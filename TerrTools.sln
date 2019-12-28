@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29503.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TerrTools", "TerrTools\TerrTools.csproj", "{213ED7CD-69EB-43AC-9071-706E4FBC55CC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{213ED7CD-69EB-43AC-9071-706E4FBC55CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{213ED7CD-69EB-43AC-9071-706E4FBC55CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{213ED7CD-69EB-43AC-9071-706E4FBC55CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{213ED7CD-69EB-43AC-9071-706E4FBC55CC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {54EB9BCE-8AE0-4849-96C5-B83680C265FF}
+	EndGlobalSection
+EndGlobal
