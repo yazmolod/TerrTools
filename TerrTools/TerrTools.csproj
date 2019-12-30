@@ -57,6 +57,12 @@
     <Compile Include="Commands\CopyRoomShape.cs" />
     <Compile Include="Commands\HorizontalFinishing.cs" />
     <Compile Include="Commands\Static.cs" />
+    <Compile Include="UI\OneComboboxForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\OneComboboxForm.Designer.cs">
+      <DependentUpon>OneComboboxForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\HorizontalFinishingForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -109,6 +115,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\IntersectionsForm.resx">
       <DependentUpon>IntersectionsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\OneComboboxForm.resx">
+      <DependentUpon>OneComboboxForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\TwoStringsForm.resx">
       <DependentUpon>TwoStringsForm.cs</DependentUpon>
