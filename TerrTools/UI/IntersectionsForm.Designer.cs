@@ -28,7 +28,20 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
+            this.button1 = new System.Windows.Forms.Button();
+            this.offsetTextBox = new System.Windows.Forms.TextBox();
+            this.minSizeTextBox = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
             this.Level = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.IntersectionPoint = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.HostName = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -43,11 +56,6 @@
             this.GroundOffset = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.HoleId = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.AddToProject = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.button1 = new System.Windows.Forms.Button();
-            this.offsetTextBox = new System.Windows.Forms.TextBox();
-            this.minSizeTextBox = new System.Windows.Forms.TextBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -76,105 +84,14 @@
             this.AddToProject});
             this.dataGridView1.Location = new System.Drawing.Point(12, 12);
             this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.Size = new System.Drawing.Size(1047, 458);
+            this.dataGridView1.Size = new System.Drawing.Size(973, 458);
             this.dataGridView1.TabIndex = 0;
             this.dataGridView1.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellValueChanged);
-            // 
-            // Level
-            // 
-            this.Level.HeaderText = "Уровень пересечения";
-            this.Level.Name = "Level";
-            this.Level.ReadOnly = true;
-            // 
-            // IntersectionPoint
-            // 
-            this.IntersectionPoint.HeaderText = "Точка пересечения";
-            this.IntersectionPoint.Name = "IntersectionPoint";
-            this.IntersectionPoint.ReadOnly = true;
-            // 
-            // HostName
-            // 
-            this.HostName.HeaderText = "Стена";
-            this.HostName.Name = "HostName";
-            this.HostName.ReadOnly = true;
-            // 
-            // HostId
-            // 
-            this.HostId.HeaderText = "Id стены";
-            this.HostId.Name = "HostId";
-            this.HostId.ReadOnly = true;
-            this.HostId.Visible = false;
-            this.HostId.Width = 50;
-            // 
-            // PipeName
-            // 
-            this.PipeName.HeaderText = "Труба/Воздуховод";
-            this.PipeName.Name = "PipeName";
-            this.PipeName.ReadOnly = true;
-            // 
-            // PipeId
-            // 
-            this.PipeId.HeaderText = "Id трубы";
-            this.PipeId.Name = "PipeId";
-            this.PipeId.ReadOnly = true;
-            this.PipeId.Visible = false;
-            this.PipeId.Width = 50;
-            // 
-            // PipeSize
-            // 
-            this.PipeSize.HeaderText = "Размер трубы/воздуховода";
-            this.PipeSize.Name = "PipeSize";
-            this.PipeSize.ReadOnly = true;
-            // 
-            // Offset
-            // 
-            this.Offset.HeaderText = "Минимальный отступ";
-            this.Offset.Name = "Offset";
-            this.Offset.Width = 50;
-            // 
-            // IsBrick
-            // 
-            this.IsBrick.HeaderText = "Размеры кирпича";
-            this.IsBrick.Name = "IsBrick";
-            this.IsBrick.Width = 60;
-            // 
-            // HoleSize
-            // 
-            this.HoleSize.HeaderText = "Размер отверстия";
-            this.HoleSize.Name = "HoleSize";
-            this.HoleSize.ReadOnly = true;
-            // 
-            // LevelOffset
-            // 
-            this.LevelOffset.HeaderText = "Отметка низа (от уровня этажа)";
-            this.LevelOffset.Name = "LevelOffset";
-            this.LevelOffset.ReadOnly = true;
-            this.LevelOffset.Width = 80;
-            // 
-            // GroundOffset
-            // 
-            this.GroundOffset.HeaderText = "Отметка низа (от уровня 0.000)";
-            this.GroundOffset.Name = "GroundOffset";
-            this.GroundOffset.ReadOnly = true;
-            this.GroundOffset.Width = 80;
-            // 
-            // HoleId
-            // 
-            this.HoleId.HeaderText = "Id отверстия ";
-            this.HoleId.Name = "HoleId";
-            this.HoleId.ReadOnly = true;
-            this.HoleId.Width = 70;
-            // 
-            // AddToProject
-            // 
-            this.AddToProject.HeaderText = "Добавить в проект";
-            this.AddToProject.Name = "AddToProject";
-            this.AddToProject.Width = 60;
             // 
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(954, 476);
+            this.button1.Location = new System.Drawing.Point(880, 476);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(105, 39);
             this.button1.TabIndex = 1;
@@ -222,11 +139,122 @@
             this.label2.TabIndex = 7;
             this.label2.Text = "Добавить в проект отверстия в местах пересечения с сетями размером не менее:";
             // 
+            // Level
+            // 
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.Level.DefaultCellStyle = dataGridViewCellStyle1;
+            this.Level.HeaderText = "Уровень пересечения";
+            this.Level.Name = "Level";
+            this.Level.ReadOnly = true;
+            // 
+            // IntersectionPoint
+            // 
+            dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.IntersectionPoint.DefaultCellStyle = dataGridViewCellStyle2;
+            this.IntersectionPoint.HeaderText = "Точка пересечения";
+            this.IntersectionPoint.Name = "IntersectionPoint";
+            this.IntersectionPoint.ReadOnly = true;
+            // 
+            // HostName
+            // 
+            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.HostName.DefaultCellStyle = dataGridViewCellStyle3;
+            this.HostName.HeaderText = "Стена";
+            this.HostName.Name = "HostName";
+            this.HostName.ReadOnly = true;
+            // 
+            // HostId
+            // 
+            this.HostId.HeaderText = "Id стены";
+            this.HostId.Name = "HostId";
+            this.HostId.ReadOnly = true;
+            this.HostId.Visible = false;
+            this.HostId.Width = 50;
+            // 
+            // PipeName
+            // 
+            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.PipeName.DefaultCellStyle = dataGridViewCellStyle4;
+            this.PipeName.HeaderText = "Труба/Воздуховод";
+            this.PipeName.Name = "PipeName";
+            this.PipeName.ReadOnly = true;
+            // 
+            // PipeId
+            // 
+            this.PipeId.HeaderText = "Id трубы";
+            this.PipeId.Name = "PipeId";
+            this.PipeId.ReadOnly = true;
+            this.PipeId.Visible = false;
+            this.PipeId.Width = 50;
+            // 
+            // PipeSize
+            // 
+            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.PipeSize.DefaultCellStyle = dataGridViewCellStyle5;
+            this.PipeSize.HeaderText = "Размер трубы/воздуховода";
+            this.PipeSize.Name = "PipeSize";
+            this.PipeSize.ReadOnly = true;
+            // 
+            // Offset
+            // 
+            this.Offset.HeaderText = "Минимальный отступ";
+            this.Offset.Name = "Offset";
+            this.Offset.Width = 50;
+            // 
+            // IsBrick
+            // 
+            this.IsBrick.HeaderText = "Размеры кирпича";
+            this.IsBrick.Name = "IsBrick";
+            this.IsBrick.Width = 60;
+            // 
+            // HoleSize
+            // 
+            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            dataGridViewCellStyle6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.HoleSize.DefaultCellStyle = dataGridViewCellStyle6;
+            this.HoleSize.HeaderText = "Размер отверстия";
+            this.HoleSize.Name = "HoleSize";
+            this.HoleSize.ReadOnly = true;
+            // 
+            // LevelOffset
+            // 
+            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            dataGridViewCellStyle7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.LevelOffset.DefaultCellStyle = dataGridViewCellStyle7;
+            this.LevelOffset.HeaderText = "Отметка низа (от уровня этажа)";
+            this.LevelOffset.Name = "LevelOffset";
+            this.LevelOffset.ReadOnly = true;
+            this.LevelOffset.Width = 80;
+            // 
+            // GroundOffset
+            // 
+            dataGridViewCellStyle8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            dataGridViewCellStyle8.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.GroundOffset.DefaultCellStyle = dataGridViewCellStyle8;
+            this.GroundOffset.HeaderText = "Отметка низа (от уровня 0.000)";
+            this.GroundOffset.Name = "GroundOffset";
+            this.GroundOffset.ReadOnly = true;
+            this.GroundOffset.Width = 80;
+            // 
+            // HoleId
+            // 
+            this.HoleId.HeaderText = "Id отверстия ";
+            this.HoleId.Name = "HoleId";
+            this.HoleId.ReadOnly = true;
+            this.HoleId.Visible = false;
+            this.HoleId.Width = 70;
+            // 
+            // AddToProject
+            // 
+            this.AddToProject.HeaderText = "Добавить в проект";
+            this.AddToProject.Name = "AddToProject";
+            this.AddToProject.Width = 60;
+            // 
             // IntersectionsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1067, 527);
+            this.ClientSize = new System.Drawing.Size(993, 527);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.minSizeTextBox);
@@ -237,6 +265,7 @@
             this.MinimizeBox = false;
             this.Name = "IntersectionsForm";
             this.ShowIcon = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Пересечения сетей со стенами";
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             this.ResumeLayout(false);
@@ -247,6 +276,11 @@
         #endregion
 
         private System.Windows.Forms.DataGridView dataGridView1;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.TextBox offsetTextBox;
+        private System.Windows.Forms.TextBox minSizeTextBox;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
         private System.Windows.Forms.DataGridViewTextBoxColumn Level;
         private System.Windows.Forms.DataGridViewTextBoxColumn IntersectionPoint;
         private System.Windows.Forms.DataGridViewTextBoxColumn HostName;
@@ -261,10 +295,5 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn GroundOffset;
         private System.Windows.Forms.DataGridViewTextBoxColumn HoleId;
         private System.Windows.Forms.DataGridViewCheckBoxColumn AddToProject;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.TextBox offsetTextBox;
-        private System.Windows.Forms.TextBox minSizeTextBox;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label2;
     }
 }

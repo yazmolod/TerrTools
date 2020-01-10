@@ -97,9 +97,10 @@ namespace TerrTools
         UIApplication uiapp;
         UIDocument uidoc;
         Document doc;
-        Document linkedDoc;
-        XYZ linkedOrigin;
+        RevitLinkInstance linkedDocInstance;
         FamilySymbol openingFamilySymbol;
+
+        Document linkedDoc { get { return linkedDocInstance.GetLinkDocument(); } }
 
         private FamilySymbol FindOpeningFamily()
         {
@@ -134,8 +135,8 @@ namespace TerrTools
             uidoc = uiapp.ActiveUIDocument;
             doc = uidoc.Document;
 
-            GetLinkedDoc();
-            if (linkedDoc == null)
+            linkedDocInstance = Static.GetLinkedDoc(doc);
+            if (linkedDocInstance == null)
                 return Result.Cancelled;            
 
             openingFamilySymbol = FindOpeningFamily();
@@ -145,13 +146,13 @@ namespace TerrTools
                 return Result.Failed;
             }
 
+            DeleteUnusedOpenings();
             List<Intersection> intersections = GetIntersections();
             UI.IntersectionsForm form = new UI.IntersectionsForm(intersections);
 
             if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
             {
                 intersections = form.UpdatedIntersections;
-                DeleteUnusedOpenings();
                 bool result = PlaceOpeningFamilies(intersections);
                 return Result.Succeeded;
             }
@@ -173,17 +174,11 @@ namespace TerrTools
                     .ToArray();
                 foreach (Element op in existingOpenings)
                 {
-                    if (IsUnusedOpening(op)) doc.Delete(op.Id);
-                }
-                
+                    Parameter p = op.LookupParameter("Идентификатор пересечения");
+                    if (p != null && !String.IsNullOrEmpty(p.AsString())) doc.Delete(op.Id);
+                }                
                 tr.Commit();
             }
-        }
-
-        private bool IsUnusedOpening(Element op)
-        {
-            // метод не реализован
-            return false;
         }
 
         private bool PlaceOpeningFamilies(List<Intersection> intersections)
@@ -214,44 +209,12 @@ namespace TerrTools
                     return false;
                 }
             }
-        }
-
-        public void GetLinkedDoc()
-        {
-            RevitLinkInstance[] linkedDocs = new FilteredElementCollector(doc).OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().ToArray();
-            var form = new UI.OneComboboxForm((from d in linkedDocs select d.Name).ToArray());
-            if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
-            {
-                RevitLinkInstance linkInstance = (from d in linkedDocs where d.Name == form.SelectedItem select d).First();
-                linkedDoc = linkInstance.GetLinkDocument();
-                linkedOrigin = linkInstance.GetTransform().Origin;
-            }
-            else
-            {
-                linkedDoc = null;
-            }
-
-            /* Выбор связанного файла мышкой; Не очень удобный вариант
-            try
-            {
-                Reference linkInstanceRef = uidoc.Selection.PickObject(
-                    Autodesk.Revit.UI.Selection.ObjectType.Element,
-                    new LinkedDocFilter(),
-                    "Выберите документ, в котором содержатся помещения");
-                RevitLinkInstance linkInstance = doc.GetElement(linkInstanceRef) as RevitLinkInstance;
-                linkedDoc = linkInstance.GetLinkDocument();
-                linkedDocOrigin = linkInstance.GetTransform().Origin;
-            }
-            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-            {
-                linkedDoc = null;
-                linkedDocOrigin = null;
-            }
-            */
-        }
+        }       
 
         private List<Intersection> GetIntersections()
         {
+            Transform tr = GetCorrectionTransform();
+
             FilteredElementCollector WallCollector = new FilteredElementCollector(doc);
             WallCollector.OfClass(typeof(Wall));
             List<Wall> walls = WallCollector.Cast<Wall>().ToList();
@@ -263,11 +226,11 @@ namespace TerrTools
                 if (wallFace != null)
                 {
                     BoundingBoxXYZ bb = w.get_BoundingBox(null);
-                    Outline outline = new Outline(bb.Min, bb.Max);
-                    BoundingBoxIntersectsFilter bbfilter = new BoundingBoxIntersectsFilter(outline);
-
+                    Outline outline = new Outline(tr.OfPoint(bb.Min), tr.OfPoint(bb.Max));
+                    BoundingBoxIntersectsFilter filter = new BoundingBoxIntersectsFilter(outline);
+                                                          
                     List<MEPCurve> meps = new FilteredElementCollector(linkedDoc)
-                        .WherePasses(bbfilter)
+                        .WherePasses(filter)
                         .OfClass(typeof(MEPCurve))
                         .Cast<MEPCurve>()
                         .ToList();
@@ -328,7 +291,7 @@ namespace TerrTools
             }
             return intersectionList;
         }
-
+       
         //Find the wind pipe corresponding curve
         public Curve FindDuctCurve(MEPCurve mepCurve)
         {
@@ -349,45 +312,34 @@ namespace TerrTools
             {
                 return null;
             }
+            catch (Autodesk.Revit.Exceptions.ArgumentsInconsistentException)
+            {
+                return null;
+            }
         }
 
         public Face FindWallFace(Wall wall)
         {
             List<Face> normalFaces = new List<Face>();
 
-            Options opt = new Options();
-            opt.ComputeReferences = true;
-            opt.DetailLevel = ViewDetailLevel.Fine;
-
-            GeometryElement e = wall.get_Geometry(opt);
-
-            foreach (GeometryObject obj in e)
+            Solid solid = Static.GetSolid(wall);
+            foreach (Face face in solid.Faces)
             {
-                Solid solid = obj as Solid;
-
-                if (solid != null && solid.Faces.Size > 0)
-                {
-                    foreach (Face face in solid.Faces)
-                    {
-                        PlanarFace pf = face as PlanarFace;
-                        if (pf != null)
-                        {
-                            normalFaces.Add(pf);
-                        }
-                    }
-                }
-            }
+                PlanarFace pf = face as PlanarFace;
+                if (pf != null) normalFaces.Add(pf);
+            }                       
             return normalFaces.OrderBy(i => i.Area).LastOrDefault();
         }
 
         public XYZ FindFaceIntersection(Curve DuctCurve, Face WallFace)
         {
             // Коррекция позиции связанного файла
-            XYZ vec = GetCorrectionVector();
-            Transform tf = Transform.CreateTranslation(vec);
+            // Так как перемещаем не ПЛОСКОСТЬ, а ЛУЧИ, то инвертируем перемещение
+            Transform tf = GetCorrectionTransform();
+            tf = tf.Inverse;
             Curve correctedCurve = DuctCurve.CreateTransformed(tf);
             //The intersection point
-            IntersectionResultArray intersectionR = new IntersectionResultArray();//Intersection point set
+            IntersectionResultArray intersectionR;//Intersection point set
             SetComparisonResult results;//Results of Comparison
             results = WallFace.Intersect(correctedCurve, out intersectionR);
             XYZ intersectionResult = null;//Intersection coordinate
@@ -402,11 +354,11 @@ namespace TerrTools
             return intersectionResult;
         }
 
-        private XYZ GetCorrectionVector()
+        private Transform GetCorrectionTransform()
         {
-            BasePoint originBP = new FilteredElementCollector(doc).OfClass(typeof(BasePoint)).Cast<BasePoint>().Where(x => !x.IsShared).First();
-            BasePoint linkedBP = new FilteredElementCollector(linkedDoc).OfClass(typeof(BasePoint)).Cast<BasePoint>().Where(x => !x.IsShared).First();
-            return new XYZ();
+            Transform transform = linkedDocInstance.GetTransform();
+            if (!transform.AlmostEqual(Transform.Identity)) return transform.Inverse;
+            else return Transform.Identity;
         }
     }
 }

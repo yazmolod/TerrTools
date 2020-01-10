@@ -61,6 +61,7 @@
             this.MinimizeBox = false;
             this.Name = "OneComboboxForm";
             this.ShowIcon = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Выбор связанного файла";
             this.ResumeLayout(false);
 

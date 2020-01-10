@@ -14,7 +14,7 @@ namespace TerrTools
     class Static
     {
         static public string sharedParameterFilePath = @"\\serverL\PSD\REVIT\ФОП\ФОП2017.txt";
-        public static bool AddSharedParameter(
+        static public bool AddSharedParameter(
             Document doc,
             string parameterName,
             string groupName,
@@ -59,7 +59,7 @@ namespace TerrTools
                 return true;
             }
         }
-        
+
         static public List<List<Curve>> GetCurvesListFromRoom(Room room)
         {
             List<List<Curve>> profiles = new List<List<Curve>>();
@@ -74,6 +74,33 @@ namespace TerrTools
                 }
             }
             return profiles;
+        }
+
+        static public RevitLinkInstance GetLinkedDoc(Document doc)
+        {
+            RevitLinkInstance[] linkedDocs = new FilteredElementCollector(doc).OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().ToArray();
+            var form = new UI.OneComboboxForm((from d in linkedDocs select d.Name).ToArray());
+            if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
+            {
+                RevitLinkInstance linkInstance = (from d in linkedDocs where d.Name == form.SelectedItem select d).First();
+                return linkInstance;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        static public Solid GetSolid(Element e)
+        {
+            Options opt = new Options();
+            GeometryElement geomElem = e.get_Geometry(opt);
+            foreach (GeometryObject geomObj in geomElem)
+            {
+                Solid geomSolid = geomObj as Solid;
+                if (null != geomSolid) return geomSolid;
+            }
+            return null;
         }
     }
 }
