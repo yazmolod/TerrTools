@@ -36,6 +36,7 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.button1 = new System.Windows.Forms.Button();
             this.offsetTextBox = new System.Windows.Forms.TextBox();
@@ -84,14 +85,14 @@
             this.AddToProject});
             this.dataGridView1.Location = new System.Drawing.Point(12, 12);
             this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.Size = new System.Drawing.Size(973, 458);
+            this.dataGridView1.Size = new System.Drawing.Size(1022, 444);
             this.dataGridView1.TabIndex = 0;
             this.dataGridView1.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellValueChanged);
             // 
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(880, 476);
+            this.button1.Location = new System.Drawing.Point(929, 479);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(105, 39);
             this.button1.TabIndex = 1;
@@ -102,7 +103,7 @@
             // offsetTextBox
             // 
             this.offsetTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.offsetTextBox.Location = new System.Drawing.Point(12, 495);
+            this.offsetTextBox.Location = new System.Drawing.Point(12, 498);
             this.offsetTextBox.Name = "offsetTextBox";
             this.offsetTextBox.Size = new System.Drawing.Size(98, 20);
             this.offsetTextBox.TabIndex = 2;
@@ -112,7 +113,7 @@
             // minSizeTextBox
             // 
             this.minSizeTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.minSizeTextBox.Location = new System.Drawing.Point(308, 495);
+            this.minSizeTextBox.Location = new System.Drawing.Point(190, 498);
             this.minSizeTextBox.Name = "minSizeTextBox";
             this.minSizeTextBox.Size = new System.Drawing.Size(100, 20);
             this.minSizeTextBox.TabIndex = 4;
@@ -123,21 +124,22 @@
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 476);
+            this.label1.Location = new System.Drawing.Point(9, 464);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(269, 13);
+            this.label1.Size = new System.Drawing.Size(157, 26);
             this.label1.TabIndex = 6;
-            this.label1.Text = "Задать минимальный отступ для всех пересечений";
+            this.label1.Text = "Задать минимальный отступ \r\nдля всех пересечений";
             // 
             // label2
             // 
             this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(305, 476);
+            this.label2.Location = new System.Drawing.Point(187, 464);
+            this.label2.Margin = new System.Windows.Forms.Padding(5);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(432, 13);
+            this.label2.Size = new System.Drawing.Size(229, 26);
             this.label2.TabIndex = 7;
-            this.label2.Text = "Добавить в проект отверстия в местах пересечения с сетями размером не менее:";
+            this.label2.Text = "Добавить в проект отверстия в местах \r\nпересечения с сетями размером не менее:";
             // 
             // Level
             // 
@@ -165,16 +167,17 @@
             // 
             // HostId
             // 
+            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.HostId.DefaultCellStyle = dataGridViewCellStyle4;
             this.HostId.HeaderText = "Id стены";
             this.HostId.Name = "HostId";
             this.HostId.ReadOnly = true;
-            this.HostId.Visible = false;
             this.HostId.Width = 50;
             // 
             // PipeName
             // 
-            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.PipeName.DefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.PipeName.DefaultCellStyle = dataGridViewCellStyle5;
             this.PipeName.HeaderText = "Труба/Воздуховод";
             this.PipeName.Name = "PipeName";
             this.PipeName.ReadOnly = true;
@@ -189,8 +192,8 @@
             // 
             // PipeSize
             // 
-            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.PipeSize.DefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.PipeSize.DefaultCellStyle = dataGridViewCellStyle6;
             this.PipeSize.HeaderText = "Размер трубы/воздуховода";
             this.PipeSize.Name = "PipeSize";
             this.PipeSize.ReadOnly = true;
@@ -209,18 +212,18 @@
             // 
             // HoleSize
             // 
-            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            dataGridViewCellStyle6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.HoleSize.DefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            dataGridViewCellStyle7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.HoleSize.DefaultCellStyle = dataGridViewCellStyle7;
             this.HoleSize.HeaderText = "Размер отверстия";
             this.HoleSize.Name = "HoleSize";
             this.HoleSize.ReadOnly = true;
             // 
             // LevelOffset
             // 
-            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            dataGridViewCellStyle7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.LevelOffset.DefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            dataGridViewCellStyle8.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.LevelOffset.DefaultCellStyle = dataGridViewCellStyle8;
             this.LevelOffset.HeaderText = "Отметка низа (от уровня этажа)";
             this.LevelOffset.Name = "LevelOffset";
             this.LevelOffset.ReadOnly = true;
@@ -228,9 +231,9 @@
             // 
             // GroundOffset
             // 
-            dataGridViewCellStyle8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            dataGridViewCellStyle8.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.GroundOffset.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle9.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            dataGridViewCellStyle9.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.GroundOffset.DefaultCellStyle = dataGridViewCellStyle9;
             this.GroundOffset.HeaderText = "Отметка низа (от уровня 0.000)";
             this.GroundOffset.Name = "GroundOffset";
             this.GroundOffset.ReadOnly = true;
@@ -254,7 +257,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(993, 527);
+            this.ClientSize = new System.Drawing.Size(1042, 530);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.minSizeTextBox);

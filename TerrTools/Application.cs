@@ -106,8 +106,8 @@ namespace TerrTools
             pbDict.Add("RoomPluntData",
             MakePushButton(
                 "PluntRoom",
-                "Оборудование:\nномер помещения",
-                "Прописывает для элементов выбранной категории номера помещений, взятых из связанного архитектурного файла",
+                "Обновить диффузоры",
+                "Копирует номер пространства и расход воздуха для всех диффузоров в проекте",
                 "DuctNumber.png"
                 ));
             pbDict.Add("WallOpening",
@@ -128,13 +128,24 @@ namespace TerrTools
                 "Создает элемент \"Перекрытие\" нужного типоразмера в указанных помещениях",
                 "Brush.png"
                 ));
-            pbDict.Add("CopyRoomShape",
+
+            pbDict.Add("CopyRoomDataToSpace",
+                MakePushButton(
+                    "SpaceNaming",
+                    "Переименовать\nпространства",
+                    "Копирует номер и имя помещения из связанного файла",
+                    "RoomToSpace.png"
+                    ));
+          
+         /*   pbDict.Add("CopyRoomShape",
            MakePushButton(
                 "CopyRoomShape",
                 "Копировать\nконтур помещений",
                 "Копирует в буфер обмена контуры выделенных помещений. В дайльнейшем это можно использовать в эскизе потолка, перекрытия и т.д.",
                 "Shape.png"
                 ));
+         */
+
             ///
             /// Pulldown buttons
             ///
@@ -150,7 +161,6 @@ namespace TerrTools
             ///
             panelArch.AddItem(pbDict["RoomFinishingData"]);
             panelArch.AddItem(pbDict["GenerateFloor"]);
-            panelArch.AddItem(pbDict["CopyRoomShape"]);
 
             ///
             /// Конструкторская панель
@@ -159,10 +169,12 @@ namespace TerrTools
             tempBtn.AddPushButton(pbDict["WallOpening"]);
             tempBtn.AddPushButton(pbDict["FloorOpening"]);
 
+
             ///
             /// ОВиК панель
             ///
             panelMEP.AddItem(pbDict["RoomPluntData"]);
+            panelMEP.AddItem(pbDict["CopyRoomDataToSpace"]);
 
             return Result.Succeeded;
         }

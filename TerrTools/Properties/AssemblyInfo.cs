@@ -7,7 +7,14 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-- Улучшения в окне задания отверстий")]
+ОВиК
+- Добавлена кнопка копирования наименования и номеров помещений в пространства
+- Обновлен макрос диффузоров: теперь он не только подгружает номер пространства (не помещения!),
+но и копирует заданный расход приточного/вытяжного воздуха для диффузоров соответствующей системы
+
+КР:
+- В макросе 'Расстановка отверстий в стенах' добавлена поддержка вариантов конструкции
+")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("TerrTools")]
@@ -33,4 +40,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.2.1")]
+[assembly: AssemblyFileVersion("0.3.0")]

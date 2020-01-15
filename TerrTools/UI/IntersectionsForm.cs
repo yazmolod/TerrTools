@@ -13,6 +13,7 @@ namespace TerrTools.UI
     public partial class IntersectionsForm : Form
     {
         List<Intersection> Intersections { get; set; }
+        bool DeleteOld { get; set; }
         double minPipeSizeValue {get;set;}
         public List<Intersection> UpdatedIntersections = new List<Intersection>();
         public IntersectionsForm(List<Intersection> intersections)

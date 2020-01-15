@@ -17,7 +17,7 @@ namespace TerrTools
     {
         public Element Host { get; set; }
         public Element Pipe { get; set; }
-        public long Id { get {return long.Parse(Host.Id.ToString() + Pipe.Id.ToString()); } }
+        public string Id { get {return Host.Id.ToString() + Pipe.Id.ToString(); } }
         public bool IsBrick { get; set; }
         public bool IsRound { get; set; }
         public XYZ CenterPoint { get; set; }
@@ -73,9 +73,9 @@ namespace TerrTools
                 double nominalLevelOffset = CenterPoint.Z - Level.Elevation - HoleHeight / 2;
                 if (IsBrick)
                 {
-                    int bricks = 1;
+                    int bricks = 0;
                     double bricksHeight = (bricks * 65 + (bricks - 1) * 10) / 304.8;
-                    while (bricksHeight + 65/304.8 < nominalLevelOffset)
+                    while (bricksHeight < nominalLevelOffset)
                     {
                         bricks++;
                         bricksHeight = (bricks * 65 + (bricks - 1) * 10) / 304.8;
@@ -99,6 +99,7 @@ namespace TerrTools
         Document doc;
         RevitLinkInstance linkedDocInstance;
         FamilySymbol openingFamilySymbol;
+        ElementId activeDesignOptionId;
 
         Document linkedDoc { get { return linkedDocInstance.GetLinkDocument(); } }
 
@@ -134,6 +135,8 @@ namespace TerrTools
             uiapp = commandData.Application;
             uidoc = uiapp.ActiveUIDocument;
             doc = uidoc.Document;
+
+            activeDesignOptionId = DesignOption.GetActiveDesignOptionId(doc);
 
             linkedDocInstance = Static.GetLinkedDoc(doc);
             if (linkedDocInstance == null)
@@ -175,7 +178,10 @@ namespace TerrTools
                 foreach (Element op in existingOpenings)
                 {
                     Parameter p = op.LookupParameter("Идентификатор пересечения");
-                    if (p != null && !String.IsNullOrEmpty(p.AsString())) doc.Delete(op.Id);
+                    ElementId opDesignOption = op.DesignOption != null ? op.DesignOption.Id : ElementId.InvalidElementId;
+                    if (p != null 
+                        && !String.IsNullOrEmpty(p.AsString())
+                        && opDesignOption == activeDesignOptionId) doc.Delete(op.Id);
                 }                
                 tr.Commit();
             }
@@ -188,17 +194,36 @@ namespace TerrTools
                 tr.Start();
                 try
                 {
+                    List<Intersection> failedIntersections = new List<Intersection>();
                     foreach (Intersection i in intersections)
                     {
-                        Element holeElement = doc.Create.NewFamilyInstance(new XYZ (i.CenterPoint.X, i.CenterPoint.Y, i.Level.Elevation), openingFamilySymbol, i.Host, i.Level, StructuralType.NonStructural);
-                        holeElement.LookupParameter("ADSK_Отверстие_Ширина").Set(i.HoleWidth);
-                        holeElement.LookupParameter("ADSK_Отверстие_Высота").Set(i.HoleHeight);
-                        holeElement.LookupParameter("ADSK_Отверстие_Функция").Set(i.Type);
-                        holeElement.LookupParameter("ADSK_Отверстие_Отметка от этажа").Set(i.LevelOffset);
-                        if (i.Level.Elevation == 0) holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(0);
-                        else holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(i.Level.Elevation);
-                        holeElement.LookupParameter("Идентификатор пересечения").Set(i.Id.ToString());
+                        ElementId wallDesignOption = i.Host.DesignOption != null ? i.Host.DesignOption.Id : ElementId.InvalidElementId;
+                        if (wallDesignOption == activeDesignOptionId)
+                        {
+                            Element holeElement = doc.Create.NewFamilyInstance(new XYZ(i.CenterPoint.X, i.CenterPoint.Y, i.Level.Elevation), openingFamilySymbol, i.Host, i.Level, StructuralType.NonStructural);
+                            holeElement.LookupParameter("ADSK_Отверстие_Ширина").Set(i.HoleWidth);
+                            holeElement.LookupParameter("ADSK_Отверстие_Высота").Set(i.HoleHeight);
+                            holeElement.LookupParameter("ADSK_Отверстие_Функция").Set(i.Type);
+                            holeElement.LookupParameter("ADSK_Отверстие_Отметка от этажа").Set(i.LevelOffset);
+                            if (i.Level.Elevation == 0) holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(0);
+                            else holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(i.Level.Elevation);
+                            holeElement.LookupParameter("Идентификатор пересечения").Set(i.Id.ToString());
+                        }
+                        else
+                        {
+                            failedIntersections.Add(i);
+                        }
                     }
+                    TaskDialog dialog = new TaskDialog("Результат");
+                    dialog.MainInstruction = String.Format("Количество добавленных отверстий: {0}\nПропущенные отверстия: {1}", intersections.Count - failedIntersections.Count, failedIntersections.Count);
+                    dialog.MainContent = failedIntersections.Count > 0 ? 
+                        String.Format(
+                        "Нижеперечисленные стены находятся в другом варианте конструкции и были пропущены при расстановке отверстий:"+
+                        "\n{0}\n" +
+                        "Чтобы добавить эти пересечения в проект, переключитесь на вариант конструкции, в котором содержатся эти стены и повторите попытку",
+                        String.Join(", ", (from e in failedIntersections select e.Host.Id.ToString())))
+                        : null;
+                    dialog.Show();
                     tr.Commit();
                     return true;
                 }
@@ -213,7 +238,7 @@ namespace TerrTools
 
         private List<Intersection> GetIntersections()
         {
-            Transform tr = GetCorrectionTransform();
+            Transform tr = Static.GetCorrectionTransform(linkedDocInstance);
 
             FilteredElementCollector WallCollector = new FilteredElementCollector(doc);
             WallCollector.OfClass(typeof(Wall));
@@ -222,8 +247,8 @@ namespace TerrTools
             List<Intersection> intersectionList = new List<Intersection>();
             foreach (Wall w in walls)
             {
-                Face wallFace = FindWallFace(w);
-                if (wallFace != null)
+                List<Face> wallFaces = FindWallFaces(w);
+                if (wallFaces.Count > 0)
                 {
                     BoundingBoxXYZ bb = w.get_BoundingBox(null);
                     Outline outline = new Outline(tr.OfPoint(bb.Min), tr.OfPoint(bb.Max));
@@ -241,12 +266,11 @@ namespace TerrTools
                         if (mepCurve != null)
                         {
                             double height = mepCurve.GetEndPoint(0).Z;
-                            XYZ interPt = null;
-                            interPt = FindFaceIntersection(mepCurve, wallFace);
-                            if (null != interPt)
+                            XYZ[] interPts = (from wallFace in wallFaces select FindFaceIntersection(mepCurve, wallFace)).ToArray();
+                            if (interPts.Any(x => x!= null))
                             {
                                 Intersection i = new Intersection();
-                                i.CenterPoint = interPt;
+                                i.CenterPoint = interPts.First(x => x!=null);
                                 i.Host = w;
                                 i.Pipe = m;
                                 i.Level = doc.GetElement(w.LevelId) as Level;
@@ -318,7 +342,7 @@ namespace TerrTools
             }
         }
 
-        public Face FindWallFace(Wall wall)
+        public List<Face> FindWallFaces(Wall wall)
         {
             List<Face> normalFaces = new List<Face>();
 
@@ -328,37 +352,28 @@ namespace TerrTools
                 PlanarFace pf = face as PlanarFace;
                 if (pf != null) normalFaces.Add(pf);
             }                       
-            return normalFaces.OrderBy(i => i.Area).LastOrDefault();
+            return normalFaces;
         }
 
         public XYZ FindFaceIntersection(Curve DuctCurve, Face WallFace)
         {
             // Коррекция позиции связанного файла
             // Так как перемещаем не ПЛОСКОСТЬ, а ЛУЧИ, то инвертируем перемещение
-            Transform tf = GetCorrectionTransform();
+            Transform tf = Static.GetCorrectionTransform(linkedDocInstance);
             tf = tf.Inverse;
             Curve correctedCurve = DuctCurve.CreateTransformed(tf);
             //The intersection point
             IntersectionResultArray intersectionR;//Intersection point set
             SetComparisonResult results;//Results of Comparison
             results = WallFace.Intersect(correctedCurve, out intersectionR);
-            XYZ intersectionResult = null;//Intersection coordinate
-            if (SetComparisonResult.Disjoint != results)            {
-                if (intersectionR != null) {
-                    if (!intersectionR.IsEmpty)
-                    {
-                        intersectionResult = intersectionR.get_Item(0).XYZPoint;
-                    }
-                }
-            }
-            return intersectionResult;
+            if (SetComparisonResult.Disjoint != results 
+                && intersectionR != null 
+                && !intersectionR.IsEmpty) 
+                return intersectionR.get_Item(0).XYZPoint;                    
+            else            
+                return null;
         }
 
-        private Transform GetCorrectionTransform()
-        {
-            Transform transform = linkedDocInstance.GetTransform();
-            if (!transform.AlmostEqual(Transform.Identity)) return transform.Inverse;
-            else return Transform.Identity;
-        }
+        
     }
 }

@@ -29,34 +29,36 @@ namespace TerrTools
                 catSet.Insert(doc.Settings.Categories.get_Item(c));
             }
 
-            doc.Application.SharedParametersFilename = sharedParameterFilePath;
-            DefinitionFile spFile = doc.Application.OpenSharedParameterFile();
-            DefinitionGroup terrGroup = spFile.Groups.get_Item(groupName);
-            Definition sharedDef = terrGroup.Definitions.get_Item(parameterName);
-            if (sharedDef == null)
+            try
             {
-                TaskDialog.Show("Ошибка добавления общих параметров",
-                    "Параметр " + parameterName + " отсутствует в файле общих параметров. Проверьте его наличие и повторите попытку");
-                return false;
-            }
-            else
-            {
+                doc.Application.SharedParametersFilename = sharedParameterFilePath;
+                DefinitionFile spFile = doc.Application.OpenSharedParameterFile();
+                DefinitionGroup terrGroup = spFile.Groups.get_Item(groupName);
+                Definition sharedDef = terrGroup.Definitions.get_Item(parameterName);
+
                 using (Transaction trDef = new Transaction(doc, "Добавление общего параметра"))
                 {
                     trDef.Start();
-                    if (isIntance)
+                    Binding bind;
+                    if (isIntance) bind = doc.Application.Create.NewInstanceBinding(catSet);                    
+                    else bind = doc.Application.Create.NewTypeBinding(catSet);
+                    bool result = doc.ParameterBindings.Insert(sharedDef, bind, group);
+                    if (result)
                     {
-                        InstanceBinding bind = doc.Application.Create.NewInstanceBinding(catSet);
-                        doc.ParameterBindings.Insert(sharedDef, bind, group);
+                        trDef.Commit();
+                        return true;
                     }
                     else
                     {
-                        TypeBinding bind = doc.Application.Create.NewTypeBinding(catSet);
-                        doc.ParameterBindings.Insert(sharedDef, bind, group);
+                        TaskDialog.Show("Ошибка", String.Format("Глобальный параметр \"{0}\" уже существует в проекте, но назначен другим категориям", parameterName));
+                        return false;
                     }
-                    trDef.Commit();
-                }
-                return true;
+                }                
+            }
+            catch
+            {
+                TaskDialog.Show("Ошибка", String.Format("Произошла ошибка добавления общего параметра \"{0}\"", parameterName));
+                return false;
             }
         }
 
@@ -89,6 +91,13 @@ namespace TerrTools
             {
                 return null;
             }
+        }
+
+        static public Transform GetCorrectionTransform(RevitLinkInstance linkedDocInstance)
+        {
+            Transform transform = linkedDocInstance.GetTransform();
+            if (!transform.AlmostEqual(Transform.Identity)) return transform.Inverse;
+            else return Transform.Identity;
         }
 
         static public Solid GetSolid(Element e)

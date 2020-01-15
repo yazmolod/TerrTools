@@ -4,105 +4,183 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
-using Autodesk.Revit.DB.Architecture;
+using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 
+
 namespace TerrTools
 {
-    class LinkedDocFilter : Autodesk.Revit.UI.Selection.ISelectionFilter
+    [Transaction(TransactionMode.Manual)]
+    public class SpaceNaming : IExternalCommand
     {
-        public bool AllowElement(Element elem)
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            BuiltInCategory cat = (BuiltInCategory)elem.Category.Id.IntegerValue;
-            if (cat == BuiltInCategory.OST_RvtLinks) return true;
-            return false;
-        }
-
-        public bool AllowReference(Reference reference, XYZ position)
-        {
-            return false;            
+            Document doc = commandData.Application.ActiveUIDocument.Document;
+            FilteredElementCollector collector = new FilteredElementCollector(doc).OfClass(typeof(SpatialElement));
+            Element[] spaces = (from e in collector.ToElements()
+                                where e is Space
+                                select e).ToArray();
+            if (spaces.Length > 0)
+            {
+                using (Transaction tr = new Transaction(doc, "Перенос информации из помещений в пространства"))
+                {
+                    tr.Start();
+                    foreach (Element space in spaces)
+                    {
+                        string name = space.get_Parameter(BuiltInParameter.SPACE_ASSOC_ROOM_NAME).AsString();
+                        string number = space.get_Parameter(BuiltInParameter.SPACE_ASSOC_ROOM_NUMBER).AsString();
+                        space.get_Parameter(BuiltInParameter.ROOM_NAME).Set(name);
+                        space.get_Parameter(BuiltInParameter.ROOM_NUMBER).Set(number);
+                    }
+                    tr.Commit();
+                }
+                TaskDialog.Show("Результат", "Данные успешно скопированы");
+                return Result.Succeeded;
+            }
+            else
+            {
+                message = "Не найдено ни одно пространство в текущем проекте";
+                return Result.Failed;
+            }            
         }
     }
 
     [Transaction(TransactionMode.Manual)]
     public class PluntRoom : IExternalCommand    
-    {               
+    {
+        Document doc { get; set; }
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Document doc = uidoc.Document;
-
-            Document linkedDoc = null;
-            XYZ linkedOrigin = null;
-
-            TwoStringsForm inputForm = new TwoStringsForm();
-            BuiltInCategory category = inputForm.Category;
-            string parameterName = inputForm.ParameterName;   
-            if (category == BuiltInCategory.INVALID)
-            {
-                TaskDialog.Show("Ошибка", "Не найдена категория");
-                return Result.Failed;
-            }
-
-            // Выбор связанного файла, в котором содержаися помещения с забитыми номерами
-            try
-            {
-                Reference linkInstanceRef = uidoc.Selection.PickObject(
-                    Autodesk.Revit.UI.Selection.ObjectType.Element,
-                    new LinkedDocFilter(),
-                    "Выберите документ, в котором содержатся помещения");
-                RevitLinkInstance linkInstance = doc.GetElement(linkInstanceRef) as RevitLinkInstance;
-                linkedDoc = linkInstance.GetLinkDocument();
-                linkedOrigin = linkInstance.GetTransform().Origin;
-            }
-            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-            {
-                return Result.Cancelled;
-            }        
+            // Стандарт
+            doc = commandData.Application.ActiveUIDocument.Document;
+            // Параметры для обновления
+            string airflowParameterName = "ADSK_Расход воздуха";
+            string spaceNumberParameterName = "ТеррНИИ_Номер помещения";            
 
             // Выбираем все элементы трубуемой категории
             FilteredElementCollector collector = new FilteredElementCollector(doc);
-            List<Element> ductTerminals = collector.OfCategory(category).WhereElementIsNotElementType().ToList();
+            List<Element> ductTerminals = collector.OfCategory(BuiltInCategory.OST_DuctTerminal).WhereElementIsNotElementType().ToList();
             if (ductTerminals.Count < 1)
             {
-                TaskDialog.Show("Ошибка", "Не найден ни один элемент данной категории");
+                TaskDialog.Show("Ошибка", "Не найден ни один воздухораспределитель");
                 return Result.Failed;
             }
 
-            //Проверяем, существует ли он в проекте
-            Parameter checkingParameter = ductTerminals[0].LookupParameter(parameterName);
+            //Проверяем наличие необходимых параметров в проекте
+            Parameter checkingParameter = ductTerminals[0].LookupParameter(spaceNumberParameterName);
             if (checkingParameter == null)
             {
-                TaskDialog.Show("Ошибка", String.Format("Не найден параметер {0} для требуемой категории", parameterName));
-                return Result.Failed;
+                bool result = Static.AddSharedParameter(doc,
+                    spaceNumberParameterName,
+                    "TerrTools_General",
+                    true,
+                    new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal },
+                    BuiltInParameterGroup.PG_IDENTITY_DATA);
+                if (!result) return Result.Failed;
             }
 
+
+            checkingParameter = ductTerminals[0].LookupParameter(airflowParameterName);
+            if (checkingParameter == null)
+            {
+                bool result = Static.AddSharedParameter(doc,
+                    airflowParameterName,
+                    "ADSK_Main_MEP",
+                    true,
+                    new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal },
+                    BuiltInParameterGroup.PG_MECHANICAL);
+                if (!result) return Result.Failed;
+            }
+
+            // Назначаем номера помещений диффузорам
+            List<Element> missingDucts = new List<Element>();
             using (Transaction tr = new Transaction(doc, "Назначить воздухораспределителям номера помещений"))
             {
                 tr.Start();
-                List<string> missingDucts = new List<string>();
                 foreach (Element el in ductTerminals)
-                {
-                    LocationPoint el_origin = el.Location as LocationPoint;
-                    XYZ el_originXYZ = el_origin.Point;
-                    Room room = linkedDoc.GetRoomAtPoint(el_originXYZ - linkedOrigin);
-                    if (room != null)
+                {                    
+                    Parameter p = el.LookupParameter(spaceNumberParameterName);
+                    Space space = GetSpaceOfDuct(el);
+                    if (space != null)
                     {
-                        string roomNumber = room.LookupParameter("Номер").AsString();
-                        el.LookupParameter(parameterName).Set(roomNumber);
+                        string roomNumber = space.LookupParameter("Номер").AsString();
+                        p.Set(roomNumber);
                     }
                     else
                     {
-                        el.LookupParameter(parameterName).Set("<Помещение не найдено!>");
-                        missingDucts.Add(el.Id.ToString());
+                        p.Set("<Помещение не найдено!>");
+                        missingDucts.Add(el);
                     }
                 }
-                TaskDialog.Show(String.Format("Не определено элементов: {0}", missingDucts.Count), String.Join("\n", missingDucts));
                 tr.Commit();
             }
+
+            // Назначаем расход диффузорам            
+            using (Transaction tr = new Transaction(doc, "Задать расход диффузорам"))
+            {
+                tr.Start();
+                foreach (Element el in ductTerminals)
+                {
+                    try
+                    {
+                        // Параметр номера помещения
+                        Parameter spaceNumberParam = el.LookupParameter(spaceNumberParameterName);
+                        // Параметр Расход воздуха
+                        Parameter airflowParam = el.LookupParameter(airflowParameterName);
+                        // Параметр "Классификация системы"
+                        BuiltInParameter sysClassBuiltIn = BuiltInParameter.RBS_SYSTEM_CLASSIFICATION_PARAM;
+                        Parameter systemClassParam = el.get_Parameter(sysClassBuiltIn);
+                        string systemClass = systemClassParam.AsString();
+                        // Считаем количество диффузоров одной системы на пространство
+                        int count = (from d in ductTerminals
+                                     where d.LookupParameter(spaceNumberParameterName).AsString() == spaceNumberParam.AsString()
+                                     && d.get_Parameter(sysClassBuiltIn).AsString() == systemClassParam.AsString()
+                                     select d).Count();
+
+                        // Находим пространство, в котором находится диффузор и достаем нужные значения
+                        Space space = GetSpaceOfDuct(el);
+                        if (space != null)
+                        {
+                            double value;
+                            switch (systemClass)
+                            {
+                                case "Приточный воздух":
+                                    value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_SUPPLY_AIRFLOW_PARAM).AsDouble();
+                                    value /= count;
+                                    airflowParam.Set(value);
+                                    break;
+                                case "Отработанный воздух":
+                                    value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_EXHAUST_AIRFLOW_PARAM).AsDouble();
+                                    value /= count;
+                                    airflowParam.Set(value);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        else airflowParam.Set(0);
+                    }
+                    catch
+                    {
+                        TaskDialog.Show("Ошибка", string.Format("При попытке назначить расход элементу {0} возникла ошибка. Данный элемент пропущен", el.Id.ToString()));
+                    }
+                }
+                tr.Commit();
+            }            
+            TaskDialog dialog = new TaskDialog("Результат");
+            dialog.MainInstruction = String.Format("Количество воздухораспределителей, для которых найдено пространство: {0}\nНе найдено: {1}",ductTerminals.Count - missingDucts.Count, missingDucts.Count);
+            dialog.MainContent = "Не найдены пространства для следующих воздухораспределителей:\n" + String.Join(", ", (from e in missingDucts select e.Id.ToString()));
+            dialog.Show();
             return Result.Succeeded;
+        }
+
+        private Space GetSpaceOfDuct(Element el)
+        {
+            LocationPoint el_origin = el.Location as LocationPoint;
+            XYZ el_originXYZ = el_origin.Point;
+            Space space = doc.GetSpaceAtPoint(el_originXYZ);
+            return space;
         }
     }
 }
