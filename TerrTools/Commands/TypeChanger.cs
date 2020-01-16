@@ -11,26 +11,39 @@ using Autodesk.Revit.DB.Architecture;
 
 namespace TerrTools
 {
+    class FamilyLoadOptions : IFamilyLoadOptions
+    {
+        public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
+        {
+            overwriteParameterValues = false;
+            return true;
+        }
+        public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues)
+        {
+            source = FamilySource.Project;
+            overwriteParameterValues = false;
+            return true;
+        }
+    }
+
     [Transaction(TransactionMode.Manual)]
     class TypeChanger : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             Document doc = commandData.Application.ActiveUIDocument.Document;
+            UpdateType(doc);
 
-            FilteredElementCollector families = new FilteredElementCollector(doc).OfClass(typeof(Family));
+            Family[] families = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>().ToArray();            
             foreach (Family family in families)
             {
                 if (family.IsEditable)
                 {
                     Document famdoc = doc.EditFamily(family);
+                    UpdateType(famdoc);
+                    famdoc.LoadFamily(doc, new FamilyLoadOptions());
                 }
-            }
-
-            UpdateType(doc);
-
-
-            
+            }            
             return Result.Succeeded;
         }
 
@@ -38,7 +51,8 @@ namespace TerrTools
         {
             ElementClassFilter filterTextType = new ElementClassFilter(typeof(TextElementType));
             ElementClassFilter filterTextNote = new ElementClassFilter(typeof(TextNoteType));
-            LogicalOrFilter filter = new LogicalOrFilter(filterTextNote, filterTextType);
+            ElementClassFilter filterDimension = new ElementClassFilter(typeof(DimensionType));
+            LogicalOrFilter filter = new LogicalOrFilter(new ElementFilter[] { filterTextNote, filterTextType, filterDimension });
             Element[] textTypes = new FilteredElementCollector(doc).WherePasses(filter).ToArray();
             using (Transaction tr = new Transaction(doc, "Обновление шрифта"))
             {

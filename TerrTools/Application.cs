@@ -86,7 +86,7 @@ namespace TerrTools
             RibbonPanel panelArch = application.CreateRibbonPanel(tabName, "АР");
             RibbonPanel panelStruct = application.CreateRibbonPanel(tabName, "КР");
             RibbonPanel panelMEP = application.CreateRibbonPanel(tabName, "ОВиК");
-            RibbonPanel panelFamily = application.CreateRibbonPanel(tabName, "Семейства");
+            RibbonPanel panelGeneral = application.CreateRibbonPanel(tabName, "Общие");
 
             Dictionary<string, PushButtonData> pbDict = new Dictionary<string, PushButtonData>();
             Dictionary<string, PulldownButtonData> plDict = new Dictionary<string, PulldownButtonData>();
@@ -182,12 +182,13 @@ namespace TerrTools
             ///
             panelMEP.AddItem(pbDict["RoomPluntData"]);
             panelMEP.AddItem(pbDict["CopyRoomDataToSpace"]);
-            panelMEP.AddItem(pbDict["FocusOnElement"]);
+
 
             ///
-            /// Панель семейства
+            /// Общая панель
             ///
-            panelFamily.AddItem(pbDict["UpdateType"]);
+            panelGeneral.AddItem(pbDict["FocusOnElement"]);
+            panelGeneral.AddItem(pbDict["UpdateType"]);
 
             return Result.Succeeded;
         }
