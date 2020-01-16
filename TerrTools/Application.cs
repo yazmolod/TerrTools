@@ -86,6 +86,7 @@ namespace TerrTools
             RibbonPanel panelArch = application.CreateRibbonPanel(tabName, "АР");
             RibbonPanel panelStruct = application.CreateRibbonPanel(tabName, "КР");
             RibbonPanel panelMEP = application.CreateRibbonPanel(tabName, "ОВиК");
+            RibbonPanel panelFamily = application.CreateRibbonPanel(tabName, "Семейства");
 
             Dictionary<string, PushButtonData> pbDict = new Dictionary<string, PushButtonData>();
             Dictionary<string, PulldownButtonData> plDict = new Dictionary<string, PulldownButtonData>();
@@ -142,16 +143,15 @@ namespace TerrTools
                     "Выберите из списка необходимый элемент и окно сфокусируется на нем",
                     "Zoom.png"
                     ));
+            pbDict.Add("UpdateType",
+                MakePushButton(
+                    "TypeChanger",
+                    "Обновить шрифт",
+                    "Обновляет шрифт в семействе",
+                    "Type.png"                    
+                    ));
 
           
-         /*   pbDict.Add("CopyRoomShape",
-           MakePushButton(
-                "CopyRoomShape",
-                "Копировать\nконтур помещений",
-                "Копирует в буфер обмена контуры выделенных помещений. В дайльнейшем это можно использовать в эскизе потолка, перекрытия и т.д.",
-                "Shape.png"
-                ));
-         */
 
             ///
             /// Pulldown buttons
@@ -183,6 +183,11 @@ namespace TerrTools
             panelMEP.AddItem(pbDict["RoomPluntData"]);
             panelMEP.AddItem(pbDict["CopyRoomDataToSpace"]);
             panelMEP.AddItem(pbDict["FocusOnElement"]);
+
+            ///
+            /// Панель семейства
+            ///
+            panelFamily.AddItem(pbDict["UpdateType"]);
 
             return Result.Succeeded;
         }

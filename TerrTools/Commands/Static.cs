@@ -39,20 +39,24 @@ namespace TerrTools
                 using (Transaction trDef = new Transaction(doc, "Добавление общего параметра"))
                 {
                     trDef.Start();
-                    Binding bind;
+                    ElementBinding bind;
                     if (isIntance) bind = doc.Application.Create.NewInstanceBinding(catSet);                    
                     else bind = doc.Application.Create.NewTypeBinding(catSet);
                     bool result = doc.ParameterBindings.Insert(sharedDef, bind, group);
-                    if (result)
+                    if (!result)
                     {
-                        trDef.Commit();
-                        return true;
-                    }
-                    else
-                    {
-                        TaskDialog.Show("Ошибка", String.Format("Глобальный параметр \"{0}\" уже существует в проекте, но назначен другим категориям", parameterName));
-                        return false;
-                    }
+                        bind = GetParameterBinding(doc, sharedDef.Name);
+                        foreach (Category c in catSet) bind.Categories.Insert(c);
+                        bool result2 = doc.ParameterBindings.ReInsert(sharedDef, bind, group);
+                        if (!result2)
+                        {
+                            TaskDialog.Show("Ошибка", String.Format("Произошла ошибка при редактировании привязок существующего параметра \"{0}\"", parameterName));
+                            trDef.RollBack();
+                            return false;
+                        }
+                    }                    
+                    trDef.Commit();
+                    return true;
                 }                
             }
             catch
@@ -60,6 +64,31 @@ namespace TerrTools
                 TaskDialog.Show("Ошибка", String.Format("Произошла ошибка добавления общего параметра \"{0}\"", parameterName));
                 return false;
             }
+        }
+
+        static public bool IsParameterInProject(Document doc, string parameterName, Category category)
+        {
+            BindingMap map = doc.ParameterBindings;
+            DefinitionBindingMapIterator it = map.ForwardIterator();
+            bool result = false;
+            it.Reset();
+            while (it.MoveNext())
+            {
+                result = result || (it.Key.Name == parameterName && (it.Current as ElementBinding).Categories.Contains(category));
+            }
+            return result;
+        }
+
+        static private ElementBinding GetParameterBinding(Document doc, string parameterName)
+        {
+            BindingMap map = doc.ParameterBindings;
+            DefinitionBindingMapIterator it = map.ForwardIterator();
+            it.Reset();
+            while (it.MoveNext())
+            {
+                if (it.Key.Name == parameterName) return it.Current as ElementBinding;
+            }
+            return null;
         }
 
         static public List<List<Curve>> GetCurvesListFromRoom(Room room)

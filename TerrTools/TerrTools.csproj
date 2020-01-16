@@ -58,6 +58,7 @@
     <Compile Include="Commands\HorizontalFinishing.cs" />
     <Compile Include="Commands\Static.cs" />
     <Compile Include="Commands\FocusOnElement.cs" />
+    <Compile Include="Commands\TypeChanger.cs" />
     <Compile Include="UI\OneComboboxForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -138,6 +139,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\Zoom.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\Type.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
