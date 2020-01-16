@@ -128,7 +128,6 @@ namespace TerrTools
                 "Создает элемент \"Перекрытие\" нужного типоразмера в указанных помещениях",
                 "Brush.png"
                 ));
-
             pbDict.Add("CopyRoomDataToSpace",
                 MakePushButton(
                     "SpaceNaming",
@@ -136,6 +135,14 @@ namespace TerrTools
                     "Копирует номер и имя помещения из связанного файла",
                     "RoomToSpace.png"
                     ));
+            pbDict.Add("FocusOnElement",
+                MakePushButton(
+                    "FocusOnElement",
+                    "Сфокусироваться\nна элементе",
+                    "Выберите из списка необходимый элемент и окно сфокусируется на нем",
+                    "Zoom.png"
+                    ));
+
           
          /*   pbDict.Add("CopyRoomShape",
            MakePushButton(
@@ -175,6 +182,7 @@ namespace TerrTools
             ///
             panelMEP.AddItem(pbDict["RoomPluntData"]);
             panelMEP.AddItem(pbDict["CopyRoomDataToSpace"]);
+            panelMEP.AddItem(pbDict["FocusOnElement"]);
 
             return Result.Succeeded;
         }

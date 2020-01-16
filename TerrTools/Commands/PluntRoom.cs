@@ -60,7 +60,7 @@ namespace TerrTools
 
             // Выбираем все элементы трубуемой категории
             FilteredElementCollector collector = new FilteredElementCollector(doc);
-            List<Element> ductTerminals = collector.OfCategory(BuiltInCategory.OST_DuctTerminal).WhereElementIsNotElementType().ToList();
+            List<FamilyInstance> ductTerminals = collector.OfCategory(BuiltInCategory.OST_DuctTerminal).WhereElementIsNotElementType().Cast<FamilyInstance>().ToList();
             if (ductTerminals.Count < 1)
             {
                 TaskDialog.Show("Ошибка", "Не найден ни один воздухораспределитель");
@@ -98,7 +98,7 @@ namespace TerrTools
             using (Transaction tr = new Transaction(doc, "Назначить воздухораспределителям номера помещений"))
             {
                 tr.Start();
-                foreach (Element el in ductTerminals)
+                foreach (FamilyInstance el in ductTerminals)
                 {                    
                     Parameter p = el.LookupParameter(spaceNumberParameterName);
                     Space space = GetSpaceOfDuct(el);
@@ -120,7 +120,7 @@ namespace TerrTools
             using (Transaction tr = new Transaction(doc, "Задать расход диффузорам"))
             {
                 tr.Start();
-                foreach (Element el in ductTerminals)
+                foreach (FamilyInstance el in ductTerminals)
                 {
                     try
                     {
@@ -170,17 +170,34 @@ namespace TerrTools
             }            
             TaskDialog dialog = new TaskDialog("Результат");
             dialog.MainInstruction = String.Format("Количество воздухораспределителей, для которых найдено пространство: {0}\nНе найдено: {1}",ductTerminals.Count - missingDucts.Count, missingDucts.Count);
-            dialog.MainContent = "Не найдены пространства для следующих воздухораспределителей:\n" + String.Join(", ", (from e in missingDucts select e.Id.ToString()));
+            dialog.MainContent = "Не найдены пространства для следующих воздухораспределителей:\n" 
+                + String.Join(", ", (from e in missingDucts select e.Id.ToString()).Take(20)) 
+                + "...\n\nЕсли диффузор находится в пространстве, но не определяется, проверьте точку расчета площади в семействе";
             dialog.Show();
             return Result.Succeeded;
         }
 
-        private Space GetSpaceOfDuct(Element el)
+        private Space GetSpaceOfDuct(FamilyInstance el)
         {
+            //По свойству пространства диффузора
+            Space space = el.Space;
+            if (space != null) return space;
+
+            //По точке расчета площади
+            if (el.HasSpatialElementCalculationPoint)
+            {
+                XYZ point = el.GetSpatialElementCalculationPoint();
+                space = doc.GetSpaceAtPoint(point);
+                if (space != null) return space;
+            }
+            //По точке вставки экземпляра семества
             LocationPoint el_origin = el.Location as LocationPoint;
             XYZ el_originXYZ = el_origin.Point;
-            Space space = doc.GetSpaceAtPoint(el_originXYZ);
-            return space;
+            space = doc.GetSpaceAtPoint(el_originXYZ);
+            if (space != null) return space;
+
+            //Ничего не прошло - возвращаем null
+            return null;
         }
     }
 }
