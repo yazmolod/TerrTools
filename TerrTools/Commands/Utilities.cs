@@ -11,7 +11,7 @@ using Autodesk.Revit.Attributes;
 
 namespace TerrTools
 {
-    class Static
+    class CustomSharedParameter
     {
         static public string sharedParameterFilePath = @"\\serverL\PSD\REVIT\ФОП\ФОП2017.txt";
         static public bool AddSharedParameter(
@@ -43,6 +43,7 @@ namespace TerrTools
                     if (isIntance) bind = doc.Application.Create.NewInstanceBinding(catSet);                    
                     else bind = doc.Application.Create.NewTypeBinding(catSet);
                     bool result = doc.ParameterBindings.Insert(sharedDef, bind, group);
+                    // Если параметр уже существует, но данная категория отсутствует в сете - обновляем сет
                     if (!result)
                     {
                         bind = GetParameterBinding(doc, sharedDef.Name);
@@ -66,8 +67,9 @@ namespace TerrTools
             }
         }
 
-        static public bool IsParameterInProject(Document doc, string parameterName, Category category)
+        static public bool IsParameterInProject(Document doc, string parameterName, BuiltInCategory cat)
         {
+            Category category = doc.Settings.Categories.get_Item(cat);
             BindingMap map = doc.ParameterBindings;
             DefinitionBindingMapIterator it = map.ForwardIterator();
             bool result = false;
@@ -90,7 +92,21 @@ namespace TerrTools
             }
             return null;
         }
+    }
 
+    static class CustomGeometryUtility
+    {
+        static public Solid GetSolid(Element e)
+        {
+            Options opt = new Options();
+            GeometryElement geomElem = e.get_Geometry(opt);
+            foreach (GeometryObject geomObj in geomElem)
+            {
+                Solid geomSolid = geomObj as Solid;
+                if (null != geomSolid) return geomSolid;
+            }
+            return null;
+        }
         static public List<List<Curve>> GetCurvesListFromRoom(Room room)
         {
             List<List<Curve>> profiles = new List<List<Curve>>();
@@ -106,11 +122,10 @@ namespace TerrTools
             }
             return profiles;
         }
-
         static public RevitLinkInstance GetLinkedDoc(Document doc)
         {
             RevitLinkInstance[] linkedDocs = new FilteredElementCollector(doc).OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().ToArray();
-            var form = new UI.OneComboboxForm((from d in linkedDocs select d.Name).ToArray());
+            var form = new UI.OneComboboxForm("Выберите связанный файл", (from d in linkedDocs select d.Name).ToArray());
             if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
             {
                 RevitLinkInstance linkInstance = (from d in linkedDocs where d.Name == form.SelectedItem select d).First();
@@ -121,24 +136,11 @@ namespace TerrTools
                 return null;
             }
         }
-
         static public Transform GetCorrectionTransform(RevitLinkInstance linkedDocInstance)
         {
             Transform transform = linkedDocInstance.GetTransform();
             if (!transform.AlmostEqual(Transform.Identity)) return transform.Inverse;
             else return Transform.Identity;
-        }
-
-        static public Solid GetSolid(Element e)
-        {
-            Options opt = new Options();
-            GeometryElement geomElem = e.get_Geometry(opt);
-            foreach (GeometryObject geomObj in geomElem)
-            {
-                Solid geomSolid = geomObj as Solid;
-                if (null != geomSolid) return geomSolid;
-            }
-            return null;
         }
     }
 }

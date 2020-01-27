@@ -13,9 +13,12 @@ namespace TerrTools
     [Transaction(TransactionMode.Manual)]
     class Finishing : IExternalCommand
     {
-        UIApplication uiapp;
-        UIDocument uidoc;
-        Document doc;
+        private Document doc;
+        private string openingAreaParameterName = "ADSK_Площадь проемов";
+        private string doorOpeningWidthParameterName = "ТеррНИИ_Ширина дверных проемов";
+        private string openingPlanAreaParameterName = "ТеррНИИ_Площадь проемов в плане";
+        private string openingFinishingAreaParameterName = "ТеррНИИ_Площадь проемов отделка";
+        private string finishingHeightAreaParameterName = "ТеррНИИ_Высота отделки помещения";
 
         Dictionary<int, double> holesAreaDict = new Dictionary<int, double>();
         Dictionary<int, double> doorsWidthDict = new Dictionary<int, double>();
@@ -63,22 +66,21 @@ namespace TerrTools
                 else holesAreaDict[roomId] = S;
 
                 Parameter itemBottomOffsetParam = item.LookupParameter("Высота нижнего бруса");
-                Parameter finishingHeightParam = room.LookupParameter("ТеррНИИ_Высота отделки помещения");
+                Parameter finishingHeightParam = room.LookupParameter(finishingHeightAreaParameterName);
                 if (itemBottomOffsetParam != null && finishingHeightParam != null)
                 {
                     double finishingHeight = finishingHeightParam.AsDouble();
                     double itemBottomOffset = itemBottomOffsetParam.AsDouble();
                     double deltaH = finishingHeight - itemBottomOffset;
                     double deltaS = 0f;
-                    if (finishingHeight>0 && deltaH > 0 && H > 0)
+                    if (finishingHeight > 0 && deltaH > 0 && H > 0)
                     {
-                        if (finishingHeight>= itemBottomOffset+H) deltaS = S;
+                        if (finishingHeight >= itemBottomOffset + H) deltaS = S;
                         else deltaS = S * deltaH / H;
                         if (finishingHolesAreaDict.ContainsKey(roomId)) finishingHolesAreaDict[roomId] += deltaS;
                         else finishingHolesAreaDict[roomId] = deltaS;
-                    
-                    }
 
+                    }
                 }
 
                 if (itemIsDoor)
@@ -91,46 +93,18 @@ namespace TerrTools
                     if (doorsPlaneDict.ContainsKey(roomId)) doorsPlaneDict[roomId] += doorFloorArea;
                     else doorsPlaneDict[roomId] = doorFloorArea;
                 }
-           }
+            }
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
-        {            
-            uiapp = commandData.Application;
-            uidoc = uiapp.ActiveUIDocument;
-            doc = uidoc.Document;
-
-            FinishingForm inputForm = new FinishingForm();
-            var input1 = inputForm.AreaParameter;
-            var input2 = inputForm.WidthParameter;
-            var input3 = inputForm.DoorPlaneParameter;
-            var input4 = inputForm.FinishingHoleAreaParameter;
-
-            SpatialElementBoundaryOptions opt = new SpatialElementBoundaryOptions();
-            List<Element> doors = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Doors).WhereElementIsNotElementType().ToList();
-            List<Element> windows = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Windows).WhereElementIsNotElementType().ToList();
+        {         
+            doc = commandData.Application.ActiveUIDocument.Document;        
+            SpatialElementBoundaryOptions opt = new SpatialElementBoundaryOptions();        
+            List<Element> doors = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Doors).WhereElementIsNotElementType().ToList();        
+            List<Element> windows = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Windows).WhereElementIsNotElementType().ToList();        
             List<Element> rooms = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToList();
 
-            try
-            {
-                if (rooms[0].LookupParameter(input1) == null || 
-                    rooms[0].LookupParameter(input2) == null ||
-                    rooms[0].LookupParameter(input3) == null ||
-                    rooms[0].LookupParameter(input4) == null) {
-                    TaskDialog.Show("Ошибка", "Не найден(ы) параметр(ы)");
-                    return Result.Failed;
-                };
-                if (rooms[0].LookupParameter("ТеррНИИ_Высота отделки помещения") == null)
-                {
-                    TaskDialog.Show("Ошибка", "Отсутствует параметр \"ТеррНИИ_Высота отделки помещения\". Невозможно расчитать параметры)");
-                    return Result.Failed;
-                }
-            }
-            catch
-            {
-                TaskDialog.Show("Ошибка", "Не найдены помещения в проекте");
-                return Result.Failed;
-            }
+            CheckDefaultParameters();
 
             foreach (Element door in doors)
             {
@@ -160,7 +134,7 @@ namespace TerrTools
                         double W = doorsWidthDict.ContainsKey(roomId) ? doorsWidthDict[roomId] : 0f;
                         double D = doorsPlaneDict.ContainsKey(roomId) ? doorsPlaneDict[roomId] : 0f;
                         double deltaS = finishingHolesAreaDict.ContainsKey(roomId) ? finishingHolesAreaDict[roomId] : 0f;
-                        double finishingHeight = room.LookupParameter("ТеррНИИ_Высота отделки помещения").AsDouble();
+                        double finishingHeight = room.LookupParameter(finishingHeightAreaParameterName).AsDouble();
                         IList<IList<BoundarySegment>> bounds = room.GetBoundarySegments(opt);
                         foreach (IList<BoundarySegment> contour in bounds)
                         {
@@ -195,17 +169,41 @@ namespace TerrTools
                                 }
                             }
                         }
-                        room.LookupParameter(input1).Set(S);
-                        room.LookupParameter(input2).Set(W);
-                        room.LookupParameter(input3).Set(D);
-                        room.LookupParameter(input4).Set(deltaS);
+                        room.LookupParameter(openingAreaParameterName).Set(S);
+                        room.LookupParameter(doorOpeningWidthParameterName).Set(W);
+                        room.LookupParameter(openingPlanAreaParameterName).Set(D);
+                        room.LookupParameter(openingFinishingAreaParameterName).Set(deltaS);
                     }
                 }
                 tr.Commit();
             }
-
-
             return Result.Succeeded;
+        }
+
+        private void CheckDefaultParameters()
+        {
+            bool exist;
+
+            exist = CustomSharedParameter.IsParameterInProject(doc, openingAreaParameterName, BuiltInCategory.OST_Rooms);
+            if (!exist) CustomSharedParameter.AddSharedParameter(doc, openingAreaParameterName, "ADSK_Secondary_Arch", true,
+                new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
+
+            exist = CustomSharedParameter.IsParameterInProject(doc, doorOpeningWidthParameterName, BuiltInCategory.OST_Rooms);
+            if (!exist) CustomSharedParameter.AddSharedParameter(doc, doorOpeningWidthParameterName, "TerrTools_Rooms", true,
+                new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
+
+            exist = CustomSharedParameter.IsParameterInProject(doc, openingPlanAreaParameterName, BuiltInCategory.OST_Rooms);
+            if (!exist) CustomSharedParameter.AddSharedParameter(doc, openingPlanAreaParameterName, "TerrTools_Rooms", true,
+                new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
+
+            exist = CustomSharedParameter.IsParameterInProject(doc, openingFinishingAreaParameterName, BuiltInCategory.OST_Rooms);
+            if (!exist) CustomSharedParameter.AddSharedParameter(doc, openingFinishingAreaParameterName, "TerrTools_Rooms", true,
+                new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
+
+            exist = CustomSharedParameter.IsParameterInProject(doc, finishingHeightAreaParameterName, BuiltInCategory.OST_Rooms);
+            if (!exist) CustomSharedParameter.AddSharedParameter(doc, finishingHeightAreaParameterName, "TerrTools_Rooms", true,
+                new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
+
         }
     }
 }

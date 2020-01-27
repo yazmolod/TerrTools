@@ -14,7 +14,9 @@ namespace TerrTools
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            throw new NotImplementedException();
+            UI.ElementFilterForm form = new UI.ElementFilterForm(commandData);
+            form.Show();
+            return Result.Succeeded;
         }
     }
 }

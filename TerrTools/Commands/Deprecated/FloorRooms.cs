@@ -48,12 +48,13 @@ namespace TerrTools
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
+            throw new Exception("Macros is deprecated");
             uiapp = commandData.Application;
             uidoc = uiapp.ActiveUIDocument;
             doc = uidoc.Document;
 
-            FloorRoomsForm form = new FloorRoomsForm(doc);
-            ElementId KeyScheduleId = form.ScheduleId;
+            
+            ElementId KeyScheduleId = ElementId.InvalidElementId;
             if (KeyScheduleId != null && doc.GetElement(KeyScheduleId) == null)
             {
                 TaskDialog.Show("Ошибка", "Не найдена спецификация");
@@ -84,7 +85,6 @@ namespace TerrTools
 
                     }
                 }
-
                 tr.Commit();
                 if (doneFlag) TaskDialog.Show("Результат", "Параметр успешно обновлен");
                 else TaskDialog.Show("Результат", "Параметр не обновлен. Попробуйте другую спецификацию");

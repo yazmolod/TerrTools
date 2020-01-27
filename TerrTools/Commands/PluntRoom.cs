@@ -63,42 +63,42 @@ namespace TerrTools
 
             //Проверяем наличие необходимых параметров в проекте
             bool exist;
-            exist = Static.IsParameterInProject(doc, spaceNumberParameterName, doc.Settings.Categories.get_Item(BuiltInCategory.OST_DuctTerminal));
+            exist = CustomSharedParameter.IsParameterInProject(doc, spaceNumberParameterName, BuiltInCategory.OST_DuctTerminal);
             if (!exist)
             {
-                bool result = Static.AddSharedParameter(doc, spaceNumberParameterName, "TerrTools_General", true,
+                bool result = CustomSharedParameter.AddSharedParameter(doc, spaceNumberParameterName, "TerrTools_General", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal }, BuiltInParameterGroup.PG_IDENTITY_DATA);
                 if (!result) return Result.Failed;
             }
 
-            exist = Static.IsParameterInProject(doc, airflowParameterName, doc.Settings.Categories.get_Item(BuiltInCategory.OST_DuctTerminal));
+            exist = CustomSharedParameter.IsParameterInProject(doc, airflowParameterName, BuiltInCategory.OST_DuctTerminal);
             if (!exist)
             {
-                bool result = Static.AddSharedParameter(doc, airflowParameterName, "ADSK_Main_MEP", true,
+                bool result = CustomSharedParameter.AddSharedParameter(doc, airflowParameterName, "ADSK_Main_MEP", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
                 if (!result) return Result.Failed;
             }
 
-            exist = Static.IsParameterInProject(doc, exhaustSystemParameterName, doc.Settings.Categories.get_Item(BuiltInCategory.OST_MEPSpaces));
+            exist = CustomSharedParameter.IsParameterInProject(doc, exhaustSystemParameterName, BuiltInCategory.OST_MEPSpaces);
             if (!exist)
             {
-                bool result = Static.AddSharedParameter(doc, exhaustSystemParameterName, "ADSK_Secondary_MEP", true,
+                bool result = CustomSharedParameter.AddSharedParameter(doc, exhaustSystemParameterName, "ADSK_Secondary_MEP", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces}, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
                 if (!result) return Result.Failed;
             }
 
-            exist = Static.IsParameterInProject(doc, supplySystemParameterName, doc.Settings.Categories.get_Item(BuiltInCategory.OST_MEPSpaces));
+            exist = CustomSharedParameter.IsParameterInProject(doc, supplySystemParameterName, BuiltInCategory.OST_MEPSpaces);
             if (!exist)
             {
-                bool result = Static.AddSharedParameter(doc, supplySystemParameterName, "ADSK_Secondary_MEP", true,
+                bool result = CustomSharedParameter.AddSharedParameter(doc, supplySystemParameterName, "ADSK_Secondary_MEP", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces}, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
                 if (!result) return Result.Failed;
             }
 
-            exist = Static.IsParameterInProject(doc, skipParameterName, doc.Settings.Categories.get_Item(BuiltInCategory.OST_DuctTerminal));
+            exist = CustomSharedParameter.IsParameterInProject(doc, skipParameterName,BuiltInCategory.OST_DuctTerminal);
             if (!exist)
             {
-                bool result = Static.AddSharedParameter(doc, skipParameterName, "TerrTools_General", true,
+                bool result = CustomSharedParameter.AddSharedParameter(doc, skipParameterName, "TerrTools_General", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
                 if (!result) return Result.Failed;
             }
@@ -144,6 +144,10 @@ namespace TerrTools
             // Назначаем расход диффузорам            
             using (Transaction tr = new Transaction(doc, "Задать расход диффузорам"))
             {
+                string[] systemTypes = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_DuctSystem).WhereElementIsElementType().Select(x => x.Name).ToArray();
+                string suplySystemName = new UI.OneComboboxForm("Выберите систему приточного воздуха", systemTypes).SelectedItem;
+                string exhaustSystemName = new UI.OneComboboxForm("Выберите систему вытяжного воздуха", systemTypes).SelectedItem;
+
                 tr.Start();
                 foreach (FamilyInstance el in ductTerminals)
                 {
@@ -154,13 +158,13 @@ namespace TerrTools
                         // Параметр Расход воздуха
                         Parameter airflowParam = el.LookupParameter(airflowParameterName);
                         // Параметр "Классификация системы"
-                        BuiltInParameter sysClassBuiltIn = BuiltInParameter.RBS_SYSTEM_CLASSIFICATION_PARAM;
-                        Parameter systemClassParam = el.get_Parameter(sysClassBuiltIn);
-                        string systemClass = systemClassParam.AsString();
+                        BuiltInParameter sysTypeBuiltIn = BuiltInParameter.RBS_DUCT_SYSTEM_TYPE_PARAM;
+                        Parameter systemTypeParam = el.get_Parameter(sysTypeBuiltIn);
+                        string systemType = systemTypeParam.AsValueString();
                         // Считаем количество диффузоров одной системы на пространство
                         int count = (from d in ductTerminals
                                      where d.LookupParameter(spaceNumberParameterName).AsString() == spaceNumberParam.AsString()
-                                     && d.get_Parameter(sysClassBuiltIn).AsString() == systemClassParam.AsString()
+                                     && d.get_Parameter(sysTypeBuiltIn).AsValueString() == systemType
                                      select d).Count();
 
                         // Находим пространство, в котором находится диффузор и достаем нужные значения
@@ -169,23 +173,18 @@ namespace TerrTools
                         {
                             // Задаем расход диффузорам
                             double value;
-                            switch (systemClass)
-                            {
-                                case "Приточный воздух":
-                                    value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_SUPPLY_AIRFLOW_PARAM).AsDouble();
-                                    value /= count;
-                                    airflowParam.Set(value);
-                                    space.LookupParameter(supplySystemParameterName).Set(el.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString());
-                                    break;
-                                case "Отработанный воздух":
-                                    value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_EXHAUST_AIRFLOW_PARAM).AsDouble();
-                                    value /= count;
-                                    airflowParam.Set(value);
-                                    space.LookupParameter(exhaustSystemParameterName).Set(el.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString());
-                                    break;
-                                default:
-                                    break;
+                            if (systemType == suplySystemName) {
+                                value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_SUPPLY_AIRFLOW_PARAM).AsDouble();
+                                value /= count;
+                                airflowParam.Set(value);
+                                space.LookupParameter(supplySystemParameterName).Set(el.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString());
                             }
+                            else if (systemType == exhaustSystemName) {
+                                value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_EXHAUST_AIRFLOW_PARAM).AsDouble();
+                                value /= count;
+                                airflowParam.Set(value);
+                                space.LookupParameter(exhaustSystemParameterName).Set(el.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString());
+                            }                                
                         }
                         else airflowParam.Set(0);
                     }

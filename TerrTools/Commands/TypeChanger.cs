@@ -29,25 +29,15 @@ namespace TerrTools
     [Transaction(TransactionMode.Manual)]
     class TypeChanger : IExternalCommand
     {
-        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        virtual public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             Document doc = commandData.Application.ActiveUIDocument.Document;
             UpdateType(doc);
-
-            Family[] families = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>().ToArray();            
-            foreach (Family family in families)
-            {
-                if (family.IsEditable)
-                {
-                    Document famdoc = doc.EditFamily(family);
-                    UpdateType(famdoc);
-                    famdoc.LoadFamily(doc, new FamilyLoadOptions());
-                }
-            }            
+        
             return Result.Succeeded;
         }
 
-        private void UpdateType(Document doc)
+        protected void UpdateType(Document doc)
         {
             ElementClassFilter filterTextType = new ElementClassFilter(typeof(TextElementType));
             ElementClassFilter filterTextNote = new ElementClassFilter(typeof(TextNoteType));
@@ -59,13 +49,34 @@ namespace TerrTools
                 tr.Start();
                 foreach (Element type in textTypes)
                 {
-                    type.get_Parameter(BuiltInParameter.TEXT_FONT).Set("GOST Common");
+                    type.get_Parameter(BuiltInParameter.TEXT_FONT).Set("@GOST Common");
                     type.get_Parameter(BuiltInParameter.TEXT_STYLE_ITALIC).Set(1);
                     type.get_Parameter(BuiltInParameter.TEXT_WIDTH_SCALE).Set(0.8);
-
                 }
                 tr.Commit();
             }
+        }
+    }
+
+    [Transaction(TransactionMode.Manual)]
+    class TypeChangerDeep : TypeChanger, IExternalCommand
+    {
+        override public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        {
+            Document doc = commandData.Application.ActiveUIDocument.Document;
+            UpdateType(doc);
+
+            Family[] families = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>().ToArray();
+            foreach (Family family in families)
+            {
+                if (family.IsEditable && family.FamilyCategory.CategoryType == CategoryType.Annotation)
+                {
+                    Document famdoc = doc.EditFamily(family);
+                    UpdateType(famdoc);
+                    famdoc.LoadFamily(doc, new FamilyLoadOptions());
+                }
+            }
+            return Result.Succeeded;
         }
     }
 }

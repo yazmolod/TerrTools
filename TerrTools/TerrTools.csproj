@@ -16,7 +16,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>D:\test\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -56,9 +56,15 @@
     <Compile Include="Application.cs" />
     <Compile Include="Commands\CopyRoomShape.cs" />
     <Compile Include="Commands\HorizontalFinishing.cs" />
-    <Compile Include="Commands\Static.cs" />
+    <Compile Include="Commands\Utilities.cs" />
     <Compile Include="Commands\FocusOnElement.cs" />
     <Compile Include="Commands\TypeChanger.cs" />
+    <Compile Include="UI\ElementFilterForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ElementFilterForm.Designer.cs">
+      <DependentUpon>ElementFilterForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\OneComboboxForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -73,19 +79,7 @@
     </Compile>
     <Compile Include="Commands\IntersectOpening.cs" />
     <Compile Include="Commands\Finishing.cs" />
-    <Compile Include="UI\FinishingForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="UI\FinishingForm.Designer.cs">
-      <DependentUpon>FinishingForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="Commands\Deprecated\FloorRooms.cs" />
-    <Compile Include="UI\FloorRoomsForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="UI\FloorRoomsForm.Designer.cs">
-      <DependentUpon>FloorRoomsForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="Commands\PluntRoom.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DummyClass.cs" />
@@ -95,34 +89,22 @@
     <Compile Include="UI\IntersectionsForm.Designer.cs">
       <DependentUpon>IntersectionsForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\TwoStringsForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="UI\TwoStringsForm.Designer.cs">
-      <DependentUpon>TwoStringsForm.cs</DependentUpon>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="TerrTools.addin" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="UI\FinishingForm.resx">
-      <DependentUpon>FinishingForm.cs</DependentUpon>
+    <EmbeddedResource Include="UI\ElementFilterForm.resx">
+      <DependentUpon>ElementFilterForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\HorizontalFinishingForm.resx">
       <DependentUpon>HorizontalFinishingForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="UI\FloorRoomsForm.resx">
-      <DependentUpon>FloorRoomsForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\IntersectionsForm.resx">
       <DependentUpon>IntersectionsForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\OneComboboxForm.resx">
       <DependentUpon>OneComboboxForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="UI\TwoStringsForm.resx">
-      <DependentUpon>TwoStringsForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

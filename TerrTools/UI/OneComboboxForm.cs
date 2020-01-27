@@ -13,9 +13,10 @@ namespace TerrTools.UI
     public partial class OneComboboxForm : Form
     {
         public string SelectedItem { get; set; }
-        public OneComboboxForm(string[] data)
+        public OneComboboxForm(string title, string[] data)
         {
             InitializeComponent();
+            this.Text = title;
             comboBox1.Items.AddRange(data);
             ShowDialog();
         }

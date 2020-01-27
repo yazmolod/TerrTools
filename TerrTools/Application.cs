@@ -143,15 +143,16 @@ namespace TerrTools
                     "Выберите из списка необходимый элемент и окно сфокусируется на нем",
                     "Zoom.png"
                     ));
-            pbDict.Add("UpdateType",
+            pbDict.Add("UpdateTypeCurrent",
                 MakePushButton(
                     "TypeChanger",
-                    "Обновить шрифт",
-                    "Обновляет шрифт в семействе",
-                    "Type.png"                    
+                    "В текущем проекте"              
                     ));
-
-          
+            pbDict.Add("UpdateTypeAll",
+                MakePushButton(
+                    "TypeChangerDeep",
+                    "В проекте и семействах"
+                    ));
 
             ///
             /// Pulldown buttons
@@ -161,6 +162,12 @@ namespace TerrTools
                     "Генерация отверстий",
                     "Быстрая генерация отверстий на пересечении конструктивных элементов с инженерными системами",
                     "Openings.png"
+                    ));
+            plDict.Add("UpdateType",
+                MakePulldownButton(
+                    "Обновить шрифт",
+                    "Обновление всех шрифтов в проекте под стандарты предприятия",
+                    "Type.png"
                     ));
 
             ///
@@ -188,7 +195,9 @@ namespace TerrTools
             /// Общая панель
             ///
             panelGeneral.AddItem(pbDict["FocusOnElement"]);
-            panelGeneral.AddItem(pbDict["UpdateType"]);
+            tempBtn = panelGeneral.AddItem(plDict["UpdateType"]) as PulldownButton;
+            tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
+            tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
 
             return Result.Succeeded;
         }

@@ -8,7 +8,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
 ОВиК
-- Повышена точность и стабильность определения пространства для диффузоров
+- Изменен алгоритм выбора системы для решетки (чтобы не включалось дымоудаление и другие системы)
+
+Общие
+- Добавлен макрос поиска элемента по его параметру (аналог фильтра для выделения и фокусирования)
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -35,4 +38,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.3.1")]
+[assembly: AssemblyFileVersion("0.4.0")]
