@@ -7,11 +7,8 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-ОВиК
-- Изменен алгоритм выбора системы для решетки (чтобы не включалось дымоудаление и другие системы)
-
-Общие
-- Добавлен макрос поиска элемента по его параметру (аналог фильтра для выделения и фокусирования)
+АР
+- Исправлен баг с удалением марки пола при обновлении отделки
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -38,4 +35,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.4.0")]
+[assembly: AssemblyFileVersion("0.4.2")]

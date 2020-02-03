@@ -125,8 +125,14 @@ namespace TerrTools
 
                     // Удаляем старый объект и замещаем новым
                     Parameter pRoomFinishingId = result.Room.LookupParameter(finishIdParameterName);
+                    List<OldTag> oldTags = null;
+                    ElementId oldFloor = null;
                     if (pRoomFinishingId.HasValue)
-                        try { doc.Delete(new ElementId(pRoomFinishingId.AsInteger())); }
+                        try {
+                            oldFloor = new ElementId(pRoomFinishingId.AsInteger());
+                            oldTags =  GetOldTags(oldFloor);
+                            doc.Delete(oldFloor); 
+                        }
                         catch (Autodesk.Revit.Exceptions.ArgumentException) { }
 
                     if (result.FinishingType != null)
@@ -147,6 +153,21 @@ namespace TerrTools
                         // Идентификатор пола для помещения    
                         pRoomFinishingId.Set(finishingElement.Id.IntegerValue);
                         result.FinishingElement = finishingElement;
+
+                        // Восстановление старой марки
+                        if (oldTags != null) {
+                            foreach (OldTag oldTag in oldTags)
+                            {
+                                IndependentTag newTag = doc.Create.NewTag(
+                                    oldTag.OwnerView,
+                                    finishingElement,
+                                    false,
+                                    TagMode.TM_ADDBY_CATEGORY,
+                                    oldTag.TagOrientation,
+                                    oldTag.TagHeadPosition);
+                                newTag.ChangeTypeId(oldTag.TypeId);
+                            }
+                        }
                     }
                     else
                     {
@@ -160,6 +181,20 @@ namespace TerrTools
                 tr.Commit();
             }
         }
+
+
+        private List<OldTag> GetOldTags(ElementId oldFloor)
+        {
+            List<OldTag> tags = new List<OldTag>();
+            foreach (var x in new FilteredElementCollector(doc)
+                .OfClass(typeof(IndependentTag))
+                .Cast<IndependentTag>()
+                .Where(x => x.TaggedLocalElementId == oldFloor)) {
+                tags.Add(new OldTag(x.TagOrientation, x.TagHeadPosition, doc.GetElement(x.OwnerViewId) as View, x.GetTypeId()));
+            };
+            return tags;
+        }
+
         protected Result Generation()
         {
             using (TransactionGroup transGroup = new TransactionGroup(doc))
@@ -182,6 +217,22 @@ namespace TerrTools
                     return Result.Cancelled;
                 }
             }
+        }
+    }
+
+    class OldTag
+    {
+        public TagOrientation TagOrientation { get; set; }
+        public XYZ TagHeadPosition { get; set; }
+        public View OwnerView { get; set; }
+        public ElementId TypeId { get; set; }
+
+        public OldTag(TagOrientation to, XYZ thp, View v, ElementId type)
+        {
+            TagOrientation = to;
+            TagHeadPosition = thp;
+            OwnerView = v;
+            TypeId = type;
         }
     }
 

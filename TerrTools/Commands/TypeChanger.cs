@@ -26,6 +26,7 @@ namespace TerrTools
         }
     }
 
+
     [Transaction(TransactionMode.Manual)]
     class TypeChanger : IExternalCommand
     {
@@ -49,7 +50,7 @@ namespace TerrTools
                 tr.Start();
                 foreach (Element type in textTypes)
                 {
-                    type.get_Parameter(BuiltInParameter.TEXT_FONT).Set("@GOST Common");
+                    type.get_Parameter(BuiltInParameter.TEXT_FONT).Set("GOST Common");
                     type.get_Parameter(BuiltInParameter.TEXT_STYLE_ITALIC).Set(1);
                     type.get_Parameter(BuiltInParameter.TEXT_WIDTH_SCALE).Set(0.8);
                 }
