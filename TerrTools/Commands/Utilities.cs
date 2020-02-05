@@ -23,47 +23,61 @@ namespace TerrTools
             BuiltInParameterGroup group = BuiltInParameterGroup.PG_ADSK_MODEL_PROPERTIES
             )
         {
-            CategorySet catSet = doc.Application.Create.NewCategorySet();
-            foreach (BuiltInCategory c in categories)
+            // Проверка параметра на наличие
+            List<bool> check = new List<bool>();
+            foreach (BuiltInCategory cat in categories)
             {
-                catSet.Insert(doc.Settings.Categories.get_Item(c));
+                check.Add(IsParameterInProject(doc, parameterName, cat));
             }
 
-            try
+            if (check.All(x => x == true))
             {
-                doc.Application.SharedParametersFilename = sharedParameterFilePath;
-                DefinitionFile spFile = doc.Application.OpenSharedParameterFile();
-                DefinitionGroup terrGroup = spFile.Groups.get_Item(groupName);
-                Definition sharedDef = terrGroup.Definitions.get_Item(parameterName);
-
-                using (Transaction trDef = new Transaction(doc, "Добавление общего параметра"))
+                return true;
+            }
+            else
+            {
+                CategorySet catSet = doc.Application.Create.NewCategorySet();
+                foreach (BuiltInCategory c in categories)
                 {
-                    trDef.Start();
-                    ElementBinding bind;
-                    if (isIntance) bind = doc.Application.Create.NewInstanceBinding(catSet);                    
-                    else bind = doc.Application.Create.NewTypeBinding(catSet);
-                    bool result = doc.ParameterBindings.Insert(sharedDef, bind, group);
-                    // Если параметр уже существует, но данная категория отсутствует в сете - обновляем сет
-                    if (!result)
+                    catSet.Insert(doc.Settings.Categories.get_Item(c));
+                }
+
+                try
+                {
+                    doc.Application.SharedParametersFilename = sharedParameterFilePath;
+                    DefinitionFile spFile = doc.Application.OpenSharedParameterFile();
+                    DefinitionGroup terrGroup = spFile.Groups.get_Item(groupName);
+                    Definition sharedDef = terrGroup.Definitions.get_Item(parameterName);
+
+                    using (Transaction trDef = new Transaction(doc, "Добавление общего параметра"))
                     {
-                        bind = GetParameterBinding(doc, sharedDef.Name);
-                        foreach (Category c in catSet) bind.Categories.Insert(c);
-                        bool result2 = doc.ParameterBindings.ReInsert(sharedDef, bind, group);
-                        if (!result2)
+                        trDef.Start();
+                        ElementBinding bind;
+                        if (isIntance) bind = doc.Application.Create.NewInstanceBinding(catSet);
+                        else bind = doc.Application.Create.NewTypeBinding(catSet);
+                        bool result = doc.ParameterBindings.Insert(sharedDef, bind, group);
+                        // Если параметр уже существует, но данная категория отсутствует в сете - обновляем сет
+                        if (!result)
                         {
-                            TaskDialog.Show("Ошибка", String.Format("Произошла ошибка при редактировании привязок существующего параметра \"{0}\"", parameterName));
-                            trDef.RollBack();
-                            return false;
+                            bind = GetParameterBinding(doc, sharedDef.Name);
+                            foreach (Category c in catSet) bind.Categories.Insert(c);
+                            bool result2 = doc.ParameterBindings.ReInsert(sharedDef, bind, group);
+                            if (!result2)
+                            {
+                                TaskDialog.Show("Ошибка", String.Format("Произошла ошибка при редактировании привязок существующего параметра \"{0}\"", parameterName));
+                                trDef.RollBack();
+                                return false;
+                            }
                         }
-                    }                    
-                    trDef.Commit();
-                    return true;
-                }                
-            }
-            catch
-            {
-                TaskDialog.Show("Ошибка", String.Format("Произошла ошибка добавления общего параметра \"{0}\"", parameterName));
-                return false;
+                        trDef.Commit();
+                        return true;
+                    }
+                }
+                catch
+                {
+                    TaskDialog.Show("Ошибка", String.Format("Произошла ошибка добавления общего параметра \"{0}\"", parameterName));
+                    return false;
+                }
             }
         }
 

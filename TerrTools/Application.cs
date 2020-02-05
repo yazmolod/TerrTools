@@ -104,13 +104,19 @@ namespace TerrTools
                     "Обновляет параметры в элементах категории \"Помещения\", требуемые для расчета отделки",
                     "Room.png"
                     ));
-            pbDict.Add("RoomPluntData",
+            pbDict.Add("DiffuserProcessing",
             MakePushButton(
-                "PluntRoom",
-                "Обновить диффузоры",
+                "DiffuserProcessing",
+                "Обновить\nдиффузоры",
                 "Копирует номер пространства и расход воздуха для всех диффузоров в проекте",
-                "DuctNumber.png"
+                "Diffuser.png"
                 ));
+            pbDict.Add("RadiatorProcessing",
+                MakePushButton(
+                "DummyClass",
+                "Обновить\nрадиаторы",
+                "Копирует номер пространства и подбирает радиатор исходя из заданной в пространстве тепловой мощности",
+                "Radiator.png"));
             pbDict.Add("WallOpening",
            MakePushButton(
                 "IntersectOpening",
@@ -187,7 +193,8 @@ namespace TerrTools
             ///
             /// ОВиК панель
             ///
-            panelMEP.AddItem(pbDict["RoomPluntData"]);
+            panelMEP.AddItem(pbDict["DiffuserProcessing"]);
+            panelMEP.AddItem(pbDict["RadiatorProcessing"]);
             panelMEP.AddItem(pbDict["CopyRoomDataToSpace"]);
 
 

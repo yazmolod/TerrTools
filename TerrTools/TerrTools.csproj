@@ -80,7 +80,7 @@
     <Compile Include="Commands\IntersectOpening.cs" />
     <Compile Include="Commands\Finishing.cs" />
     <Compile Include="Commands\Deprecated\FloorRooms.cs" />
-    <Compile Include="Commands\PluntRoom.cs" />
+    <Compile Include="Commands\HVAC.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DummyClass.cs" />
     <Compile Include="UI\IntersectionsForm.cs">
@@ -124,6 +124,12 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\Type.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\Radiator.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\Diffuser.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
