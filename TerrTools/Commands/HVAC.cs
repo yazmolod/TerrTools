@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Mechanical;
+using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 
@@ -59,6 +60,7 @@ namespace TerrTools
         protected string spaceNumberParameterName = "ТеррНИИ_Номер помещения";
         protected string skipParameterName = "ТеррНИИ_Пропустить";
         protected string thermalPowerParameterName = "ADSK_Тепловая мощность";
+        protected string spaceTemperatureParameterName = "ADSK_Температура в помещении";
 
         protected bool CheckDefaultSharedParameters()
         {
@@ -66,8 +68,6 @@ namespace TerrTools
             bool done = true;        
             done &= CustomSharedParameter.AddSharedParameter(doc, spaceNumberParameterName, "TerrTools_General", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_IDENTITY_DATA);
-                done &= CustomSharedParameter.AddSharedParameter(doc, airflowParameterName, "ADSK_Main_MEP", true,
-                    new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
                 done &= CustomSharedParameter.AddSharedParameter(doc, exhaustSystemParameterName, "ADSK_Secondary_MEP", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
@@ -75,10 +75,21 @@ namespace TerrTools
                 done &= CustomSharedParameter.AddSharedParameter(doc, supplySystemParameterName, "ADSK_Secondary_MEP", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
+                done &= CustomSharedParameter.AddSharedParameter(doc, spaceTemperatureParameterName, "ADSK_Secondary_MEP", true,
+                    new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
+
+            /* 
+             * Эти параметры должны быть внутри семейства, нет смысла назначать их всей категории
+
                 done &= CustomSharedParameter.AddSharedParameter(doc, thermalPowerParameterName, "ADSK_Main_MEP", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_MECHANICAL);
 
-                done &= CustomSharedParameter.AddSharedParameter(doc, skipParameterName, "TerrTools_General", true,
+                done &= CustomSharedParameter.AddSharedParameter(doc, airflowParameterName, "ADSK_Main_MEP", true,
+                    new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
+
+            */
+
+            done &= CustomSharedParameter.AddSharedParameter(doc, skipParameterName, "TerrTools_General", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
 
             return done;
@@ -143,6 +154,7 @@ namespace TerrTools
             return null;
         }
 
+
         
     }
 
@@ -153,7 +165,7 @@ namespace TerrTools
         private string suplySystemName;
         private string exhaustSystemName;
 
-        private void UpdateSize(FamilyInstance plunt)
+        private void UpdatePluntGeometry(FamilyInstance plunt)
         {
             /* Подбор размеров, скорее всего, выглядит крайне ручным и нелогичным,
              * но на этом настоял Игорь. Возможно, имеет смысл переписать эту функцию в будущем
@@ -323,7 +335,7 @@ namespace TerrTools
                 tr.Start();
                 foreach (FamilyInstance el in allPlunts)
                 {
-                    UpdateSize(el);
+                    UpdatePluntGeometry(el);
                 }
                 tr.Commit();
             }
@@ -353,12 +365,23 @@ namespace TerrTools
             List<FamilyInstance> missingPlunts = new List<FamilyInstance>();
             SetSpaces(allPlunts, out missingPlunts);
 
+            // Назначаем расход диффузорам            
+            using (Transaction tr = new Transaction(doc, "Обновление данных радиатора"))
+            {
+                tr.Start();
+                foreach (FamilyInstance el in allPlunts)
+                {
+                    UpdatePluntData(el);
+                }
+                tr.Commit();
+            }
+
             using (Transaction tr = new Transaction(doc, "Подбор размера"))
             {
                 tr.Start();
                 foreach (FamilyInstance el in allPlunts)
                 {
-                    UpdateSize(el);
+                    UpdatePluntGeometry(el, allPlunts);
                 }
                 tr.Commit();
             }
@@ -367,49 +390,102 @@ namespace TerrTools
             return Result.Succeeded;
         }
 
-        protected bool UpdateSize(FamilyInstance el)
+        private bool UpdatePluntData(FamilyInstance el)
+        {
+            // находим параметры для переопределения
+            Parameter pluntTi = el.LookupParameter("ADSK_Температура в помещении");
+            Parameter pluntTp = el.LookupParameter("ТеррНИИ_Температура обратки");
+            Parameter pluntTz = el.LookupParameter("ТеррНИИ_Температура подачи");
+
+            // Температуру помещения определяем из свойств пространства
+            Space space = GetSpaceOfPlant(el);
+            double spaceTi = space != null ? space.LookupParameter(spaceTemperatureParameterName).AsDouble() : 0;
+
+            // Температуру подачи и обратки определяем из свойств подключенных систем
+            ConnectorManager connMng = el.MEPModel.ConnectorManager;
+            if (connMng == null) return false;
+            Connector connTz = connMng.Connectors.Cast<Connector>().Where(x => x.PipeSystemType == PipeSystemType.SupplyHydronic && x.MEPSystem != null).FirstOrDefault();
+            double systemTz = connTz != null ? ((PipingSystemType)doc.GetElement(connTz.MEPSystem.GetTypeId())).FluidTemperature : 10 + 273.15;
+            Connector connTp = connMng.Connectors.Cast<Connector>().Where(x => x.PipeSystemType == PipeSystemType.ReturnHydronic && x.MEPSystem != null).FirstOrDefault();
+            double systemTp = connTp != null ? ((PipingSystemType)doc.GetElement(connTp.MEPSystem.GetTypeId())).FluidTemperature : 5 + 273.15;
+
+            // Назначаем температуру
+            if (pluntTi != null && pluntTp != null && pluntTz != null)
+            {
+                pluntTi.Set(spaceTi);
+                pluntTz.Set(systemTz);
+                pluntTp.Set(systemTp);
+                return true;
+            }
+            else return false;
+        }
+
+        protected bool UpdatePluntGeometry(FamilyInstance el, List<FamilyInstance> allPlunts)
         {
             // создаем массив со всеми размерами
             int[] lengths = { 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1400, 1600, 1800, 2000, 2300, 2600, 3000 };
-            int[] heights = { 300, 400, 450, 500, 550, 600, 900 };
-            int[][] sizeOpts = new int[lengths.Length * heights.Length][];
-            for (int i = 0; i < heights.Length; i++)
-            {
-                for (int j = 0; j < lengths.Length; j++)
-                {
-                    sizeOpts[i*lengths.Length + j] = new int[] { lengths[j], heights[i] };
-                }
-            }
+            int[] heights = { 300, 400, 450, 500, 550, 600, 900 };            
 
             Space space = GetSpaceOfPlant(el);
-            double requiredValue = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_HEATING_LOAD_PARAM).AsDouble();
+            if (space == null) return false;
+            int count = allPlunts.Where(x => x.LookupParameter("ТеррНИИ_Номер помещения").AsString() == space.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString()).Count();
+            double requiredValue = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_HEATING_LOAD_PARAM).AsDouble() / count;
+            requiredValue = UnitUtils.ConvertFromInternalUnits(requiredValue, DisplayUnitType.DUT_WATTS);
 
-            Parameter valueParameter = el.LookupParameter("ADSK_Тепловая мощность");
-            Parameter lengthParameter = el.LookupParameter("Длина радиатора");
-            Parameter heightParameter = el.LookupParameter("Высота радиатора");
+            FamilySizeTableManager sizeMng = FamilySizeTableManager.GetFamilySizeTableManager(doc, el.Symbol.Family.Id);
+            Parameter tableNameParam = el.Symbol.LookupParameter("Таблица выбора");
+            Parameter TzParam = el.LookupParameter("ТеррНИИ_Температура подачи");
+            Parameter TpParam = el.LookupParameter("ТеррНИИ_Температура обратки");
+            Parameter TiParam = el.LookupParameter("ADSK_Температура в помещении");
+            Parameter hParam = el.LookupParameter("ADSK_Размер_Высота");
+            Parameter lParam = el.LookupParameter("ADSK_Размер_Длина");
+            Parameter radType = el.LookupParameter("Тип радиатора");
+            if (hParam == null || lParam == null || radType == null || TzParam == null || 
+                TpParam == null || TiParam == null || sizeMng == null || tableNameParam == null) return false;                       
+            double Tz = UnitUtils.ConvertFromInternalUnits(TzParam.AsDouble(), DisplayUnitType.DUT_CELSIUS);
+            double Tp = UnitUtils.ConvertFromInternalUnits(TpParam.AsDouble(), DisplayUnitType.DUT_CELSIUS);
+            double Ti = UnitUtils.ConvertFromInternalUnits(TiParam.AsDouble(), DisplayUnitType.DUT_CELSIUS);
+            FamilySizeTable sizeTable = sizeMng.GetSizeTable(el.Symbol.LookupParameter("Таблица выбора").AsString());
 
-            using (Transaction tr = new Transaction(doc))
+            double N, Qn, Tzn, Tpn, Tin, powerValue;
+
+            foreach (int h in heights)
             {
-                tr.Start();
-                foreach (int[] size in sizeOpts)
+                foreach (int l in lengths)
                 {
-                    lengthParameter.Set(size[0] / 304.8);
-                    heightParameter.Set(size[1] / 304.8);
-                    if (valueParameter.AsDouble() > requiredValue) break;
-                }
-                if (valueParameter.AsDouble() < requiredValue)
-                {
-                    tr.RollBack();
-                    TaskDialog.Show("Debug", "Не найден подходящий размер для");
-                    return false;
-                }
-                else
-                {
-                    tr.Commit();
-                    return true;
+                    N = double.Parse( Utils.SizeLookup(sizeTable, "N", new string[] { radType.AsValueString(), h.ToString() }), 
+                        System.Globalization.CultureInfo.InvariantCulture);
+                    Qn = double.Parse( Utils.SizeLookup(sizeTable, "Qn", new string[] { radType.AsValueString(), h.ToString() }),
+                        System.Globalization.CultureInfo.InvariantCulture);
+                    Tzn = double.Parse( Utils.SizeLookup(sizeTable, "Tz", new string[] { radType.AsValueString(), h.ToString() }),
+                        System.Globalization.CultureInfo.InvariantCulture);
+                    Tpn = double.Parse( Utils.SizeLookup(sizeTable, "Tp", new string[] { radType.AsValueString(), h.ToString() }),
+                        System.Globalization.CultureInfo.InvariantCulture);
+                    Tin = double.Parse( Utils.SizeLookup(sizeTable, "Ti", new string[] { radType.AsValueString(), h.ToString() }),
+                        System.Globalization.CultureInfo.InvariantCulture);
+
+                    powerValue = (l / 1000.0) * Qn * Math.Pow(
+                        (
+                            (Tz - Tp) 
+                                / 
+                            Math.Log((Tz - Ti) / (Tp - Ti))
+                        )/(
+                            (Tzn - Tpn) 
+                                / 
+                            Math.Log((Tzn - Tin) / (Tpn - Tin))
+                        ), 
+                        N
+                        );                                        
+
+                    if (powerValue >= requiredValue)
+                    {
+                        lParam.Set(UnitUtils.ConvertToInternalUnits(l, DisplayUnitType.DUT_MILLIMETERS));
+                        hParam.Set(UnitUtils.ConvertToInternalUnits(h, DisplayUnitType.DUT_MILLIMETERS));
+                        return true;
+                    }
                 }
             }
-             
+            return false;        
         }
 
         protected override List<FamilyInstance> GetPlunts()
@@ -420,7 +496,6 @@ namespace TerrTools
                 .OfCategory(BuiltInCategory.OST_MechanicalEquipment)
                 .WhereElementIsNotElementType()
                 .Cast<FamilyInstance>()
-                .Where(x => x.Symbol.FamilyName == "ТеррНИИ_Оборудование_Радиатор универсальный")
                 .Where(x => x.LookupParameter(skipParameterName).AsInteger() != 1)
                 .ToList();
             return plunts;

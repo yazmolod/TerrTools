@@ -113,7 +113,7 @@ namespace TerrTools
                 ));
             pbDict.Add("RadiatorProcessing",
                 MakePushButton(
-                "DummyClass",
+                "RadiatorProcessing",
                 "Обновить\nрадиаторы",
                 "Копирует номер пространства и подбирает радиатор исходя из заданной в пространстве тепловой мощности",
                 "Radiator.png"));

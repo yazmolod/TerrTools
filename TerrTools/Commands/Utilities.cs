@@ -108,6 +108,33 @@ namespace TerrTools
         }
     }
 
+    static class Utils
+    {
+        public static string SizeLookup(FamilySizeTable fmt, string columnName, string[] args)
+        {
+            int columnIndex = -1;
+            for (int i = 0; i < fmt.NumberOfColumns; i++)
+            {
+                if (fmt.GetColumnHeader(i).Name == columnName) columnIndex = i;
+            }
+            if (columnIndex != -1)
+            {
+                for (int i = 0; i < fmt.NumberOfRows; i++)
+                {
+                    bool flag = true;
+                    string value;
+                    for (int j = 0; j < args.Length; j++)
+                    {
+                        value = fmt.AsValueString(i, j + 1);
+                        flag = flag && value.StartsWith(args[j]);
+                    }
+                    if (flag) return fmt.AsValueString(i, columnIndex);
+                }
+            }
+            return null;
+        }
+    }
+
     static class CustomGeometryUtility
     {
         static public Solid GetSolid(Element e)

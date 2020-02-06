@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
 ОВиК
-- Добавлен подбор размеров для плафонов и решеток ТеррНИИ
+- Добавлен обработчик радиаторов (номер помещения, температуры, подбор размера)
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -35,4 +35,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.4.3")]
+[assembly: AssemblyFileVersion("0.5.0")]
