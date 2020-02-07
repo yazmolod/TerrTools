@@ -3,14 +3,17 @@ using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using Autodesk.Revit.UI;
+using Autodesk.Revit.DB;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Diagnostics;
+using TerrTools.Updaters;
 
 namespace TerrTools
 {
     public class App : IExternalApplication
     {
+        public static AddInId AddInId { get { return new AddInId(new Guid("4e6830af-73c4-45fa-aea0-82df352d5157")); } }
         string tabName = "ТеррНИИ BIM";
         string releaseDLLPath = @"\\serverL\PSD\REVIT\Плагины\TerrTools";
         string releaseDLLName = "TerrTools.dll";
@@ -18,6 +21,8 @@ namespace TerrTools
 
         int btnCounter = 0;
         int pullBtnCounter = 0;
+
+        UIControlledApplication application;
 
         private bool CheckUpdates(out string currentVersion, out string lastReleaseVersion, out string patchNote)
         {
@@ -32,13 +37,14 @@ namespace TerrTools
         {
             try
             {
-                Stream stream = this.GetType().Assembly.GetManifestResourceStream(embeddedPath);
+                Stream stream = GetType().Assembly.GetManifestResourceStream(embeddedPath);
                 var decoder = new PngBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
                 return decoder.Frames[0];
             }
-            catch (System.ArgumentNullException) {
+            catch (ArgumentNullException)
+            {
                 return null;
-            }            
+            }
         }
 
         private PushButtonData MakePushButton
@@ -46,9 +52,9 @@ namespace TerrTools
         {
             btnCounter++;
             PushButtonData btnData = new PushButtonData(
-                "PushButton" + btnCounter.ToString(), 
-                btnText, 
-                Assembly.GetExecutingAssembly().Location, 
+                "PushButton" + btnCounter.ToString(),
+                btnText,
+                Assembly.GetExecutingAssembly().Location,
                 "TerrTools." + className);
             btnData.ToolTip = toolTip ?? "";
             if (iconName != null) btnData.LargeImage = BitmapToImageSource("TerrTools.Resources.Icons." + iconName);
@@ -65,13 +71,41 @@ namespace TerrTools
             return btnData;
         }
 
+        private void RegisterUpdaters()
+        {
+            IUpdater updater;
+            ElementFilter filter;
+
+            //updater = new MirroredInstancesUpdater();
+            //filter = new ElementClassFilter(typeof(FamilyInstance));
+            //UpdaterRegistry.RegisterUpdater(updater);
+            //UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeGeometry());
+
+            updater = new SpaceUpdater();
+            filter = new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces);
+            UpdaterRegistry.RegisterUpdater(updater);
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeElementAddition());
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeAny());
+
+            //updater = new RoomUpdater();
+            //filter = new ElementCategoryFilter(BuiltInCategory.OST_Rooms);
+            //UpdaterRegistry.RegisterUpdater(updater);
+            //UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeElementAddition());
+            //UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeAny());
+        }
+
         public Result OnShutdown(UIControlledApplication application)
-        {      
+        {   
+            //UpdaterRegistry.UnregisterUpdater(MirroredInstancesUpdater.UpdaterId);
+            UpdaterRegistry.UnregisterUpdater(SpaceUpdater.UpdaterId);
+            //UpdaterRegistry.UnregisterUpdater(RoomUpdater.UpdaterId);
             return Result.Succeeded;
         }
 
-        public Result OnStartup(UIControlledApplication application)
+        public Result OnStartup(UIControlledApplication app)
         {
+            application = app;
+            RegisterUpdaters();
             //string currentVersion, lastReleaseVersion, patchNote;
             if (CheckUpdates(out string currentVersion, out string lastReleaseVersion, out string patchNote))
             {
@@ -81,7 +115,6 @@ namespace TerrTools
                 td.FooterText = "Обновление плагина доступно здесь: " + releaseDLLPath;
                 td.Show();
             }
-
             application.CreateRibbonTab(tabName);
             RibbonPanel panelArch = application.CreateRibbonPanel(tabName, "АР");
             RibbonPanel panelStruct = application.CreateRibbonPanel(tabName, "КР");
@@ -99,7 +132,7 @@ namespace TerrTools
             pbDict.Add(
                 "RoomFinishingData",
                 MakePushButton(
-                    "Finishing",
+                    "FinishingData",
                     "Помещения: обновить\nпараметры отделки",
                     "Обновляет параметры в элементах категории \"Помещения\", требуемые для расчета отделки",
                     "Room.png"
@@ -121,7 +154,7 @@ namespace TerrTools
            MakePushButton(
                 "IntersectOpening",
                 "В стенах",
-                "Вставляет отверстия в местах пересечений с системами"                
+                "Вставляет отверстия в местах пересечений с системами"
                 ));
             pbDict.Add("FloorOpening",
             MakePushButton(
@@ -135,13 +168,6 @@ namespace TerrTools
                 "Создает элемент \"Перекрытие\" нужного типоразмера в указанных помещениях",
                 "Brush.png"
                 ));
-            pbDict.Add("CopyRoomDataToSpace",
-                MakePushButton(
-                    "SpaceNaming",
-                    "Переименовать\nпространства",
-                    "Копирует номер и имя помещения из связанного файла",
-                    "RoomToSpace.png"
-                    ));
             pbDict.Add("FocusOnElement",
                 MakePushButton(
                     "FocusOnElement",
@@ -152,7 +178,7 @@ namespace TerrTools
             pbDict.Add("UpdateTypeCurrent",
                 MakePushButton(
                     "TypeChanger",
-                    "В текущем проекте"              
+                    "В текущем проекте"
                     ));
             pbDict.Add("UpdateTypeAll",
                 MakePushButton(
@@ -195,7 +221,6 @@ namespace TerrTools
             ///
             panelMEP.AddItem(pbDict["DiffuserProcessing"]);
             panelMEP.AddItem(pbDict["RadiatorProcessing"]);
-            panelMEP.AddItem(pbDict["CopyRoomDataToSpace"]);
 
 
             ///

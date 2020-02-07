@@ -41,8 +41,7 @@ namespace TerrTools
             {
                 bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
-                    "ТеррНИИ_Идентификатор отделки пола",
-                    "TerrTools_Rooms",
+                    "ТеррНИИ_Идентификатор отделки пола",                    
                     true,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms });
             }
@@ -50,8 +49,7 @@ namespace TerrTools
             {
                 bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
-                    "ТеррНИИ_Идентификатор потолка",
-                    "TerrTools_Rooms",
+                    "ТеррНИИ_Идентификатор потолка",                    
                     true,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms });
             }
@@ -59,8 +57,7 @@ namespace TerrTools
             {
                 bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
-                    "ТеррНИИ_Номер помещения",
-                    "TerrTools_General",
+                    "ТеррНИИ_Номер помещения",                    
                     true,
                     new BuiltInCategory[] { BuiltInCategory.OST_Floors, BuiltInCategory.OST_Ceilings});
             }
@@ -68,8 +65,7 @@ namespace TerrTools
             {
                 bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
-                    "ТеррНИИ_Номера всех помещений",
-                    "TerrTools_Floors",
+                    "ТеррНИИ_Номера всех помещений",                    
                     false,
                     new BuiltInCategory[] { BuiltInCategory.OST_Floors });
             }

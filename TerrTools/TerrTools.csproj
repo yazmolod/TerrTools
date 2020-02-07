@@ -54,7 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application.cs" />
-    <Compile Include="Commands\CopyRoomShape.cs" />
+    <Compile Include="Commands\Deprecated\CopyRoomShape.cs" />
     <Compile Include="Commands\HorizontalFinishing.cs" />
     <Compile Include="Commands\Utilities.cs" />
     <Compile Include="Commands\FocusOnElement.cs" />
@@ -78,7 +78,7 @@
       <DependentUpon>HorizontalFinishingForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Commands\IntersectOpening.cs" />
-    <Compile Include="Commands\Finishing.cs" />
+    <Compile Include="Commands\FinishingData.cs" />
     <Compile Include="Commands\Deprecated\FloorRooms.cs" />
     <Compile Include="Commands\HVAC.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -89,6 +89,7 @@
     <Compile Include="UI\IntersectionsForm.Designer.cs">
       <DependentUpon>IntersectionsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Updaters\Class1.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TerrTools.addin" />

@@ -11,7 +11,7 @@ using Autodesk.Revit.DB.Architecture;
 namespace TerrTools
 {
     [Transaction(TransactionMode.Manual)]
-    class Finishing : IExternalCommand
+    class FinishingData : IExternalCommand
     {
         private Document doc;
         private string openingAreaParameterName = "ADSK_Площадь проемов";
@@ -182,28 +182,20 @@ namespace TerrTools
 
         private void CheckDefaultParameters()
         {
-            bool exist;
-
-            exist = SharedParameterUtils.IsParameterInProject(doc, openingAreaParameterName, BuiltInCategory.OST_Rooms);
-            if (!exist) SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName, "ADSK_Secondary_Arch", true,
+            SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName, true,
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
 
-            exist = SharedParameterUtils.IsParameterInProject(doc, doorOpeningWidthParameterName, BuiltInCategory.OST_Rooms);
-            if (!exist) SharedParameterUtils.AddSharedParameter(doc, doorOpeningWidthParameterName, "TerrTools_Rooms", true,
+            SharedParameterUtils.AddSharedParameter(doc, doorOpeningWidthParameterName, true,
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
 
-            exist = SharedParameterUtils.IsParameterInProject(doc, openingPlanAreaParameterName, BuiltInCategory.OST_Rooms);
-            if (!exist) SharedParameterUtils.AddSharedParameter(doc, openingPlanAreaParameterName, "TerrTools_Rooms", true,
+            SharedParameterUtils.AddSharedParameter(doc, openingPlanAreaParameterName, true,
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
 
-            exist = SharedParameterUtils.IsParameterInProject(doc, openingFinishingAreaParameterName, BuiltInCategory.OST_Rooms);
-            if (!exist) SharedParameterUtils.AddSharedParameter(doc, openingFinishingAreaParameterName, "TerrTools_Rooms", true,
+            SharedParameterUtils.AddSharedParameter(doc, openingFinishingAreaParameterName, true,
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
 
-            exist = SharedParameterUtils.IsParameterInProject(doc, finishingHeightAreaParameterName, BuiltInCategory.OST_Rooms);
-            if (!exist) SharedParameterUtils.AddSharedParameter(doc, finishingHeightAreaParameterName, "TerrTools_Rooms", true,
+            SharedParameterUtils.AddSharedParameter(doc, finishingHeightAreaParameterName, true,
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
-
         }
     }
 }
