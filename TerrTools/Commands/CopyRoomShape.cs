@@ -40,7 +40,7 @@ namespace TerrTools
             foreach (ElementId elementId in selection.GetElementIds())
             {
                 Room room = doc.GetElement(elementId) as Room;
-                foreach (var boundary in CustomGeometryUtility.GetCurvesListFromRoom(room))
+                foreach (var boundary in GeometryUtils.GetCurvesListFromRoom(room))
                 {
                     foreach (var curve in boundary)
                     {

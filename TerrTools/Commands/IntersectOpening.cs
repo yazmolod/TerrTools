@@ -138,7 +138,7 @@ namespace TerrTools
 
             activeDesignOptionId = DesignOption.GetActiveDesignOptionId(doc);
 
-            linkedDocInstance = CustomGeometryUtility.GetLinkedDoc(doc);
+            linkedDocInstance = GeometryUtils.GetLinkedDoc(doc);
             if (linkedDocInstance == null)
                 return Result.Cancelled;            
 
@@ -238,7 +238,7 @@ namespace TerrTools
 
         private List<Intersection> GetIntersections()
         {
-            Transform tr = CustomGeometryUtility.GetCorrectionTransform(linkedDocInstance);
+            Transform tr = GeometryUtils.GetCorrectionTransform(linkedDocInstance);
 
             FilteredElementCollector WallCollector = new FilteredElementCollector(doc);
             WallCollector.OfClass(typeof(Wall));
@@ -346,7 +346,7 @@ namespace TerrTools
         {
             List<Face> normalFaces = new List<Face>();
 
-            Solid solid = CustomGeometryUtility.GetSolid(wall);
+            Solid solid = GeometryUtils.GetSolid(wall);
             foreach (Face face in solid.Faces)
             {
                 PlanarFace pf = face as PlanarFace;
@@ -359,7 +359,7 @@ namespace TerrTools
         {
             // Коррекция позиции связанного файла
             // Так как перемещаем не ПЛОСКОСТЬ, а ЛУЧИ, то инвертируем перемещение
-            Transform tf = CustomGeometryUtility.GetCorrectionTransform(linkedDocInstance);
+            Transform tf = GeometryUtils.GetCorrectionTransform(linkedDocInstance);
             tf = tf.Inverse;
             Curve correctedCurve = DuctCurve.CreateTransformed(tf);
             //The intersection point

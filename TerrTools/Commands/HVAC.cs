@@ -66,16 +66,16 @@ namespace TerrTools
         {
             //Проверяем наличие необходимых параметров в проекте
             bool done = true;        
-            done &= CustomSharedParameter.AddSharedParameter(doc, spaceNumberParameterName, "TerrTools_General", true,
+            done &= SharedParameterUtils.AddSharedParameter(doc, spaceNumberParameterName, "TerrTools_General", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_IDENTITY_DATA);
 
-                done &= CustomSharedParameter.AddSharedParameter(doc, exhaustSystemParameterName, "ADSK_Secondary_MEP", true,
+                done &= SharedParameterUtils.AddSharedParameter(doc, exhaustSystemParameterName, "ADSK_Secondary_MEP", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
-                done &= CustomSharedParameter.AddSharedParameter(doc, supplySystemParameterName, "ADSK_Secondary_MEP", true,
+                done &= SharedParameterUtils.AddSharedParameter(doc, supplySystemParameterName, "ADSK_Secondary_MEP", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
-                done &= CustomSharedParameter.AddSharedParameter(doc, spaceTemperatureParameterName, "ADSK_Secondary_MEP", true,
+                done &= SharedParameterUtils.AddSharedParameter(doc, spaceTemperatureParameterName, "ADSK_Secondary_MEP", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
 
             /* 
@@ -89,20 +89,20 @@ namespace TerrTools
 
             */
 
-            done &= CustomSharedParameter.AddSharedParameter(doc, skipParameterName, "TerrTools_General", true,
+            done &= SharedParameterUtils.AddSharedParameter(doc, skipParameterName, "TerrTools_General", true,
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
 
             return done;
         }
 
-        protected void SetSpaces(List<FamilyInstance> plunts, out List<FamilyInstance> missingPlunts)
+        protected void SetSpaces(List<FamilyInstance> allPlunts, ref List<FamilyInstance> failedPlunts)
         {
             // Назначаем номера помещений диффузорам
-            missingPlunts = new List<FamilyInstance>();
+            failedPlunts = new List<FamilyInstance>();
             using (Transaction tr = new Transaction(doc, "Назначить воздухораспределителям номера помещений"))
             {
                 tr.Start();
-                foreach (FamilyInstance el in plunts)
+                foreach (FamilyInstance el in allPlunts)
                 {
                     Parameter p = el.LookupParameter(spaceNumberParameterName);
                     Space space = GetSpaceOfPlant(el);
@@ -114,7 +114,7 @@ namespace TerrTools
                     else
                     {
                         p.Set("<Помещение не найдено!>");
-                        missingPlunts.Add(el);
+                        failedPlunts.Add(el);
                     }
                 }
                 tr.Commit();
@@ -162,18 +162,21 @@ namespace TerrTools
     class DiffuserProcessing: PluntProcessing, IExternalCommand
     {
         protected override Document doc { get; set; }
-        private string suplySystemName;
-        private string exhaustSystemName;
+        private string suplySystemTypeName;
+        private string exhaustSystemTypeName;
 
-        private void UpdatePluntGeometry(FamilyInstance plunt)
+        private void UpdatePluntGeometry(List<FamilyInstance> allPlunts, ref List<FamilyInstance> failedPlunts)
         {
             /* Подбор размеров, скорее всего, выглядит крайне ручным и нелогичным,
              * но на этом настоял Игорь. Возможно, имеет смысл переписать эту функцию в будущем
              */
+            using (Transaction tr = new Transaction(doc, "Геометрия воздухораспределителей"))
+            {
+                tr.Start();
 
-            // Перечень допустимых размеров
-            int[][] rectOpts =
-                {
+                // Перечень допустимых размеров
+                int[][] rectOpts =
+                    {
                 new int[] { 150, 100 },
                 new int[] { 200, 100 },
                 new int[] { 150, 150 },
@@ -187,100 +190,163 @@ namespace TerrTools
                 new int[] { 350, 300 },
                 new int[] { 350, 350 }
                 };
-            int[] roundOpts = { 100, 125, 160, 200 };
-            // достаем назначенный расход
-            double airflow = plunt.LookupParameter("ADSK_Расход воздуха").AsDouble();
-            airflow = UnitUtils.ConvertFromInternalUnits(airflow, DisplayUnitType.DUT_CUBIC_METERS_PER_HOUR);
-            Connector connector = plunt.MEPModel.ConnectorManager.Connectors.Cast<Connector>().First();
-            switch (connector.Shape)
-            {
-                // Круглый диффузоры
-                case ConnectorProfileType.Round:
-                    Parameter diamParam = plunt.LookupParameter("ADSK_Размер_Диаметр");
-                    // Приточка
-                    if (connector.DuctSystemType == DuctSystemType.SupplyAir)
-                    {
-                        if (airflow <= 50) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, DisplayUnitType.DUT_MILLIMETERS));
-                        else if (airflow <= 100) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, DisplayUnitType.DUT_MILLIMETERS));
-                        else if (airflow <= 160) diamParam.Set(UnitUtils.ConvertToInternalUnits(160, DisplayUnitType.DUT_MILLIMETERS));
-                        else diamParam.Set(UnitUtils.ConvertToInternalUnits(200, DisplayUnitType.DUT_MILLIMETERS));
-                    }
-                    // Вытяжка
-                    else if (connector.DuctSystemType == DuctSystemType.ExhaustAir)
-                    {                        
-                        if (airflow <= 80) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, DisplayUnitType.DUT_MILLIMETERS));
-                        else if (airflow <= 125) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, DisplayUnitType.DUT_MILLIMETERS));
-                        else if (airflow <= 160) diamParam.Set(UnitUtils.ConvertToInternalUnits(160, DisplayUnitType.DUT_MILLIMETERS));
-                        else diamParam.Set(UnitUtils.ConvertToInternalUnits(200, DisplayUnitType.DUT_MILLIMETERS));
-                    }
-                    break;
+                int[] roundOpts = { 100, 125, 160, 200 };
 
-                // Прямоугольная решетка
-                case ConnectorProfileType.Rectangular:
-                    Parameter lengthParam = plunt.LookupParameter("ADSK_Размер_Ширина");
-                    Parameter heightParam = plunt.LookupParameter("ADSK_Размер_Высота");
-                    foreach (int[]size in rectOpts)
+                foreach (var plunt in allPlunts)
+                {
+                    // достаем назначенный расход
+                    double airflow = plunt.LookupParameter("ADSK_Расход воздуха").AsDouble();
+                    airflow = UnitUtils.ConvertFromInternalUnits(airflow, DisplayUnitType.DUT_CUBIC_METERS_PER_HOUR);
+                    Connector connector = plunt.MEPModel.ConnectorManager.Connectors.Cast<Connector>().First();
+                    switch (connector.Shape)
                     {
-                        double F = size[0] * size[1] * 0.68 / 1000000;
-                        double V = airflow / (3600 * F);
-                        if (V < 3)
-                        {
-                            lengthParam.Set(UnitUtils.ConvertToInternalUnits(size[0], DisplayUnitType.DUT_MILLIMETERS));
-                            heightParam.Set(UnitUtils.ConvertToInternalUnits(size[1], DisplayUnitType.DUT_MILLIMETERS));
+                        // Круглый диффузоры
+                        case ConnectorProfileType.Round:
+                            Parameter diamParam = plunt.LookupParameter("ADSK_Размер_Диаметр");
+                            // Приточка
+                            if (connector.DuctSystemType == DuctSystemType.SupplyAir)
+                            {
+                                if (airflow <= 50) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, DisplayUnitType.DUT_MILLIMETERS));
+                                else if (airflow <= 100) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, DisplayUnitType.DUT_MILLIMETERS));
+                                else if (airflow <= 160) diamParam.Set(UnitUtils.ConvertToInternalUnits(160, DisplayUnitType.DUT_MILLIMETERS));
+                                else if (airflow <= 250) diamParam.Set(UnitUtils.ConvertToInternalUnits(200, DisplayUnitType.DUT_MILLIMETERS));
+                                else failedPlunts.Add(plunt);
+                            }
+                            // Вытяжка
+                            else if (connector.DuctSystemType == DuctSystemType.ExhaustAir)
+                            {
+                                if (airflow <= 80) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, DisplayUnitType.DUT_MILLIMETERS));
+                                else if (airflow <= 125) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, DisplayUnitType.DUT_MILLIMETERS));
+                                else if (airflow <= 160) diamParam.Set(UnitUtils.ConvertToInternalUnits(160, DisplayUnitType.DUT_MILLIMETERS));
+                                else if (airflow <= 300) diamParam.Set(UnitUtils.ConvertToInternalUnits(200, DisplayUnitType.DUT_MILLIMETERS));
+                                else failedPlunts.Add(plunt);
+                            }
                             break;
-                        }
-                    }
-                    break;
 
-                default:
-                    break;
+                        // Прямоугольная решетка
+                        case ConnectorProfileType.Rectangular:
+                            Parameter lengthParam = plunt.LookupParameter("ADSK_Размер_Ширина");
+                            Parameter heightParam = plunt.LookupParameter("ADSK_Размер_Высота");
+                            bool found = false;
+                            foreach (int[] size in rectOpts)
+                            {
+                                double F = size[0] * size[1] * 0.68 / 1000000;
+                                double V = airflow / (3600 * F);
+                                if (V < 3)
+                                {
+                                    lengthParam.Set(UnitUtils.ConvertToInternalUnits(size[0], DisplayUnitType.DUT_MILLIMETERS));
+                                    heightParam.Set(UnitUtils.ConvertToInternalUnits(size[1], DisplayUnitType.DUT_MILLIMETERS));
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) failedPlunts.Add(plunt);
+                            break;
+
+                        default: 
+                            failedPlunts.Add(plunt); 
+                            break;
+                    }
+                }
+                tr.Commit();
             }
         }
 
-        private void UpdatePluntData(FamilyInstance currentPlunt, List<FamilyInstance> allPlunts)
+        private void UpdatePluntData(List<FamilyInstance> allPlunts, ref List<FamilyInstance> failedPlunts)
         {
-            try
+            using (Transaction tr = new Transaction(doc, "Данные воздухораспределителей"))
             {
-                // Параметр номера помещения
-                Parameter spaceNumberParam = currentPlunt.LookupParameter(spaceNumberParameterName);
-                // Параметр Расход воздуха
-                Parameter airflowParam = currentPlunt.LookupParameter(airflowParameterName);
-                // Параметр "Классификация системы"
-                BuiltInParameter sysTypeBuiltIn = BuiltInParameter.RBS_DUCT_SYSTEM_TYPE_PARAM;
-                Parameter systemTypeParam = currentPlunt.get_Parameter(sysTypeBuiltIn);
-                string systemType = systemTypeParam.AsValueString();
-                // Считаем количество диффузоров одной системы на пространство
-                int count = (from d in allPlunts
-                             where d.LookupParameter(spaceNumberParameterName).AsString() == spaceNumberParam.AsString()
-                             && d.get_Parameter(sysTypeBuiltIn).AsValueString() == systemType
-                             select d).Count();
-
-                // Находим пространство, в котором находится диффузор и достаем нужные значения
-                Space space = GetSpaceOfPlant(currentPlunt);
-                if (space != null)
+                tr.Start();
+                foreach (FamilyInstance plunt in allPlunts)
                 {
-                    // Задаем расход диффузорам
-                    double value;
-                    if (systemType == suplySystemName)
+                    try
                     {
-                        value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_SUPPLY_AIRFLOW_PARAM).AsDouble();
-                        value /= count;
-                        airflowParam.Set(value);
-                        space.LookupParameter(supplySystemParameterName).Set(currentPlunt.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString());
+                        // Параметр номера помещения
+                        Parameter spaceNumberParam = plunt.LookupParameter(spaceNumberParameterName);
+                        // Параметр Расход воздуха
+                        Parameter airflowParam = plunt.LookupParameter(airflowParameterName);
+                        // Параметр "Классификация системы"
+                        BuiltInParameter sysTypeBuiltIn = BuiltInParameter.RBS_DUCT_SYSTEM_TYPE_PARAM;
+                        Parameter systemTypeParam = plunt.get_Parameter(sysTypeBuiltIn);
+                        string systemType = systemTypeParam.AsValueString();
+                        // Считаем количество диффузоров одной системы на пространство
+                        int count = (from d in allPlunts
+                                     where d.LookupParameter(spaceNumberParameterName).AsString() == spaceNumberParam.AsString()
+                                     && d.get_Parameter(sysTypeBuiltIn).AsValueString() == systemType
+                                     select d).Count();
+
+                        // Находим пространство, в котором находится диффузор и достаем нужные значения
+                        Space space = GetSpaceOfPlant(plunt);
+                        if (space != null)
+                        {
+                            // Задаем расход диффузорам
+                            double value;
+                            if (systemType == suplySystemTypeName)
+                            {
+                                value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_SUPPLY_AIRFLOW_PARAM).AsDouble();
+                                value /= count;
+                                airflowParam.Set(value);
+                            }
+                            else if (systemType == exhaustSystemTypeName)
+                            {
+                                value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_EXHAUST_AIRFLOW_PARAM).AsDouble();
+                                value /= count;
+                                airflowParam.Set(value);
+                            }
+                        }
+                        else failedPlunts.Add(plunt);                        
                     }
-                    else if (systemType == exhaustSystemName)
+                    catch
                     {
-                        value = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_EXHAUST_AIRFLOW_PARAM).AsDouble();
-                        value /= count;
-                        airflowParam.Set(value);
-                        space.LookupParameter(exhaustSystemParameterName).Set(currentPlunt.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString());
+                        failedPlunts.Add(plunt);
                     }
                 }
-                else airflowParam.Set(0);
+                tr.Commit();
             }
-            catch
+        }
+
+        private void UpdatePluntSystem(List<FamilyInstance> allPlunts, ref List<FamilyInstance> failedPlunts)
+        {
+            using (Transaction tr = new Transaction(doc, "Система воздухораспределителей"))
             {
-                TaskDialog.Show("Ошибка", string.Format("При попытке назначить расход элементу {0} возникла ошибка. Данный элемент пропущен", currentPlunt.Id.ToString()));
+                tr.Start();
+                foreach (FamilyInstance plunt in allPlunts)
+                {
+                    Space space = GetSpaceOfPlant(plunt);
+                    string systemName = null;
+                    if (space != null)
+                    {
+                        string systemTypeName = plunt.get_Parameter(BuiltInParameter.RBS_DUCT_SYSTEM_TYPE_PARAM).AsValueString();
+                        string systemClassName = plunt.get_Parameter(BuiltInParameter.RBS_SYSTEM_CLASSIFICATION_PARAM).AsString();
+                        if (systemTypeName == suplySystemTypeName) systemName = space.LookupParameter(supplySystemParameterName).AsString();
+                        else if (systemTypeName == exhaustSystemTypeName) systemName = space.LookupParameter(exhaustSystemParameterName).AsString();
+                        else if (systemTypeName == "Не определено")
+                        {
+                            if (systemClassName == "Приточный воздух") systemName = space.LookupParameter(supplySystemParameterName).AsString();                            
+                            else if (systemClassName == "Отработанный воздух")systemName = space.LookupParameter(exhaustSystemParameterName).AsString();                            
+                        }
+                        if (systemName != null)
+                        {
+                            ConnectorSet connectors = plunt.MEPModel.ConnectorManager.Connectors;
+                            Connector baseConnector = connectors.Cast<Connector>().FirstOrDefault();
+                            MEPSystem fromSystem = baseConnector.MEPSystem;
+                            MEPSystem toSystem = new FilteredElementCollector(doc).OfClass(typeof(MEPSystem)).Cast<MEPSystem>().Where(x => x.Name == systemName).FirstOrDefault();                           
+                            if (fromSystem != null) fromSystem.Remove(connectors);
+                            if (toSystem == null)
+                            {
+                                DuctSystemType ductType = DuctSystemType.UndefinedSystemType;
+                                if (systemTypeName == suplySystemTypeName) ductType = DuctSystemType.SupplyAir;
+                                else if (systemTypeName == exhaustSystemTypeName) ductType = DuctSystemType.ExhaustAir;
+                                toSystem = doc.Create.NewMechanicalSystem(null, connectors, ductType);
+                                toSystem.Name = systemName;
+                            }
+                            else toSystem.Add(connectors);
+                        }
+                        else failedPlunts.Add(plunt);
+                    }
+                    else failedPlunts.Add(plunt);
+                }
+                tr.Commit();
             }
         }
 
@@ -309,36 +375,17 @@ namespace TerrTools
                 TaskDialog.Show("Ошибка", "Не найден ни один воздухораспределитель");
                 return Result.Failed;
             }
-
-            List<FamilyInstance> missingPlunts = new List<FamilyInstance>();
-            SetSpaces(allPlunts, out missingPlunts);
-
             // Обозначаем, где какая система
             string[] systemTypes = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_DuctSystem).WhereElementIsElementType().Select(x => x.Name).ToArray();
-            suplySystemName = new UI.OneComboboxForm("Выберите систему приточного воздуха", systemTypes).SelectedItem;
-            exhaustSystemName = new UI.OneComboboxForm("Выберите систему вытяжного воздуха", systemTypes).SelectedItem;
+            suplySystemTypeName = new UI.OneComboboxForm("Выберите систему приточного воздуха", systemTypes).SelectedItem;
+            exhaustSystemTypeName = new UI.OneComboboxForm("Выберите систему вытяжного воздуха", systemTypes).SelectedItem;
 
-            // Назначаем расход диффузорам            
-            using (Transaction tr = new Transaction(doc, "Обновление данных решеток"))
-            {
-                tr.Start();
-                foreach (FamilyInstance el in allPlunts)
-                {
-                    UpdatePluntData(el, allPlunts);
-                }
-                tr.Commit();
-            }
 
-            // Задаем размер диффузорам            
-            using (Transaction tr = new Transaction(doc, "Обновление геометрии решеток"))
-            {
-                tr.Start();
-                foreach (FamilyInstance el in allPlunts)
-                {
-                    UpdatePluntGeometry(el);
-                }
-                tr.Commit();
-            }
+            List<FamilyInstance> missingPlunts = new List<FamilyInstance>();
+            SetSpaces(allPlunts, ref missingPlunts);
+            UpdatePluntSystem(allPlunts, ref missingPlunts);
+            UpdatePluntData(allPlunts, ref missingPlunts);           
+            UpdatePluntGeometry(allPlunts, ref missingPlunts);
 
             ShowResultDialog(allPlunts, missingPlunts);
             return Result.Succeeded;
@@ -363,7 +410,8 @@ namespace TerrTools
             }
 
             List<FamilyInstance> missingPlunts = new List<FamilyInstance>();
-            SetSpaces(allPlunts, out missingPlunts);
+            SetSpaces(allPlunts, ref missingPlunts);
+            foreach (FamilyInstance el in allPlunts) FamilyInstanceUtils.MirroredIndicator(el);
 
             // Назначаем расход диффузорам            
             using (Transaction tr = new Transaction(doc, "Обновление данных радиатора"))
@@ -453,15 +501,15 @@ namespace TerrTools
             {
                 foreach (int l in lengths)
                 {
-                    N = double.Parse( Utils.SizeLookup(sizeTable, "N", new string[] { radType.AsValueString(), h.ToString() }), 
+                    N = double.Parse( FamilyInstanceUtils.SizeLookup(sizeTable, "N", new string[] { radType.AsValueString(), h.ToString() }), 
                         System.Globalization.CultureInfo.InvariantCulture);
-                    Qn = double.Parse( Utils.SizeLookup(sizeTable, "Qn", new string[] { radType.AsValueString(), h.ToString() }),
+                    Qn = double.Parse( FamilyInstanceUtils.SizeLookup(sizeTable, "Qn", new string[] { radType.AsValueString(), h.ToString() }),
                         System.Globalization.CultureInfo.InvariantCulture);
-                    Tzn = double.Parse( Utils.SizeLookup(sizeTable, "Tz", new string[] { radType.AsValueString(), h.ToString() }),
+                    Tzn = double.Parse( FamilyInstanceUtils.SizeLookup(sizeTable, "Tz", new string[] { radType.AsValueString(), h.ToString() }),
                         System.Globalization.CultureInfo.InvariantCulture);
-                    Tpn = double.Parse( Utils.SizeLookup(sizeTable, "Tp", new string[] { radType.AsValueString(), h.ToString() }),
+                    Tpn = double.Parse( FamilyInstanceUtils.SizeLookup(sizeTable, "Tp", new string[] { radType.AsValueString(), h.ToString() }),
                         System.Globalization.CultureInfo.InvariantCulture);
-                    Tin = double.Parse( Utils.SizeLookup(sizeTable, "Ti", new string[] { radType.AsValueString(), h.ToString() }),
+                    Tin = double.Parse( FamilyInstanceUtils.SizeLookup(sizeTable, "Ti", new string[] { radType.AsValueString(), h.ToString() }),
                         System.Globalization.CultureInfo.InvariantCulture);
 
                     powerValue = (l / 1000.0) * Qn * Math.Pow(

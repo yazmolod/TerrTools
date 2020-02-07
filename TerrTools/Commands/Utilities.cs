@@ -11,7 +11,7 @@ using Autodesk.Revit.Attributes;
 
 namespace TerrTools
 {
-    class CustomSharedParameter
+    static class SharedParameterUtils
     {
         static public string sharedParameterFilePath = @"\\serverL\PSD\REVIT\ФОП\ФОП2017.txt";
         static public bool AddSharedParameter(
@@ -108,7 +108,7 @@ namespace TerrTools
         }
     }
 
-    static class Utils
+    static class FamilyInstanceUtils
     {
         public static string SizeLookup(FamilySizeTable fmt, string columnName, string[] args)
         {
@@ -133,9 +133,25 @@ namespace TerrTools
             }
             return null;
         }
+
+        public static bool MirroredIndicator(FamilyInstance el)
+        {
+            Document doc = el.Document;
+            string paramName = "ТеррНИИ_Элемент отзеркален";
+            SharedParameterUtils.AddSharedParameter(doc, paramName, "TerrTools_General", true,
+                new BuiltInCategory[] { (BuiltInCategory)el.Category.Id.IntegerValue }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+            int value = el.Mirrored ? 1 : 0;
+            using (Transaction tr = new Transaction(doc, "Индикатор отзеркаливания"))
+            {
+                tr.Start();
+                el.LookupParameter(paramName).Set(value);
+                tr.Commit();
+            }
+            return el.Mirrored;
+        }
     }
 
-    static class CustomGeometryUtility
+    static class GeometryUtils
     {
         static public Solid GetSolid(Element e)
         {

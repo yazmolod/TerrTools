@@ -39,7 +39,7 @@ namespace TerrTools
             List<Element> sharedParameterElements = new FilteredElementCollector(doc).OfClass(typeof(SharedParameterElement)).ToList();
             if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Идентификатор отделки пола").Count() == 0)
             {
-                bool result = CustomSharedParameter.AddSharedParameter(
+                bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
                     "ТеррНИИ_Идентификатор отделки пола",
                     "TerrTools_Rooms",
@@ -48,7 +48,7 @@ namespace TerrTools
             }
             if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Идентификатор потолка").Count() == 0)
             {
-                bool result = CustomSharedParameter.AddSharedParameter(
+                bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
                     "ТеррНИИ_Идентификатор потолка",
                     "TerrTools_Rooms",
@@ -57,7 +57,7 @@ namespace TerrTools
             }
             if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Номер помещения").Count() == 0)
             {
-                bool result = CustomSharedParameter.AddSharedParameter(
+                bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
                     "ТеррНИИ_Номер помещения",
                     "TerrTools_General",
@@ -66,7 +66,7 @@ namespace TerrTools
             }
             if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Номера всех помещений").Count() == 0)
             {
-                bool result = CustomSharedParameter.AddSharedParameter(
+                bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
                     "ТеррНИИ_Номера всех помещений",
                     "TerrTools_Floors",

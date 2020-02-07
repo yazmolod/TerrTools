@@ -125,7 +125,7 @@ namespace TerrTools
             ///
             /// Находим все профили помещения и сортируем по периметру. Самый длинный - контур перекрытия
             ///
-            List<List<Curve>> tmp = CustomGeometryUtility.GetCurvesListFromRoom(room);
+            List<List<Curve>> tmp = GeometryUtils.GetCurvesListFromRoom(room);
             tmp = tmp.OrderBy(x => x.Sum(y => y.Length)).ToList();
             MainProfile = ConvertListToCurveArray(tmp.Last());
             ///
