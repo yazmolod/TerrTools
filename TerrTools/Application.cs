@@ -77,7 +77,7 @@ namespace TerrTools
             ElementFilter filter;
 
             //updater = new MirroredInstancesUpdater();
-            //filter = new ElementClassFilter(typeof(FamilyInstance));
+            //filter = new ElementCategoryFilter(BuiltInCategory.OST_Doors);
             //UpdaterRegistry.RegisterUpdater(updater);
             //UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeGeometry());
 

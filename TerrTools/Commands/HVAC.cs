@@ -27,7 +27,7 @@ namespace TerrTools
                 using (Transaction tr = new Transaction(doc, "Перенос информации из помещений в пространства"))
                 {
                     tr.Start();
-                    foreach (Element space in spaces) TransferData(space);                    
+                    foreach (Element space in spaces) TransferData(space);
                     tr.Commit();
                 }
                 TaskDialog.Show("Результат", "Данные успешно скопированы");
@@ -37,7 +37,7 @@ namespace TerrTools
             {
                 message = "Не найдено ни одно пространство в текущем проекте";
                 return Result.Failed;
-            }            
+            }
         }
         static public void TransferData(Element space)
         {
@@ -45,10 +45,10 @@ namespace TerrTools
             string number = space.get_Parameter(BuiltInParameter.SPACE_ASSOC_ROOM_NUMBER).AsString();
             space.get_Parameter(BuiltInParameter.ROOM_NAME).Set(name);
             space.get_Parameter(BuiltInParameter.ROOM_NUMBER).Set(number);
-        } 
+        }
     }
-   
-    abstract class PluntProcessing  
+
+    abstract class PluntProcessing
     {
         protected abstract Document doc { get; set; }
         //protected abstract void UpdateSize(FamilyInstance plunt);
@@ -66,18 +66,18 @@ namespace TerrTools
         protected bool CheckDefaultSharedParameters()
         {
             //Проверяем наличие необходимых параметров в проекте
-            bool done = true;        
+            bool done = true;
             done &= SharedParameterUtils.AddSharedParameter(doc, spaceNumberParameterName, true,
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_IDENTITY_DATA);
 
-                done &= SharedParameterUtils.AddSharedParameter(doc, exhaustSystemParameterName, true,
-                    new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
+            done &= SharedParameterUtils.AddSharedParameter(doc, exhaustSystemParameterName, true,
+                new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
-                done &= SharedParameterUtils.AddSharedParameter(doc, supplySystemParameterName, true,
-                    new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
+            done &= SharedParameterUtils.AddSharedParameter(doc, supplySystemParameterName, true,
+                new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
-                done &= SharedParameterUtils.AddSharedParameter(doc, spaceTemperatureParameterName, true,
-                    new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
+            done &= SharedParameterUtils.AddSharedParameter(doc, spaceTemperatureParameterName, true,
+                new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
 
             /* 
              * Эти параметры должны быть внутри семейства, нет смысла назначать их всей категории
@@ -120,12 +120,20 @@ namespace TerrTools
         {
             if (missingPlunts.Count > 0)
             {
+                string allMissedIds = String.Join(", ", (from e in missingPlunts select e.Id.ToString()));
                 TaskDialog dialog = new TaskDialog("Результат");
                 dialog.MainInstruction = String.Format("Операция: {0}\nНеудачно: {1} из {2}", operationTitle, missingPlunts.Count, allPlunts.Count);
                 dialog.MainContent = "Перечень id элементов, которые не удалось обновить:\n"
-                    + String.Join(", ", (from e in missingPlunts select e.Id.ToString()));
+                    + allMissedIds;
                 dialog.FooterText = hint;
-                dialog.Show();
+                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Скопировать ID элементов в буфер обмена");
+
+                TaskDialogResult result = dialog.Show();
+                if (result == TaskDialogResult.CommandLink1)
+                {
+                    System.Windows.Forms.Clipboard.SetText(allMissedIds);
+                    TaskDialog.Show("Результат", "Данные успешно скопированы в буфер обмена");
+                }
             }
         }
 
@@ -150,11 +158,11 @@ namespace TerrTools
 
             //Ничего не прошло - возвращаем null
             return null;
-        }        
+        }
     }
 
     [Transaction(TransactionMode.Manual)]
-    class DiffuserProcessing: PluntProcessing, IExternalCommand
+    class DiffuserProcessing : PluntProcessing, IExternalCommand
     {
         protected override Document doc { get; set; }
         private string suplySystemTypeName;
@@ -166,9 +174,9 @@ namespace TerrTools
              * но на этом настоял Игорь. Возможно, имеет смысл переписать эту функцию в будущем
              */
 
-                // Перечень допустимых размеров
-                int[][] rectOpts =
-                    {
+            // Перечень допустимых размеров
+            int[][] rectOpts =
+                {
                 new int[] { 150, 100 },
                 new int[] { 200, 100 },
                 new int[] { 150, 150 },
@@ -180,14 +188,18 @@ namespace TerrTools
                 new int[] { 300, 250 },
                 new int[] { 300, 300 },
                 new int[] { 350, 300 },
-                new int[] { 350, 350 }
+                new int[] { 400, 400 },
+                new int[] { 450, 450 },
+                new int[] { 500, 500 },
+
                 };
-                int[] roundOpts = { 100, 125, 160, 200 };
+            int[] roundOpts = { 100, 125, 160, 200 };
 
             foreach (var plunt in allPlunts)
             {
                 // достаем назначенный расход
                 double airflow = plunt.LookupParameter("ADSK_Расход воздуха").AsDouble();
+                string pluntSystemType = plunt.get_Parameter(BuiltInParameter.RBS_DUCT_SYSTEM_TYPE_PARAM).AsValueString();
                 airflow = UnitUtils.ConvertFromInternalUnits(airflow, DisplayUnitType.DUT_CUBIC_METERS_PER_HOUR);
                 Connector connector = plunt.MEPModel.ConnectorManager.Connectors.Cast<Connector>().First();
                 switch (connector.Shape)
@@ -196,7 +208,7 @@ namespace TerrTools
                     case ConnectorProfileType.Round:
                         Parameter diamParam = plunt.LookupParameter("ADSK_Размер_Диаметр");
                         // Приточка
-                        if (connector.DuctSystemType == DuctSystemType.SupplyAir)
+                        if (pluntSystemType == suplySystemTypeName)
                         {
                             if (airflow <= 50) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, DisplayUnitType.DUT_MILLIMETERS));
                             else if (airflow <= 100) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, DisplayUnitType.DUT_MILLIMETERS));
@@ -205,7 +217,7 @@ namespace TerrTools
                             else failedPlunts.Add(plunt);
                         }
                         // Вытяжка
-                        else if (connector.DuctSystemType == DuctSystemType.ExhaustAir)
+                        else if (pluntSystemType == exhaustSystemTypeName)
                         {
                             if (airflow <= 80) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, DisplayUnitType.DUT_MILLIMETERS));
                             else if (airflow <= 125) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, DisplayUnitType.DUT_MILLIMETERS));
@@ -217,22 +229,25 @@ namespace TerrTools
 
                     // Прямоугольная решетка
                     case ConnectorProfileType.Rectangular:
-                        Parameter lengthParam = plunt.LookupParameter("ADSK_Размер_Ширина");
-                        Parameter heightParam = plunt.LookupParameter("ADSK_Размер_Высота");
-                        bool found = false;
-                        foreach (int[] size in rectOpts)
+                        if (pluntSystemType == suplySystemTypeName || pluntSystemType == exhaustSystemTypeName)
                         {
-                            double F = size[0] * size[1] * 0.68 / 1000000;
-                            double V = airflow / (3600 * F);
-                            if (V < 3)
+                            Parameter lengthParam = plunt.LookupParameter("ADSK_Размер_Ширина");
+                            Parameter heightParam = plunt.LookupParameter("ADSK_Размер_Высота");
+                            bool found = false;
+                            foreach (int[] size in rectOpts)
                             {
-                                lengthParam.Set(UnitUtils.ConvertToInternalUnits(size[0], DisplayUnitType.DUT_MILLIMETERS));
-                                heightParam.Set(UnitUtils.ConvertToInternalUnits(size[1], DisplayUnitType.DUT_MILLIMETERS));
-                                found = true;
-                                break;
+                                double F = size[0] * size[1] * 0.68 / 1000000;
+                                double V = airflow / (3600 * F);
+                                if (V < 3)
+                                {
+                                    lengthParam.Set(UnitUtils.ConvertToInternalUnits(size[0], DisplayUnitType.DUT_MILLIMETERS));
+                                    heightParam.Set(UnitUtils.ConvertToInternalUnits(size[1], DisplayUnitType.DUT_MILLIMETERS));
+                                    found = true;
+                                    break;
+                                }
                             }
+                            if (!found) failedPlunts.Add(plunt);                            
                         }
-                        if (!found) failedPlunts.Add(plunt);
                         break;
 
                     default:
@@ -241,6 +256,7 @@ namespace TerrTools
                 }
             }
         }
+
 
         private void UpdatePluntData(List<FamilyInstance> allPlunts, ref List<FamilyInstance> failedPlunts)
         {
@@ -289,8 +305,10 @@ namespace TerrTools
             }
         }
 
+
         private void UpdatePluntSystem(List<FamilyInstance> allPlunts, ref List<FamilyInstance> failedPlunts)
         {
+            //List<FamilyInstance> changedPlunts = new List<FamilyInstance>();
             foreach (FamilyInstance plunt in allPlunts)
             {
                 Space space = GetSpaceOfPlant(plunt);
@@ -312,8 +330,8 @@ namespace TerrTools
                         Connector baseConnector = connectors.Cast<Connector>().FirstOrDefault();
                         MEPSystem fromSystem = baseConnector.MEPSystem;
                         MEPSystem toSystem = new FilteredElementCollector(doc).OfClass(typeof(MEPSystem)).Cast<MEPSystem>().Where(x => x.Name == systemName).FirstOrDefault();
-                        if (fromSystem != null) fromSystem.Remove(connectors);
-                        if (toSystem == null)
+                        if (fromSystem?.Id.IntegerValue == toSystem?.Id.IntegerValue) continue;
+                        if (fromSystem == null && toSystem == null)
                         {
                             DuctSystemType ductType = DuctSystemType.UndefinedSystemType;
                             if (systemTypeName == suplySystemTypeName) ductType = DuctSystemType.SupplyAir;
@@ -321,12 +339,24 @@ namespace TerrTools
                             toSystem = doc.Create.NewMechanicalSystem(null, connectors, ductType);
                             toSystem.Name = systemName;
                         }
-                        else toSystem.Add(connectors);
+                        else if (fromSystem == null && toSystem != null)
+                        {
+                            toSystem.Add(connectors);
+                        }
+                        else if (fromSystem != null && toSystem == null)
+                        {
+                            fromSystem.Name = systemName;
+                        }
+                        else if (fromSystem != null && toSystem != null)
+                        {
+                            fromSystem.Remove(connectors);
+                            toSystem.Add(connectors);
+                        }
                     }
-                    else failedPlunts.Add(plunt);
                 }
             }
-        }
+        }                  
+
 
         protected override List<FamilyInstance> GetPlunts()
         {
@@ -419,7 +449,7 @@ namespace TerrTools
                 tr.Commit();
             }
 
-            ShowResultDialog("Назначение пространства", allPlunts, spaceMissing, "Если экземпляр все же нахоидтся в пространстве, проверьте настройки точки расчета площади в семействе");
+            ShowResultDialog("Назначение пространства", allPlunts, spaceMissing, "Если экземпляр все же находится в пространстве, проверьте настройки точки расчета площади в семействе");
             ShowResultDialog("Назначение температур", allPlunts, dataMissing, "Не удалось обнаружить определить температуру приточки и обратки. Вероятно, радиатор не подключен к системе");
             ShowResultDialog("Подбор типоразмера", allPlunts, geometryMissing, "Вероятно, мощность выше заданного максимума. Добавьте новые в пространство.");
 
