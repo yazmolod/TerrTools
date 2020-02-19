@@ -16,11 +16,11 @@ namespace TerrTools
         static public string sharedParameterFilePath = @"\\serverL\PSD\REVIT\ФОП\ФОП2017.txt";
         static public bool AddSharedParameter(
             Document doc,
-            string parameterName,
-            bool isIntance,
-            BuiltInCategory[] categories,
+            string parameterName,            
+            BuiltInCategory[] categories,            
             BuiltInParameterGroup group = BuiltInParameterGroup.PG_ADSK_MODEL_PROPERTIES,
-            bool InTransaction = false
+            bool InTransaction = false,
+            bool isIntance = true
             )
         {
             // Проверка параметра на наличие
@@ -155,7 +155,7 @@ namespace TerrTools
         {
             Document doc = el.Document;
             string paramName = "ТеррНИИ_Элемент отзеркален";
-            SharedParameterUtils.AddSharedParameter(doc, paramName, true,
+            SharedParameterUtils.AddSharedParameter(doc, paramName, 
                 new BuiltInCategory[] { (BuiltInCategory)el.Category.Id.IntegerValue }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             int value = el.Mirrored ? 1 : 0;
             using (Transaction tr = new Transaction(doc, "Индикатор отзеркаливания"))

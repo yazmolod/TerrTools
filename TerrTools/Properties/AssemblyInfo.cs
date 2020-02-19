@@ -8,8 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
 ОВиК
-- Исправлен баг с подбором размера для неуказанных систем
-- Исправлены отчеты по подбору систем и размеров воздухораспределителей
+- Добавлена функция автоматического определения толщины стенки и класса воздуховода 
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -36,4 +35,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.5.4")]
+[assembly: AssemblyFileVersion("0.6.0")]

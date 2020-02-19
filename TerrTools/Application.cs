@@ -76,6 +76,8 @@ namespace TerrTools
             IUpdater updater;
             ElementFilter filter;
 
+            ChangeType ChangeTypeAdditionAndModication = ChangeType.ConcatenateChangeTypes(Element.GetChangeTypeAny(), Element.GetChangeTypeElementAddition());
+
             //updater = new MirroredInstancesUpdater();
             //filter = new ElementCategoryFilter(BuiltInCategory.OST_Doors);
             //UpdaterRegistry.RegisterUpdater(updater);
@@ -84,8 +86,12 @@ namespace TerrTools
             updater = new SpaceUpdater();
             filter = new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces);
             UpdaterRegistry.RegisterUpdater(updater);
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeElementAddition());
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeAny());
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
+
+            updater = new DuctsUpdater();
+            filter = new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves);
+            UpdaterRegistry.RegisterUpdater(updater);
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
 
             //updater = new RoomUpdater();
             //filter = new ElementCategoryFilter(BuiltInCategory.OST_Rooms);

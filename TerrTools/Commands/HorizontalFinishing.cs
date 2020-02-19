@@ -41,33 +41,30 @@ namespace TerrTools
             {
                 bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
-                    "ТеррНИИ_Идентификатор отделки пола",                    
-                    true,
+                    "ТеррНИИ_Идентификатор отделки пола",
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms });
             }
             if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Идентификатор потолка").Count() == 0)
             {
                 bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
-                    "ТеррНИИ_Идентификатор потолка",                    
-                    true,
+                    "ТеррНИИ_Идентификатор потолка", 
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms });
             }
             if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Номер помещения").Count() == 0)
             {
                 bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
-                    "ТеррНИИ_Номер помещения",                    
-                    true,
+                    "ТеррНИИ_Номер помещения",  
                     new BuiltInCategory[] { BuiltInCategory.OST_Floors, BuiltInCategory.OST_Ceilings});
             }
             if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Номера всех помещений").Count() == 0)
             {
                 bool result = SharedParameterUtils.AddSharedParameter(
                     doc,
-                    "ТеррНИИ_Номера всех помещений",                    
-                    false,
-                    new BuiltInCategory[] { BuiltInCategory.OST_Floors });
+                    "ТеррНИИ_Номера всех помещений",
+                    new BuiltInCategory[] { BuiltInCategory.OST_Floors },
+                    isIntance: false);
             }
         }
         protected void UpdateFinishingType()
@@ -177,7 +174,6 @@ namespace TerrTools
                 tr.Commit();
             }
         }
-
 
         private List<OldTag> GetOldTags(ElementId oldFloor)
         {

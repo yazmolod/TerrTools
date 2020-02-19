@@ -67,16 +67,16 @@ namespace TerrTools
         {
             //Проверяем наличие необходимых параметров в проекте
             bool done = true;
-            done &= SharedParameterUtils.AddSharedParameter(doc, spaceNumberParameterName, true,
+            done &= SharedParameterUtils.AddSharedParameter(doc, spaceNumberParameterName, 
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_IDENTITY_DATA);
 
-            done &= SharedParameterUtils.AddSharedParameter(doc, exhaustSystemParameterName, true,
+            done &= SharedParameterUtils.AddSharedParameter(doc, exhaustSystemParameterName, 
                 new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
-            done &= SharedParameterUtils.AddSharedParameter(doc, supplySystemParameterName, true,
+            done &= SharedParameterUtils.AddSharedParameter(doc, supplySystemParameterName, 
                 new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
-            done &= SharedParameterUtils.AddSharedParameter(doc, spaceTemperatureParameterName, true,
+            done &= SharedParameterUtils.AddSharedParameter(doc, spaceTemperatureParameterName, 
                 new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
 
             /* 
@@ -90,7 +90,7 @@ namespace TerrTools
 
             */
 
-            done &= SharedParameterUtils.AddSharedParameter(doc, skipParameterName, true,
+            done &= SharedParameterUtils.AddSharedParameter(doc, skipParameterName, 
                     new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
 
             return done;

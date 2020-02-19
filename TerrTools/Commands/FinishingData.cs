@@ -182,19 +182,19 @@ namespace TerrTools
 
         private void CheckDefaultParameters()
         {
-            SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName, true,
+            SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName, 
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
 
-            SharedParameterUtils.AddSharedParameter(doc, doorOpeningWidthParameterName, true,
+            SharedParameterUtils.AddSharedParameter(doc, doorOpeningWidthParameterName, 
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
 
-            SharedParameterUtils.AddSharedParameter(doc, openingPlanAreaParameterName, true,
+            SharedParameterUtils.AddSharedParameter(doc, openingPlanAreaParameterName, 
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
 
-            SharedParameterUtils.AddSharedParameter(doc, openingFinishingAreaParameterName, true,
+            SharedParameterUtils.AddSharedParameter(doc, openingFinishingAreaParameterName, 
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
 
-            SharedParameterUtils.AddSharedParameter(doc, finishingHeightAreaParameterName, true,
+            SharedParameterUtils.AddSharedParameter(doc, finishingHeightAreaParameterName, 
                 new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA);
         }
     }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Mechanical;
 
 namespace TerrTools.Updaters
 {
@@ -40,7 +41,7 @@ namespace TerrTools.Updaters
                 {
                     BuiltInCategory cat = (BuiltInCategory)el.Category.Id.IntegerValue;
                     bool result = SharedParameterUtils.AddSharedParameter(doc, paramName,
-                        true, new BuiltInCategory[] { cat }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS, true);
+                         new BuiltInCategory[] { cat }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS, InTransaction: true);
                     int value = el.Mirrored ? 1 : 0;
                     el.LookupParameter(paramName).Set(value);
                 }
@@ -112,8 +113,88 @@ namespace TerrTools.Updaters
         {
             string openingAreaParameterName = "ADSK_Площадь проемов";
             Document doc = data.GetDocument();
-            SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName, true,
-    new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA, true);        }
+            SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName, 
+    new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA, InTransaction: true);
+        }
+    }
 
+    public class DuctsUpdater : IUpdater
+    {
+        public static Guid Guid { get { return new Guid("93dc3d80-0c29-4af5-a509-c36dfd497d66"); } }
+        public static UpdaterId UpdaterId { get { return new UpdaterId(App.AddInId, Guid); } }
+
+        public UpdaterId GetUpdaterId()
+        {
+            return UpdaterId;
+        }
+
+        public string GetUpdaterName()
+        {
+            return "DuctUpdater";
+        }
+        public string GetAdditionalInformation()
+        {
+            return "Обновляет параметры толщины стенки и класса герметичности в зависимости от габаритов";
+        }
+        public ChangePriority GetChangePriority()
+        {
+            return ChangePriority.MEPAccessoriesFittingsSegmentsWires;
+        }
+        private string GetDuctClass(Duct el)
+        {
+            bool isInsul = el.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0;
+            string cl = isInsul ? "\"А\" с огнезащитой" : "\"B\"";
+            return cl;
+        }
+        private double GetDuctThickness(Duct el)
+        {
+            double thickness = -1;
+            bool isInsul = el.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0;
+            bool isRect = false;
+            bool isRound = false;
+            double size;
+            try
+            {
+                size = el.Width >= el.Height ? el.Width : el.Height;
+                isRect = true;
+            }
+            catch
+            {
+                size = el.Diameter;
+                isRound = true;
+            }
+            size = UnitUtils.ConvertFromInternalUnits(size, DisplayUnitType.DUT_MILLIMETERS);
+
+            if (isRect)
+            {
+                if (size <= 250) thickness = isInsul ? 0.8 : 0.5;
+                else if (250 < size && size <= 1000) thickness = isInsul ? 1.0 : 0.7;
+                else if (1000 < size && size <= 2000) thickness = isInsul ? 1.2 : 0.9;
+            }
+            else if (isRound)
+            {
+                if (size <= 200) thickness = isInsul ? 0.8 : 0.5;
+                else if (200 < size && size <= 450) thickness = isInsul ? 0.9 : 0.6;
+                else if (450 < size && size <= 800) thickness = isInsul ? 1.0 : 0.7;
+                else if (800 < size && size <= 1250) thickness = isInsul ? 1.3 : 1.0;
+            }
+            thickness = UnitUtils.ConvertToInternalUnits(thickness, DisplayUnitType.DUT_MILLIMETERS);
+            return thickness;
+        }
+
+        public void Execute(UpdaterData data)
+        {
+            Document doc = data.GetDocument();
+            string thickParameter = "ADSK_Толщина стенки";
+            string classParameter = "ТеррНИИ_Класс герметичности";
+            SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves }, InTransaction: true);
+            SharedParameterUtils.AddSharedParameter(doc, classParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves }, InTransaction: true);
+            foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))
+            {
+                Duct el = (Duct)doc.GetElement(id);
+                el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
+                el.LookupParameter(classParameter).Set(GetDuctClass(el));
+            }
+        }
     }
 }
