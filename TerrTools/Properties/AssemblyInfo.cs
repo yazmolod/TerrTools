@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-ОВиК
-- Добавлена функция автоматического определения толщины стенки и класса воздуховода 
+ОБЩЕЕ ОБНОВЛЕНИЕ:
+- изменен механизм обновления плагина ТеррНИИ BIM. Теперь обновляться можно автоматически после закрытия программы или через моментальный перезапуск
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -35,4 +35,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.6.0")]
+[assembly: AssemblyFileVersion("0.7.0")]
