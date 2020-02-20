@@ -46,12 +46,12 @@ namespace TerrTools
                 {
                     doc.Application.SharedParametersFilename = sharedParameterFilePath;
                     DefinitionFile spFile = doc.Application.OpenSharedParameterFile();
-                    Definition sharedDef = null;
+                    ExternalDefinition sharedDef = null;
                     foreach (DefinitionGroup gr in spFile.Groups)
                     {
                         foreach (Definition def in gr.Definitions)
                         {
-                            if (def.Name == parameterName) sharedDef = def;
+                            if (def.Name == parameterName) sharedDef = (ExternalDefinition)def;
                         }
                     }
                     if (sharedDef == null)
@@ -59,6 +59,7 @@ namespace TerrTools
                         TaskDialog.Show("Ошибка", String.Format("Параметр \"{0}\" отсутствует в файле общих параметров", parameterName));
                         return false;
                     }
+
 
                     Transaction trDef = null;
                     if (!InTransaction)
@@ -73,7 +74,8 @@ namespace TerrTools
                     // Если параметр уже существует, но данная категория отсутствует в сете - обновляем сет
                     if (!result)
                     {
-                        bind = GetParameterBinding(doc, sharedDef.Name);
+                        string realName = GetRealParameterName(doc, sharedDef);
+                        bind = GetParameterBinding(doc, realName);
                         foreach (Category c in catSet) bind.Categories.Insert(c);
                         bool result2 = doc.ParameterBindings.ReInsert(sharedDef, bind, group);
                         if (!result2)
@@ -90,12 +92,24 @@ namespace TerrTools
                     return true;
 
                 }
-                catch
+                catch (Exception e)
                 {
-                    TaskDialog.Show("Ошибка", String.Format("Произошла ошибка добавления общего параметра \"{0}\"", parameterName));
+                    TaskDialog td = new TaskDialog("Ошибка");
+                    td.MainInstruction = String.Format("Произошла ошибка добавления общего параметра \"{0}\"", parameterName);
+                    td.MainContent = e.ToString();
+                    td.Show();
                     return false;
                 }
             }
+        }
+
+        private static string GetRealParameterName(Document doc, ExternalDefinition def)
+        {
+            foreach (var i in new FilteredElementCollector(doc).OfClass(typeof(SharedParameterElement)).Cast<SharedParameterElement>())
+            {
+                if (i.GuidValue.ToString() == def.GUID.ToString()) return i.Name;
+            }
+            return def.Name;
         }
 
         static public bool IsParameterInProject(Document doc, string parameterName, BuiltInCategory cat)

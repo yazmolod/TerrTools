@@ -150,6 +150,7 @@ namespace TerrTools.Updaters
         {
             double thickness = -1;
             bool isInsul = el.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0;
+            string systemType = el.get_Parameter(BuiltInParameter.RBS_DUCT_SYSTEM_TYPE_PARAM).AsValueString();
             bool isRect = false;
             bool isRound = false;
             double size;
@@ -165,18 +166,25 @@ namespace TerrTools.Updaters
             }
             size = UnitUtils.ConvertFromInternalUnits(size, DisplayUnitType.DUT_MILLIMETERS);
 
-            if (isRect)
+            if (systemType.IndexOf("дым", StringComparison.OrdinalIgnoreCase) >= 0) 
             {
-                if (size <= 250) thickness = isInsul ? 0.8 : 0.5;
-                else if (250 < size && size <= 1000) thickness = isInsul ? 1.0 : 0.7;
-                else if (1000 < size && size <= 2000) thickness = isInsul ? 1.2 : 0.9;
+                thickness = 1.0;
             }
-            else if (isRound)
+            else
             {
-                if (size <= 200) thickness = isInsul ? 0.8 : 0.5;
-                else if (200 < size && size <= 450) thickness = isInsul ? 0.9 : 0.6;
-                else if (450 < size && size <= 800) thickness = isInsul ? 1.0 : 0.7;
-                else if (800 < size && size <= 1250) thickness = isInsul ? 1.3 : 1.0;
+                if (isRect)
+                {
+                    if (size <= 250) thickness = isInsul ? 0.8 : 0.5;
+                    else if (250 < size && size <= 1000) thickness = isInsul ? 0.8 : 0.7;
+                    else if (1000 < size && size <= 2000) thickness = isInsul ? 0.9 : 0.9;
+                }
+                else if (isRound)
+                {
+                    if (size <= 200) thickness = isInsul ? 0.8 : 0.5;
+                    else if (200 < size && size <= 450) thickness = isInsul ? 0.8 : 0.6;
+                    else if (450 < size && size <= 800) thickness = isInsul ? 0.8 : 0.7;
+                    else if (800 < size && size <= 1250) thickness = isInsul ? 1.0 : 1.0;
+                }
             }
             thickness = UnitUtils.ConvertToInternalUnits(thickness, DisplayUnitType.DUT_MILLIMETERS);
             return thickness;
@@ -194,6 +202,47 @@ namespace TerrTools.Updaters
                 Duct el = (Duct)doc.GetElement(id);
                 el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
                 el.LookupParameter(classParameter).Set(GetDuctClass(el));
+            }
+        }
+    }
+
+
+    public class DuctsAccessoryUpdater : IUpdater
+    {
+        public static Guid Guid { get { return new Guid("79e309d3-bd2d-4255-84b8-2133c88b695d"); } }
+        public static UpdaterId UpdaterId { get { return new UpdaterId(App.AddInId, Guid); } }
+
+        public UpdaterId GetUpdaterId()
+        {
+            return UpdaterId;
+        }
+
+        public string GetUpdaterName()
+        {
+            return "DuctsAccessoryUpdater";
+        }
+        public string GetAdditionalInformation()
+        {
+            return "Задает корректную марку для арматуры воздуховодов";
+        }
+        public ChangePriority GetChangePriority()
+        {
+            return ChangePriority.MEPAccessoriesFittingsSegmentsWires;
+        }
+        
+        public void Execute(UpdaterData data)
+        {
+            Document doc = data.GetDocument();
+            string tagParameter = "ADSK_Марка";
+            //SharedParameterUtils.AddSharedParameter(doc, tagParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctAccessory }, group: BuiltInParameterGroup.PG_DATA, InTransaction: true);
+            var modified = data.GetModifiedElementIds();
+            var added = data.GetAddedElementIds();
+            foreach (ElementId id in modified.Concat(added))
+            {
+                Element el = doc.GetElement(id);
+                string rawSize = el.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString();
+                string size = rawSize.Split('-')[0].Replace("м", "").Replace(" ", "");
+                el.LookupParameter("Марка").Set(size);
             }
         }
     }

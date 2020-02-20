@@ -9,6 +9,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription(@"
 ОБЩЕЕ ОБНОВЛЕНИЕ:
 - изменен механизм обновления плагина ТеррНИИ BIM. Теперь обновляться можно автоматически после закрытия программы или через моментальный перезапуск
+
+ОВ:
+- Автоматическое обновление марки для арматуры воздуховодов (из размера)
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -35,4 +38,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.7.0")]
+[assembly: AssemblyFileVersion("0.7.1")]

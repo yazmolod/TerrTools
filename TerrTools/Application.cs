@@ -70,7 +70,7 @@ namespace TerrTools
         }
 
         private void RegisterUpdaters()
-        {
+        {            
             IUpdater updater;
             ElementFilter filter;
 
@@ -90,7 +90,13 @@ namespace TerrTools
 
             updater = new Updaters.DuctsUpdater();
             updatersId.Add(updater.GetUpdaterId());
-            filter = new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves);
+            filter = new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves), new ElementIsElementTypeFilter(true));
+            UpdaterRegistry.RegisterUpdater(updater);
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
+
+            updater = new Updaters.DuctsAccessoryUpdater();
+            updatersId.Add(updater.GetUpdaterId());
+            filter = new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory), new ElementIsElementTypeFilter(true));
             UpdaterRegistry.RegisterUpdater(updater);
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
 
