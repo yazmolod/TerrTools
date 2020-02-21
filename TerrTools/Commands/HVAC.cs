@@ -358,7 +358,6 @@ namespace TerrTools
                                     fromSystem.Remove(smallSet);
                                     toSystem.Add(smallSet);
                                 }
-                                else failedPlunts.Add(plunt);
                             }
                             catch (Autodesk.Revit.Exceptions.ArgumentException)
                             {
