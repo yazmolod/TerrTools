@@ -15,8 +15,7 @@ namespace TerrToolsUpdater
         static string[] foldersTo =
             {
             @"C:\ProgramData\Autodesk\Revit\Addins\2019\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2017\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2046\"
+            @"C:\ProgramData\Autodesk\Revit\Addins\2017\"
         };
         static string[] fileNames =
             {
@@ -40,7 +39,7 @@ namespace TerrToolsUpdater
                     string src = Path.Combine(folderFrom, fileName);
                     string dst = Path.Combine(folderTo, fileName);
                     if (!File.Exists(src)) Console.WriteLine(string.Format("Не найдем файл {0}", src));
-                    else if (!File.Exists(dst)) Console.WriteLine(string.Format("Не удалось скопировать в путь {0}", dst));
+                    else if (!Directory.Exists(folderTo)) Console.WriteLine(string.Format("Не удалось скопировать в путь {0}", folderTo));
                     else
                     {
                         File.Copy(src, dst, true);

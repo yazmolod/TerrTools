@@ -26,9 +26,17 @@ namespace TerrTools
         {
             currentVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
 
-            lastReleaseVersion = FileVersionInfo.GetVersionInfo(DLLPath).FileVersion;
-            patchNote = FileVersionInfo.GetVersionInfo(DLLPath).Comments;
-            return currentVersion != lastReleaseVersion;
+            try
+            {
+                lastReleaseVersion = FileVersionInfo.GetVersionInfo(DLLPath).FileVersion;
+                patchNote = FileVersionInfo.GetVersionInfo(DLLPath).Comments;
+                return currentVersion != lastReleaseVersion;
+            }
+            catch
+            {
+                lastReleaseVersion = patchNote = "0";
+                return false;
+            }
         }
 
         private ImageSource BitmapToImageSource(string embeddedPath)
@@ -258,23 +266,20 @@ namespace TerrTools
                     case TaskDialogResult.CommandLink1:
                         StartUpdaterService("-fromRevit -restart");
                         Process.GetCurrentProcess().CloseMainWindow();
-                        break;
+                        return Result.Cancelled;
 
                     case TaskDialogResult.CommandLink2:
                         StartUpdaterService("-fromRevit");
-                        RegisterUpdaters();
-                        CreateRibbon();
                         break;
 
                     case TaskDialogResult.CommandLink3:
-                        RegisterUpdaters();
-                        CreateRibbon();
                         break;
                 }
             }
+            RegisterUpdaters();
+            CreateRibbon();
             return Result.Succeeded;
         }
-
 
         private void StartUpdaterService(string argLine)
         {
