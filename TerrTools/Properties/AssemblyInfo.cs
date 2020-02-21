@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-ОБЩЕЕ ОБНОВЛЕНИЕ:
-- исправлены ошибки в автообновлении
+ОВИК
+- исправлена ошибка в назначении систем
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -35,4 +35,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.7.2")]
+[assembly: AssemblyFileVersion("0.7.3")]
