@@ -319,16 +319,16 @@ namespace TerrTools
                     string systemClassName = plunt.get_Parameter(BuiltInParameter.RBS_SYSTEM_CLASSIFICATION_PARAM).AsString();
                     if (systemTypeName == suplySystemTypeName) systemName = space.LookupParameter(supplySystemParameterName).AsString();
                     else if (systemTypeName == exhaustSystemTypeName) systemName = space.LookupParameter(exhaustSystemParameterName).AsString();
-                    else if (systemTypeName == "Не определено")
+                    /*else if (systemTypeName == "Не определено")
                     {
                         if (systemClassName == "Приточный воздух") systemName = space.LookupParameter(supplySystemParameterName).AsString();
                         else if (systemClassName == "Отработанный воздух") systemName = space.LookupParameter(exhaustSystemParameterName).AsString();
-                    }
+                    }*/
                     if (systemName != null)
                     {
                         ConnectorSet connectors = plunt.MEPModel.ConnectorManager.Connectors;
                         Connector baseConnector = connectors.Cast<Connector>().FirstOrDefault();
-                        MEPSystem fromSystem = baseConnector.MEPSystem;
+                        MEPSystem fromSystem = baseConnector?.MEPSystem;
                         MEPSystem toSystem = new FilteredElementCollector(doc).OfClass(typeof(MEPSystem)).Cast<MEPSystem>().Where(x => x.Name == systemName).FirstOrDefault();
                         if (fromSystem?.Id.IntegerValue == toSystem?.Id.IntegerValue) continue;
                         if (fromSystem == null && toSystem == null)
@@ -349,10 +349,24 @@ namespace TerrTools
                         }
                         else if (fromSystem != null && toSystem != null)
                         {
-                            fromSystem.Remove(connectors);
-                            toSystem.Add(connectors);
+                            try
+                            {
+                                if (fromSystem.ConnectorManager.Connectors.Size > 1)
+                                {
+                                    ConnectorSet smallSet = new ConnectorSet();
+                                    smallSet.Insert(baseConnector);
+                                    fromSystem.Remove(smallSet);
+                                    toSystem.Add(smallSet);
+                                }
+                                else failedPlunts.Add(plunt);
+                            }
+                            catch (Autodesk.Revit.Exceptions.ArgumentException)
+                            {
+                                failedPlunts.Add(plunt);
+                            }
                         }
                     }
+                    else failedPlunts.Add(plunt);
                 }
             }
         }                  
