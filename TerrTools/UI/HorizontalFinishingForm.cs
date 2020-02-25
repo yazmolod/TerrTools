@@ -14,6 +14,7 @@ using Autodesk.Revit.DB.Architecture;
 
 namespace TerrTools
 {
+
     public partial class HorizontalFinishingForm : WF.Form
     {
         public List<HorizontalFinishingResult> Result { get; set; }
@@ -55,18 +56,18 @@ namespace TerrTools
                 }
                 /// связанный элемент
                 Parameter pFloorId = Rooms[i].LookupParameter(FinishingIdParameterName);
-                Element linkedFloor = null;
-                if (pFloorId != null && pFloorId.HasValue) {
-                    this.dataGridView1.Rows[i].Cells["FinishingId"].Value = pFloorId.AsInteger();
-                    linkedFloor = Rooms[i].Document.GetElement(new ElementId(pFloorId.AsInteger()));
-                        }
-                /// смещение пола
-                this.dataGridView1.Rows[i].Cells["FinishingOffset"].Value = 
-                    linkedFloor != null 
-                    ? 
-                    linkedFloor.get_Parameter(FinishingOffsetParameter).AsDouble()*304.8
-                    : 
-                    0.0;
+                int floorId = (pFloorId != null && pFloorId.HasValue) ? pFloorId.AsInteger() : ElementId.InvalidElementId.IntegerValue;
+                Floor linkedFloor = Rooms[i].Document.GetElement(new ElementId(floorId)) as Floor;
+                if (linkedFloor != null)
+                {
+                    this.dataGridView1.Rows[i].Cells["FinishingId"].Value = floorId;
+                    this.dataGridView1.Rows[i].Cells["FinishingOffset"].Value = linkedFloor.get_Parameter(FinishingOffsetParameter).AsDouble() * 304.8;
+                }
+                else
+                {
+                    this.dataGridView1.Rows[i].Cells["FinishingId"].Value = -1;
+                    this.dataGridView1.Rows[i].Cells["FinishingOffset"].Value = 0f;
+                }
             }
         }
 
@@ -105,6 +106,8 @@ namespace TerrTools
             }
         }
     }
+
+
     public class HorizontalFinishingResult
     {
         public Room Room { get; set; }
