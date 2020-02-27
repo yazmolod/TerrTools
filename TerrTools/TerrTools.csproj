@@ -90,6 +90,12 @@
     <Compile Include="UI\IntersectionsForm.Designer.cs">
       <DependentUpon>IntersectionsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\ProgressBar.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ProgressBar.Designer.cs">
+      <DependentUpon>ProgressBar.cs</DependentUpon>
+    </Compile>
     <Compile Include="Updaters\Class1.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -107,6 +113,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\OneComboboxForm.resx">
       <DependentUpon>OneComboboxForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\ProgressBar.resx">
+      <DependentUpon>ProgressBar.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
