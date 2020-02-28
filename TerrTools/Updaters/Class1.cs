@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Mechanical;
+using Autodesk.Revit.DB.Architecture;
 
 namespace TerrTools.Updaters
 {
@@ -111,10 +112,14 @@ namespace TerrTools.Updaters
         }
         public void Execute(UpdaterData data)
         {
-            string openingAreaParameterName = "ADSK_Площадь проемов";
-            Document doc = data.GetDocument();
-            SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName, 
-    new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_DATA, InTransaction: true);
+            Document doc = data.GetDocument();            
+            var modified = data.GetModifiedElementIds();
+            var added = data.GetAddedElementIds();
+            foreach (ElementId id in modified.Concat(added))
+            {
+                Room room = doc.GetElement(id) as Room;
+                if (room != null) FinishingData.Calculate(room);
+            }
         }
     }
 

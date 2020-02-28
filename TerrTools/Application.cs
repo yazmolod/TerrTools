@@ -108,12 +108,11 @@ namespace TerrTools
             UpdaterRegistry.RegisterUpdater(updater);
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
 
-            //updater = new RoomUpdater();
-            //updatersId.Add(updater.GetUpdaterId());
-            //filter = new ElementCategoryFilter(BuiltInCategory.OST_Rooms);
-            //UpdaterRegistry.RegisterUpdater(updater);
-            //UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeElementAddition());
-            //UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeAny());
+            updater = new Updaters.RoomUpdater();
+            updatersId.Add(updater.GetUpdaterId());
+            filter = new ElementCategoryFilter(BuiltInCategory.OST_Rooms);
+            UpdaterRegistry.RegisterUpdater(updater);
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
         }
 
         private void CreateRibbon()
