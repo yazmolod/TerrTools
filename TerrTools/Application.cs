@@ -83,6 +83,7 @@ namespace TerrTools
             ElementFilter filter;
 
             ChangeType ChangeTypeAdditionAndModication = ChangeType.ConcatenateChangeTypes(Element.GetChangeTypeAny(), Element.GetChangeTypeElementAddition());
+            ChangeType allChangeTypes = ChangeType.ConcatenateChangeTypes(ChangeTypeAdditionAndModication, Element.GetChangeTypeElementDeletion());
 
             //updater = new MirroredInstancesUpdater();
             //updatersId.Add(updater.GetUpdaterId());
@@ -110,9 +111,12 @@ namespace TerrTools
 
             updater = new Updaters.RoomUpdater();
             updatersId.Add(updater.GetUpdaterId());
-            filter = new ElementCategoryFilter(BuiltInCategory.OST_Rooms);
+            var filter1 = new ElementCategoryFilter(BuiltInCategory.OST_Rooms);
+            var filter2 = new ElementCategoryFilter(BuiltInCategory.OST_Doors);
+            var filter3 = new ElementCategoryFilter(BuiltInCategory.OST_Windows);
+            filter = new LogicalOrFilter(new List<ElementFilter>() { filter1, filter2, filter3 });
             UpdaterRegistry.RegisterUpdater(updater);
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, allChangeTypes);
         }
 
         private void CreateRibbon()
@@ -131,14 +135,6 @@ namespace TerrTools
             ///
             /// Push buttons
             ///
-            pbDict.Add(
-                "RoomFinishingData",
-                MakePushButton(
-                    "FinishingData",
-                    "Помещения: обновить\nпараметры отделки",
-                    "Обновляет параметры в элементах категории \"Помещения\", требуемые для расчета отделки",
-                    "Room.png"
-                    ));
             pbDict.Add("DiffuserProcessing",
             MakePushButton(
                 "DiffuserProcessing",
@@ -209,11 +205,9 @@ namespace TerrTools
                     "Обновление всех шрифтов в проекте под стандарты предприятия",
                     "Type.png"
                     ));
-
             ///
             /// Архитектурная панель
             ///
-            panelArch.AddItem(pbDict["RoomFinishingData"]);
             panelArch.AddItem(pbDict["GenerateFloor"]);
 
             ///

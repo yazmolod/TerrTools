@@ -153,8 +153,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2017\"
-copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2017\"</PostBuildEvent>
+    <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
+copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2019\"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>

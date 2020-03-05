@@ -65,34 +65,38 @@ namespace TerrTools
 
         protected bool CheckDefaultSharedParameters()
         {
-            //Проверяем наличие необходимых параметров в проекте
             bool done = true;
-            done &= SharedParameterUtils.AddSharedParameter(doc, spaceNumberParameterName, 
-                    new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_IDENTITY_DATA);
+            using (Transaction tr = new Transaction(doc, "Добавление общих параметров"))
+            {
+                tr.Start();
+                //Проверяем наличие необходимых параметров в проекте                
+                done &= SharedParameterUtils.AddSharedParameter(doc, spaceNumberParameterName,
+                        new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_IDENTITY_DATA);
 
-            done &= SharedParameterUtils.AddSharedParameter(doc, exhaustSystemParameterName, 
-                new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
+                done &= SharedParameterUtils.AddSharedParameter(doc, exhaustSystemParameterName,
+                    new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
-            done &= SharedParameterUtils.AddSharedParameter(doc, supplySystemParameterName, 
-                new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
+                done &= SharedParameterUtils.AddSharedParameter(doc, supplySystemParameterName,
+                    new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
-            done &= SharedParameterUtils.AddSharedParameter(doc, spaceTemperatureParameterName, 
-                new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
+                done &= SharedParameterUtils.AddSharedParameter(doc, spaceTemperatureParameterName,
+                    new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
 
-            /* 
-             * Эти параметры должны быть внутри семейства, нет смысла назначать их всей категории
+                /* 
+                 * Эти параметры должны быть внутри семейства, нет смысла назначать их всей категории
 
-                done &= CustomSharedParameter.AddSharedParameter(doc, thermalPowerParameterName, "ADSK_Main_MEP", true,
-                    new BuiltInCategory[] { BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_MECHANICAL);
+                    done &= CustomSharedParameter.AddSharedParameter(doc, thermalPowerParameterName, "ADSK_Main_MEP", true,
+                        new BuiltInCategory[] { BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_MECHANICAL);
 
-                done &= CustomSharedParameter.AddSharedParameter(doc, airflowParameterName, "ADSK_Main_MEP", true,
-                    new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
+                    done &= CustomSharedParameter.AddSharedParameter(doc, airflowParameterName, "ADSK_Main_MEP", true,
+                        new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
 
-            */
+                */
 
-            done &= SharedParameterUtils.AddSharedParameter(doc, skipParameterName, 
-                    new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
-
+                done &= SharedParameterUtils.AddSharedParameter(doc, skipParameterName,
+                        new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal, BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+                tr.Commit();
+            }
             return done;
         }
 

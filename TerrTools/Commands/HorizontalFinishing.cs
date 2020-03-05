@@ -36,37 +36,23 @@ namespace TerrTools
 
         protected void CheckDefaultSharedParameters()
         {
-            List<Element> sharedParameterElements = new FilteredElementCollector(doc).OfClass(typeof(SharedParameterElement)).ToList();
-            if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Идентификатор отделки пола").Count() == 0)
+            using (Transaction tr = new Transaction(doc, "Добавление общих параметров"))
             {
-                bool result = SharedParameterUtils.AddSharedParameter(
-                    doc,
-                    "ТеррНИИ_Идентификатор отделки пола",
-                    new BuiltInCategory[] { BuiltInCategory.OST_Rooms });
-            }
-            if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Идентификатор потолка").Count() == 0)
-            {
-                bool result = SharedParameterUtils.AddSharedParameter(
-                    doc,
-                    "ТеррНИИ_Идентификатор потолка", 
-                    new BuiltInCategory[] { BuiltInCategory.OST_Rooms });
-            }
-            if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Номер помещения").Count() == 0)
-            {
-                bool result = SharedParameterUtils.AddSharedParameter(
-                    doc,
-                    "ТеррНИИ_Номер помещения",  
-                    new BuiltInCategory[] { BuiltInCategory.OST_Floors, BuiltInCategory.OST_Ceilings});
-            }
-            if (sharedParameterElements.Where(p => p.Name == "ТеррНИИ_Номера всех помещений").Count() == 0)
-            {
-                bool result = SharedParameterUtils.AddSharedParameter(
-                    doc,
-                    "ТеррНИИ_Номера всех помещений",
-                    new BuiltInCategory[] { BuiltInCategory.OST_Floors },
-                    isIntance: false);
+                tr.Start();
+                bool done = true;
+                done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Идентификатор отделки пола",
+                        new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+                done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Идентификатор потолка",
+                        new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+                done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Номер помещения",
+                        new BuiltInCategory[] { BuiltInCategory.OST_Rooms, BuiltInCategory.OST_Ceilings }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+                done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Номера всех помещений",
+                        new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS, isIntance: false);
+                tr.Commit();
             }
         }
+    
+
         protected void UpdateFinishingType()
         {
             using (Transaction tr = new Transaction(doc, "Обновление типоразмеров"))
@@ -248,7 +234,8 @@ namespace TerrTools
         }
         protected override Element CreateHostGeometry(HorizontalFinishingResult res)
         {
-            return doc.Create.NewFloor(res.MainProfile, res.FinishingType as FloorType, res.Level, false);
+            CurveArray mainProfileWithDoors = null;
+            return doc.Create.NewFloor(mainProfileWithDoors, res.FinishingType as FloorType, res.Level, false);
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.IFC;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
@@ -19,7 +20,6 @@ namespace TerrTools
             string parameterName,            
             BuiltInCategory[] categories,            
             BuiltInParameterGroup group = BuiltInParameterGroup.PG_ADSK_MODEL_PROPERTIES,
-            bool InTransaction = false,
             bool isIntance = true
             )
         {
@@ -60,13 +60,6 @@ namespace TerrTools
                         return false;
                     }
 
-
-                    Transaction trDef = null;
-                    if (!InTransaction)
-                    {
-                        trDef = new Transaction(doc, "Добавление общего параметра");
-                        trDef.Start();
-                    }
                     ElementBinding bind;
                     if (isIntance) bind = doc.Application.Create.NewInstanceBinding(catSet);
                     else bind = doc.Application.Create.NewTypeBinding(catSet);
@@ -83,11 +76,6 @@ namespace TerrTools
                             TaskDialog.Show("Ошибка", String.Format("Произошла ошибка при редактировании привязок существующего параметра \"{0}\"", parameterName));
                             return false;
                         }
-                    }
-                    if (!InTransaction)
-                    {
-                        trDef.Commit();
-                        trDef.Dispose();
                     }
                     return true;
 
@@ -168,13 +156,13 @@ namespace TerrTools
         public static bool MirroredIndicator(FamilyInstance el)
         {
             Document doc = el.Document;
-            string paramName = "ТеррНИИ_Элемент отзеркален";
-            SharedParameterUtils.AddSharedParameter(doc, paramName, 
-                new BuiltInCategory[] { (BuiltInCategory)el.Category.Id.IntegerValue }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+            string paramName = "ТеррНИИ_Элемент отзеркален";            
             int value = el.Mirrored ? 1 : 0;
             using (Transaction tr = new Transaction(doc, "Индикатор отзеркаливания"))
             {
                 tr.Start();
+                SharedParameterUtils.AddSharedParameter(doc, paramName,
+                new BuiltInCategory[] { (BuiltInCategory)el.Category.Id.IntegerValue }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
                 el.LookupParameter(paramName).Set(value);
                 tr.Commit();
             }
@@ -229,6 +217,124 @@ namespace TerrTools
             Transform transform = linkedDocInstance.GetTransform();
             if (!transform.AlmostEqual(Transform.Identity)) return transform.Inverse;
             else return Transform.Identity;
+        }
+
+    }
+
+    class ModelCurveCreator {
+
+        Autodesk.Revit.ApplicationServices.Application _app;
+        Document _doc;
+
+        public ModelCurveCreator(Document doc)
+        {
+            _doc = doc;
+            _app = doc.Application;
+        }
+
+        static public Curve GetFamilyInstanceCutBaseLine(FamilyInstance fi)
+        {
+            XYZ dir;
+            CurveLoop loop = ExporterIFCUtils.GetInstanceCutoutFromWall(fi.Document, fi.Host as Wall, fi, out dir);
+            Curve curve = loop.Where(x => x.GetEndPoint(0).Z == x.GetEndPoint(1).Z).OrderBy(x => x.GetEndPoint(0).Z).FirstOrDefault();
+            return curve;
+        }
+
+        private Plane NewPlanePassLine(Curve curve)
+        {
+            XYZ p = curve.GetEndPoint(0);
+            XYZ q = curve.GetEndPoint(1);
+            if (p.X == q.X) return Plane.CreateByNormalAndOrigin(XYZ.BasisX, p);
+            else if (p.Y == q.Y) return Plane.CreateByNormalAndOrigin(XYZ.BasisY, p);
+            else if (p.Z == q.Z) return Plane.CreateByNormalAndOrigin(XYZ.BasisZ, p);
+            else return Plane.CreateByThreePoints(p, q, XYZ.Zero);
+        }
+
+        public ModelCurve MakeModelCurve(Curve curve)
+        {
+            SketchPlane skPlane = SketchPlane.Create(_doc, NewPlanePassLine(curve));
+            try
+            {
+                ModelCurve modelCurve = _doc.Create.NewModelCurve(curve, skPlane);
+                return modelCurve;
+            }
+            catch (Autodesk.Revit.Exceptions.ArgumentException)
+            {
+                TaskDialog.Show("Error", "Не найдена плоскость для линии");
+                return null;
+            }
+        }
+
+        public ModelCurve MakeModelCurve(XYZ p1, XYZ p2)
+        {
+            Curve curve = Line.CreateBound(p1, p2);
+            ModelCurve modelCurve = MakeModelCurve(curve);
+            return modelCurve;
+        }
+
+        public ModelCurveArray MakeModelCurve(XYZ[] pts, bool close = true)
+        {
+            ModelCurve modelCurve;
+            ModelCurveArray array = new ModelCurveArray();
+            if (pts.Length < 3)
+            {
+                throw new ArgumentException("Требуется больше трех точек");
+            }
+            for (int i = 0; i < pts.Length - 1; i++)
+            {
+                modelCurve = MakeModelCurve(pts[i], pts[i + 1]);
+                array.Append(modelCurve);
+            }
+            if (close)
+            {
+                modelCurve = MakeModelCurve(pts.First(), pts.Last());
+                array.Append(modelCurve);
+            }
+            return array;
+        }
+                
+
+        public ModelCurveArray MakeModelCurve(IEnumerable<Curve> curves)
+        {
+            ModelCurveArray array = new ModelCurveArray();
+            foreach (Curve curve in curves)
+            {
+                ModelCurve modelCurve = MakeModelCurve(curve);
+                array.Append(modelCurve);
+            }
+            return array;
+        }
+
+        public ModelCurveArray MakeModelCurve(BoundingBoxXYZ bb)
+        {
+            ModelCurveArray array = new ModelCurveArray();
+            XYZ p1 = bb.Min;
+            XYZ p2 = bb.Max;
+
+            XYZ[][] pairs =
+            {
+                new XYZ[] {new XYZ(p1.X, p1.Y, p1.Z), new XYZ(p2.X, p1.Y, p1.Z) },
+                new XYZ[] {new XYZ(p2.X, p2.Y, p1.Z), new XYZ(p2.X, p1.Y, p1.Z) },
+                new XYZ[] {new XYZ(p2.X, p2.Y, p1.Z), new XYZ(p1.X, p2.Y, p1.Z) },
+                new XYZ[] {new XYZ(p1.X, p1.Y, p1.Z), new XYZ(p1.X, p2.Y, p1.Z) },
+
+                new XYZ[] {new XYZ(p1.X, p1.Y, p2.Z), new XYZ(p2.X, p1.Y, p2.Z) },
+                new XYZ[] {new XYZ(p2.X, p2.Y, p2.Z), new XYZ(p2.X, p1.Y, p2.Z) },
+                new XYZ[] {new XYZ(p2.X, p2.Y, p2.Z), new XYZ(p1.X, p2.Y, p2.Z) },
+                new XYZ[] {new XYZ(p1.X, p1.Y, p2.Z), new XYZ(p1.X, p2.Y, p2.Z) },
+
+                new XYZ[] {new XYZ(p1.X, p1.Y, p1.Z), new XYZ(p1.X, p1.Y, p2.Z) },
+                new XYZ[] {new XYZ(p2.X, p1.Y, p1.Z), new XYZ(p2.X, p1.Y, p2.Z) },
+                new XYZ[] {new XYZ(p2.X, p2.Y, p1.Z), new XYZ(p2.X, p2.Y, p2.Z) },
+                new XYZ[] {new XYZ(p1.X, p2.Y, p1.Z), new XYZ(p1.X, p2.Y, p2.Z) }
+            };
+
+            foreach (var pair in pairs)
+            {
+                ModelCurve modelCurve = MakeModelCurve(pair[0], pair[1]);
+                array.Append(modelCurve);
+            }
+            return array;
         }
     }
 }

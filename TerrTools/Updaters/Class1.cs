@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Architecture;
 
@@ -42,7 +43,7 @@ namespace TerrTools.Updaters
                 {
                     BuiltInCategory cat = (BuiltInCategory)el.Category.Id.IntegerValue;
                     bool result = SharedParameterUtils.AddSharedParameter(doc, paramName,
-                         new BuiltInCategory[] { cat }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS, InTransaction: true);
+                         new BuiltInCategory[] { cat }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
                     int value = el.Mirrored ? 1 : 0;
                     el.LookupParameter(paramName).Set(value);
                 }
@@ -100,11 +101,11 @@ namespace TerrTools.Updaters
 
         public string GetUpdaterName()
         {
-            return "Room Updater";
+            return "Автообновление данных для отделки";
         }
         public string GetAdditionalInformation()
         {
-            return "Текст";
+            return "Автоматически обновляет параметры помещений, необходимых для расчета отделки";
         }
         public ChangePriority GetChangePriority()
         {
@@ -115,10 +116,23 @@ namespace TerrTools.Updaters
             Document doc = data.GetDocument();            
             var modified = data.GetModifiedElementIds();
             var added = data.GetAddedElementIds();
-            foreach (ElementId id in modified.Concat(added))
+            var deleted = data.GetDeletedElementIds();
+            foreach (ElementId id in modified.Concat(added).Concat(deleted))
             {
-                Room room = doc.GetElement(id) as Room;
-                if (room != null) FinishingData.Calculate(room);
+                Element el = doc.GetElement(id);
+                if (el is Room) FinishingData.Calculate(el as Room);
+                else
+                {
+                    if (el != null)
+                    {
+                        List<Room> rooms = FinishingData.GetCollidedRooms(el);
+                        foreach (Room r in rooms) FinishingData.Calculate(r);
+                    }
+                    else
+                    {
+                        foreach (Room r in new FilteredElementCollector(doc, doc.ActiveView.Id).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>()) FinishingData.Calculate(r);
+                    }
+                }
             }
         }
     }
@@ -200,8 +214,8 @@ namespace TerrTools.Updaters
             Document doc = data.GetDocument();
             string thickParameter = "ADSK_Толщина стенки";
             string classParameter = "ТеррНИИ_Класс герметичности";
-            SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves }, InTransaction: true);
-            SharedParameterUtils.AddSharedParameter(doc, classParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves }, InTransaction: true);
+            SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
+            SharedParameterUtils.AddSharedParameter(doc, classParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))
             {
                 Duct el = (Duct)doc.GetElement(id);
