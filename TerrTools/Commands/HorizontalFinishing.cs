@@ -45,9 +45,9 @@ namespace TerrTools
                 done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Идентификатор потолка",
                         new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
                 done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Номер помещения",
-                        new BuiltInCategory[] { BuiltInCategory.OST_Rooms, BuiltInCategory.OST_Ceilings }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+                        new BuiltInCategory[] { BuiltInCategory.OST_Floors, BuiltInCategory.OST_Ceilings }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
                 done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Номера всех помещений",
-                        new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS, isIntance: false);
+                        new BuiltInCategory[] { BuiltInCategory.OST_Floors, BuiltInCategory.OST_Ceilings }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS, isIntance: false);
                 tr.Commit();
             }
         }
@@ -137,11 +137,12 @@ namespace TerrTools
                         if (oldTags != null) {
                             foreach (OldTag oldTag in oldTags)
                             {
-                                IndependentTag newTag = doc.Create.NewTag(
-                                    oldTag.OwnerView,
-                                    finishingElement,
+                                IndependentTag newTag = IndependentTag.Create(
+                                    doc,
+                                    oldTag.TypeId,
+                                    oldTag.OwnerView.Id,
+                                    new Reference(finishingElement),
                                     false,
-                                    TagMode.TM_ADDBY_CATEGORY,
                                     oldTag.TagOrientation,
                                     oldTag.TagHeadPosition);
                                 newTag.ChangeTypeId(oldTag.TypeId);
@@ -234,8 +235,19 @@ namespace TerrTools
         }
         protected override Element CreateHostGeometry(HorizontalFinishingResult res)
         {
-            CurveArray mainProfileWithDoors = null;
-            return doc.Create.NewFloor(mainProfileWithDoors, res.FinishingType as FloorType, res.Level, false);
+            /*CurveArray mainProfileWithDoors = res.MainProfile;
+            foreach (FamilyInstance door in new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Doors))
+            {
+                if (FinishingData.IsElementCollideRoom(res.Room, door))
+                {
+                    Curve c = ModelCurveCreator.GetFamilyInstanceCutBaseLine(door);
+                    XYZ ptSt = c.GetEndPoint(0); 
+                    XYZ ptEnd = c.GetEndPoint(1);
+
+                    mainProfileWithDoors.get_Item(0).Project
+                }
+            }*/
+            return doc.Create.NewFloor(res.MainProfile, res.FinishingType as FloorType, res.Level, false);
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

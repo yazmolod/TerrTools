@@ -136,7 +136,6 @@ namespace TerrTools
             return new FilteredElementCollector(el.Document).OfCategory(BuiltInCategory.OST_Rooms).WherePasses(filter).Cast<Room>().ToList();
         }
 
-
         static private void GetOpeningSize(Wall elHost, Element elInsert, out double width, out double height, out double area)
         {
             width = 0;

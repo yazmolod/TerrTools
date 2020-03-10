@@ -184,12 +184,6 @@ namespace TerrTools
                     "В проекте и семействах"
                     ));
 
-            pbDict.Add("TEST",
-    MakePushButton(
-        "DummyClass",
-        "ТЕСТ"
-        ));
-
             ///
             /// Pulldown buttons
             ///
@@ -232,7 +226,6 @@ namespace TerrTools
             tempBtn = panelGeneral.AddItem(plDict["UpdateType"]) as PulldownButton;
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
-            tempBtn.AddPushButton(pbDict["TEST"]);
         }
 
         public Result OnShutdown(UIControlledApplication application)
