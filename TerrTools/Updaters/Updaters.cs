@@ -7,6 +7,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Architecture;
+using System.Diagnostics;
 
 namespace TerrTools.Updaters
 {
@@ -76,15 +77,21 @@ namespace TerrTools.Updaters
         public void Execute(UpdaterData data)
         {
             Document doc = data.GetDocument();
-            foreach (ElementId elemId in data.GetAddedElementIds())
+            var modified = data.GetModifiedElementIds();
+            var added = data.GetAddedElementIds();
+            foreach (ElementId id in added.Concat(modified))
             {
-                Element space = doc.GetElement(elemId);
-                SpaceNaming.TransferData(space);
-            }
-            foreach (ElementId elemId in data.GetModifiedElementIds())
-            {
-                Element space = doc.GetElement(elemId);
-                SpaceNaming.TransferData(space);
+                try
+                {
+                    Element space = doc.GetElement(id);
+                    SpaceNaming.TransferData(space);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    Debug.WriteLine(ex.StackTrace);
+                    Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
+                }
             }
         }
     }
@@ -112,28 +119,39 @@ namespace TerrTools.Updaters
             return ChangePriority.RoomsSpacesZones;
         }
         public void Execute(UpdaterData data)
-        {
-            Document doc = data.GetDocument();            
-            var modified = data.GetModifiedElementIds();
-            var added = data.GetAddedElementIds();
-            var deleted = data.GetDeletedElementIds();
+        {            
+                Document doc = data.GetDocument();
+                var modified = data.GetModifiedElementIds();
+                var added = data.GetAddedElementIds();
+                var deleted = data.GetDeletedElementIds();
             foreach (ElementId id in modified.Concat(added).Concat(deleted))
             {
-                Element el = doc.GetElement(id);
-                if (el is Room) FinishingData.Calculate(el as Room);
-                else
+                try
                 {
-                    if (el != null)
-                    {
-                        List<Room> rooms = FinishingData.GetCollidedRooms(el);
-                        foreach (Room r in rooms) FinishingData.Calculate(r);
-                    }
+                    Element el = doc.GetElement(id);
+                    if (el is Room) FinishingData.Calculate(el as Room);
                     else
                     {
-                        foreach (Room r in new FilteredElementCollector(doc, doc.ActiveView.Id).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>()) FinishingData.Calculate(r);
+                        if (el != null)
+                        {
+                            List<Room> rooms = FinishingData.GetCollidedRooms(el);
+                            foreach (Room r in rooms) FinishingData.Calculate(r);
+                        }
+                        else
+                        {
+                            foreach (Room r in new FilteredElementCollector(doc, doc.ActiveView.Id).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>()) FinishingData.Calculate(r);
+                        }
                     }
+
                 }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    Debug.WriteLine(ex.StackTrace);
+                    Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
+                } 
             }
+
         }
     }
 
@@ -218,9 +236,18 @@ namespace TerrTools.Updaters
             SharedParameterUtils.AddSharedParameter(doc, classParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))
             {
-                Duct el = (Duct)doc.GetElement(id);
-                el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
-                el.LookupParameter(classParameter).Set(GetDuctClass(el));
+                try
+                {
+                    Duct el = (Duct)doc.GetElement(id);
+                    el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
+                    el.LookupParameter(classParameter).Set(GetDuctClass(el));
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    Debug.WriteLine(ex.StackTrace);
+                    Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
+                }
             }
         }
     }
@@ -252,16 +279,23 @@ namespace TerrTools.Updaters
         public void Execute(UpdaterData data)
         {
             Document doc = data.GetDocument();
-            string tagParameter = "ADSK_Марка";
-            //SharedParameterUtils.AddSharedParameter(doc, tagParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctAccessory }, group: BuiltInParameterGroup.PG_DATA, InTransaction: true);
             var modified = data.GetModifiedElementIds();
             var added = data.GetAddedElementIds();
             foreach (ElementId id in modified.Concat(added))
             {
-                Element el = doc.GetElement(id);
-                string rawSize = el.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString();
-                string size = rawSize.Split('-')[0].Replace("м", "").Replace(" ", "");
-                el.LookupParameter("Марка").Set(size);
+                try
+                {
+                    Element el = doc.GetElement(id);
+                    string rawSize = el.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString();
+                    string size = rawSize.Split('-')[0].Replace("м", "").Replace(" ", "");
+                    el.LookupParameter("Марка").Set(size);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    Debug.WriteLine(ex.StackTrace);
+                    Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
+                }
             }
         }
     }

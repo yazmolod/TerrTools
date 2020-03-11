@@ -87,7 +87,8 @@ namespace TerrTools
                 {
                     foreach (CurveArray profile in res.OpeningProfiles)
                     {
-                        if (res.FinishingElement != null) doc.Create.NewOpening(res.FinishingElement as Element, profile, true);
+
+                        if (res.FinishingElement != null && res.FinishingElement.IsValidObject) doc.Create.NewOpening(res.FinishingElement as Element, profile, true);
                     }
                 }
                 tr.Commit();
@@ -118,35 +119,46 @@ namespace TerrTools
                     {
                         // создание геометрии
                         Element finishingElement = CreateHostGeometry(result);
-                        finishingElement.get_Parameter(finishingOffsetParameter).Set(result.Offset / 304.8);
+                        if (finishingElement != null)
+                        {
+                            finishingElement.get_Parameter(finishingOffsetParameter).Set(result.Offset / 304.8);
 
-                        /// заполнение данных
-                        // Номер помещения конкретного элемента
-                        string roomNumber = result.Room.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString();
-                        Parameter pRoomNumber = finishingElement.LookupParameter("ТеррНИИ_Номер помещения");
-                        pRoomNumber.Set(roomNumber);
+                            /// заполнение данных
+                            // Номер помещения конкретного элемента
+                            string roomNumber = result.Room.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString();
+                            Parameter pRoomNumber = finishingElement.LookupParameter("ТеррНИИ_Номер помещения");
+                            pRoomNumber.Set(roomNumber);
 
-                        // Название отделки для помещения
-                        pRoomFinishingName.Set(finishingElement.Name);
+                            // Название отделки для помещения
+                            pRoomFinishingName.Set(finishingElement.Name);
 
-                        // Идентификатор пола для помещения    
-                        pRoomFinishingId.Set(finishingElement.Id.IntegerValue);
-                        result.FinishingElement = finishingElement;
+                            // Идентификатор пола для помещения    
+                            pRoomFinishingId.Set(finishingElement.Id.IntegerValue);
+                            result.FinishingElement = finishingElement;
 
-                        // Восстановление старой марки
-                        if (oldTags != null) {
-                            foreach (OldTag oldTag in oldTags)
+                            // Восстановление старой марки
+                            if (oldTags != null)
                             {
-                                IndependentTag newTag = IndependentTag.Create(
-                                    doc,
-                                    oldTag.TypeId,
-                                    oldTag.OwnerView.Id,
-                                    new Reference(finishingElement),
-                                    false,
-                                    oldTag.TagOrientation,
-                                    oldTag.TagHeadPosition);
-                                newTag.ChangeTypeId(oldTag.TypeId);
+                                foreach (OldTag oldTag in oldTags)
+                                {
+                                    IndependentTag newTag = IndependentTag.Create(
+                                        doc,
+                                        oldTag.TypeId,
+                                        oldTag.OwnerView.Id,
+                                        new Reference(finishingElement),
+                                        false,
+                                        oldTag.TagOrientation,
+                                        oldTag.TagHeadPosition);
+                                    newTag.ChangeTypeId(oldTag.TypeId);
+                                }
                             }
+                        }
+                        else
+                        {
+                            // Идентификатор пола для помещения    
+                            pRoomFinishingId.Set(-1);
+                            // Название отделки для помещения
+                            pRoomFinishingName.Set(result.FinishingType.Name);
                         }
                     }
                     else
@@ -235,7 +247,9 @@ namespace TerrTools
         }
         protected override Element CreateHostGeometry(HorizontalFinishingResult res)
         {
-            /*CurveArray mainProfileWithDoors = res.MainProfile;
+            try {           
+            
+                /*CurveArray mainProfileWithDoors = res.MainProfile;
             foreach (FamilyInstance door in new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Doors))
             {
                 if (FinishingData.IsElementCollideRoom(res.Room, door))
@@ -247,7 +261,18 @@ namespace TerrTools
                     mainProfileWithDoors.get_Item(0).Project
                 }
             }*/
-            return doc.Create.NewFloor(res.MainProfile, res.FinishingType as FloorType, res.Level, false);
+
+
+            return doc.Create.NewFloor(res.MainProfile, res.FinishingType as FloorType, res.Level, false); }
+            catch (Autodesk.Revit.Exceptions.ArgumentException)
+            {
+                TaskDialog td = new TaskDialog("Предупреждение");
+                td.MainIcon = TaskDialogIcon.TaskDialogIconWarning;
+                td.MainInstruction = string.Format("Помещение {0} имеет незамкнутый внешний контур. создание отделки пола для него было пропущено", res.Room.Number);
+                td.MainContent = "Проверьте контур помещения, а также же правильность соединения внешних стен";
+                td.Show();
+                return null;
+            }
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

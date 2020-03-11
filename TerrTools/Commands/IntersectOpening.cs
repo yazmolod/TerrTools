@@ -363,9 +363,9 @@ namespace TerrTools
             tf = tf.Inverse;
             Curve correctedCurve = DuctCurve.CreateTransformed(tf);
             //The intersection point
-            IntersectionResultArray intersectionR;//Intersection point set
+            //Intersection point set
             SetComparisonResult results;//Results of Comparison
-            results = WallFace.Intersect(correctedCurve, out intersectionR);
+            results = WallFace.Intersect(correctedCurve, out IntersectionResultArray intersectionR);
             if (SetComparisonResult.Disjoint != results 
                 && intersectionR != null 
                 && !intersectionR.IsEmpty) 
