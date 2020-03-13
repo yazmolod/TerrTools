@@ -135,4 +135,10 @@
   <metadata name="FinishingId.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>
+  <metadata name="createTooltip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <data name="button3.ToolTip" xml:space="preserve">
+    <value>Создает отделку пола только в тех помещениях, где она отсутствует (Связанный элемент отделки = -1, не обновляя старую отделку. Этот вариант быстрее, однако старая отделка может оказаться неточной формы</value>
+  </data>
 </root>

@@ -62,6 +62,7 @@
             this.checkedListBox.Location = new System.Drawing.Point(3, 16);
             this.checkedListBox.Name = "checkedListBox";
             this.checkedListBox.Size = new System.Drawing.Size(221, 372);
+            this.checkedListBox.Sorted = true;
             this.checkedListBox.TabIndex = 0;
             this.checkedListBox.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.checkedListBox_ItemCheck);
             // 
@@ -97,6 +98,7 @@
             this.valueComboBox.Location = new System.Drawing.Point(78, 74);
             this.valueComboBox.Name = "valueComboBox";
             this.valueComboBox.Size = new System.Drawing.Size(166, 21);
+            this.valueComboBox.Sorted = true;
             this.valueComboBox.TabIndex = 3;
             // 
             // comparisonComboBox
@@ -118,6 +120,7 @@
             this.parameterComboBox.Location = new System.Drawing.Point(78, 20);
             this.parameterComboBox.Name = "parameterComboBox";
             this.parameterComboBox.Size = new System.Drawing.Size(166, 21);
+            this.parameterComboBox.Sorted = true;
             this.parameterComboBox.TabIndex = 1;
             this.parameterComboBox.SelectedValueChanged += new System.EventHandler(this.parameterComboBox_SelectedValueChanged);
             // 

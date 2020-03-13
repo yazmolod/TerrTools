@@ -33,6 +33,7 @@ namespace TerrTools
             FinishingOffsetParameter = finishingOffsetParameter;
             Result = new List<HorizontalFinishingResult>();
             InitDefaultValues();
+            dataGridView1.Sort(dataGridView1.Columns["RoomNumber"], ListSortDirection.Ascending);
             ShowDialog();
         }
 
@@ -71,7 +72,7 @@ namespace TerrTools
             }
         }
 
-        private void SetResult()
+        private void SetCreateAndUpdateResult()
         {
             foreach (WF.DataGridViewRow row in this.dataGridView1.Rows)
             {
@@ -86,9 +87,29 @@ namespace TerrTools
             }
         }
 
+        private void SetCreateResult()
+        {
+            foreach (WF.DataGridViewRow row in this.dataGridView1.Rows)
+            {
+                int finishingIdValue = (int)row.Cells["FinishingId"].Value;
+                if (finishingIdValue == -1)
+                {
+                    Room r = this.Rooms.First(q => q.Id.IntegerValue == (int)row.Cells["RoomId"].Value);
+                    ElementType elType;
+                    var tmp = row.Cells["FinishingType"].Value;
+                    if (tmp == null || (string)tmp == "" || !this.FinishingTypes.Any(q => q.Name == tmp.ToString())) elType = null;
+                    else elType = this.FinishingTypes.First(q => q.Name == tmp.ToString());
+                    double off = 0f;
+                    Double.TryParse(row.Cells["FinishingOffset"].Value.ToString(), out off);
+                    Result.Add(new HorizontalFinishingResult(r, elType, off));
+                }
+            }
+        }
+
+
         private void button1_Click(object sender, EventArgs e)
         {
-            this.SetResult();
+            this.SetCreateAndUpdateResult();
             this.DialogResult = WF.DialogResult.OK;
             this.Close();
         }
@@ -104,6 +125,13 @@ namespace TerrTools
             {
                 row.Cells["FinishingType"].Value = null;
             }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            this.SetCreateResult();
+            this.DialogResult = WF.DialogResult.OK;
+            this.Close();
         }
     }
 
@@ -128,7 +156,7 @@ namespace TerrTools
             ///
             /// Находим все профили помещения и сортируем по периметру. Самый длинный - контур перекрытия
             ///
-            List<List<Curve>> tmp = GeometryUtils.GetCurvesListFromRoom(room);
+            List<List<Curve>> tmp = GeometryUtils.GetCurvesListFromSpatialElement(room);
             tmp = tmp.OrderBy(x => x.Sum(y => y.Length)).ToList();
             MainProfile = ConvertListToCurveArray(tmp.Last());
             ///

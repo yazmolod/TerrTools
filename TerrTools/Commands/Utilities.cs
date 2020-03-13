@@ -15,6 +15,7 @@ namespace TerrTools
     static class SharedParameterUtils
     {
         static public string sharedParameterFilePath = @"\\serverL\PSD\REVIT\ФОП\ФОП2017.txt";
+
         static public bool AddSharedParameter(
             Document doc,
             string parameterName,            
@@ -183,11 +184,51 @@ namespace TerrTools
             }
             return null;
         }
-        static public List<List<Curve>> GetCurvesListFromRoom(Room room)
+
+        static public Curve FindDuctCurve(MEPCurve mepCurve)
+        {
+            //The wind pipe curve
+            if (mepCurve == null) return null;
+            IList<XYZ> list = new List<XYZ>();
+            try
+            {
+                ConnectorSetIterator csi = mepCurve.ConnectorManager.Connectors.ForwardIterator();
+                while (csi.MoveNext())
+                {
+                    Connector conn = csi.Current as Connector;
+                    list.Add(conn.Origin);
+                }
+                Curve curve = Line.CreateBound(list.ElementAt(0), list.ElementAt(1)) as Curve;
+                return curve;
+            }
+            catch (Autodesk.Revit.Exceptions.InvalidOperationException)
+            {
+                return null;
+            }
+            catch (Autodesk.Revit.Exceptions.ArgumentsInconsistentException)
+            {
+                return null;
+            }
+        }
+
+        static public List<Face> GetFaces(Element e)
+        {
+            List<Face> normalFaces = new List<Face>();
+
+            Solid solid = GeometryUtils.GetSolid(e);
+            foreach (Face face in solid.Faces)
+            {
+                PlanarFace pf = face as PlanarFace;
+                if (pf != null) normalFaces.Add(pf);
+            }
+            return normalFaces;
+        }
+
+        static public List<List<Curve>> GetCurvesListFromSpatialElement(SpatialElement spatial)
         {
             List<List<Curve>> profiles = new List<List<Curve>>();
             SpatialElementBoundaryOptions opt = new SpatialElementBoundaryOptions();
-            IList<IList<BoundarySegment>> boundaries = room.GetBoundarySegments(opt);
+            IList<IList<BoundarySegment>> boundaries = spatial.GetBoundarySegments(opt);
             for (int i = 0; i < boundaries.Count; i++)
             {
                 profiles.Add(new List<Curve>());

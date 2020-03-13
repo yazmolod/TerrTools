@@ -36,141 +36,126 @@ namespace TerrTools
 
         protected void CheckDefaultSharedParameters()
         {
-            using (Transaction tr = new Transaction(doc, "Добавление общих параметров"))
-            {
-                tr.Start();
-                bool done = true;
-                done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Идентификатор отделки пола",
-                        new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
-                done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Идентификатор потолка",
-                        new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
-                done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Номер помещения",
-                        new BuiltInCategory[] { BuiltInCategory.OST_Floors, BuiltInCategory.OST_Ceilings }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
-                done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Номера всех помещений",
-                        new BuiltInCategory[] { BuiltInCategory.OST_Floors, BuiltInCategory.OST_Ceilings }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS, isIntance: false);
-                tr.Commit();
-            }
+            bool done = true;
+            done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Идентификатор отделки пола",
+                    new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+            done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Идентификатор потолка",
+                    new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+            done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Номер помещения",
+                    new BuiltInCategory[] { BuiltInCategory.OST_Floors, BuiltInCategory.OST_Ceilings }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+            done &= SharedParameterUtils.AddSharedParameter(doc, "ТеррНИИ_Номера всех помещений",
+                    new BuiltInCategory[] { BuiltInCategory.OST_Floors, BuiltInCategory.OST_Ceilings }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS, isIntance: false);
         }
-    
 
         protected void UpdateFinishingType()
         {
-            using (Transaction tr = new Transaction(doc, "Обновление типоразмеров"))
+            /// Все помещения типоразмера
+            IEnumerable<Element> allFloorTypes = new FilteredElementCollector(doc).OfClass(typeof(FloorType));
+            IEnumerable<Floor> allFloors = new FilteredElementCollector(doc).OfClass(typeof(Floor)).Cast<Floor>();
+            foreach (Element elType in allFloorTypes)
             {
-                tr.Start();
-                /// Все помещения типоразмера
-                List<Element> allFloorTypes =
-                    (from db in FormResult
-                     select db.FinishingType).Distinct().Cast<Element>().ToList();
-                foreach (Element elType in allFloorTypes)
+                if (elType != null)
                 {
-                    if (elType != null)
-                    {
-                        string value = String.Join(", ",
-                            (from db in FormResult
-                             where db.FinishingType == elType
-                             select db.Room.Number).OrderBy(x => x));
-                        Parameter pAllRooms = elType.LookupParameter("ТеррНИИ_Номера всех помещений");
-                        pAllRooms.Set(value);
-
-                    }
+                    string value = String.Join(", ",
+                        (from fl in allFloors
+                         where fl.FloorType.Id == elType.Id
+                         select fl.LookupParameter("ТеррНИИ_Номер помещения").AsString()).OrderBy(x => x));
+                    Parameter pAllRooms = elType.LookupParameter("ТеррНИИ_Номера всех помещений");
+                    pAllRooms?.Set(value);
                 }
-                tr.Commit();
             }
         }
         protected void CreateOpening()
         {
-            using (Transaction tr = new Transaction(doc, "Вырезание отверстий"))
+            foreach (HorizontalFinishingResult res in FormResult)
             {
-                tr.Start();
-                foreach (HorizontalFinishingResult res in FormResult)
+                foreach (CurveArray profile in res.OpeningProfiles)
                 {
-                    foreach (CurveArray profile in res.OpeningProfiles)
+                    try
                     {
-
                         if (res.FinishingElement != null && res.FinishingElement.IsValidObject) doc.Create.NewOpening(res.FinishingElement as Element, profile, true);
                     }
+                    catch (Autodesk.Revit.Exceptions.InvalidOperationException)
+                    {
+                        continue;
+                    }
                 }
-                tr.Commit();
             }
         }
+
         protected void UpdateFinishingElement()
         {
-            using (Transaction tr = new Transaction(doc, "Создание геометрии"))
+            foreach (HorizontalFinishingResult result in FormResult)
             {
-                tr.Start();
-                foreach (HorizontalFinishingResult result in FormResult)
-                {
-                    Parameter pRoomFinishingName = result.Room.get_Parameter(roomFinishParameter);
+                Parameter pRoomFinishingName = result.Room.get_Parameter(roomFinishParameter);
 
-                    // Удаляем старый объект и замещаем новым
-                    Parameter pRoomFinishingId = result.Room.LookupParameter(finishIdParameterName);
-                    List<OldTag> oldTags = null;
-                    ElementId oldFloor = null;
-                    if (pRoomFinishingId.HasValue)
-                        try {
-                            oldFloor = new ElementId(pRoomFinishingId.AsInteger());
-                            oldTags =  GetOldTags(oldFloor);
-                            doc.Delete(oldFloor); 
-                        }
-                        catch (Autodesk.Revit.Exceptions.ArgumentException) { }
-
-                    if (result.FinishingType != null)
+                // Удаляем старый объект и замещаем новым
+                Parameter pRoomFinishingId = result.Room.LookupParameter(finishIdParameterName);
+                List<OldTag> oldTags = null;
+                ElementId oldFloor = null;
+                if (pRoomFinishingId.HasValue)
+                    try
                     {
-                        // создание геометрии
-                        Element finishingElement = CreateHostGeometry(result);
-                        if (finishingElement != null)
+                        oldFloor = new ElementId(pRoomFinishingId.AsInteger());
+                        oldTags = GetOldTags(oldFloor);
+                        doc.Delete(oldFloor);
+                    }
+                    catch (Autodesk.Revit.Exceptions.ArgumentException) { }
+
+                if (result.FinishingType != null)
+                {
+                    // создание геометрии
+                    Element finishingElement = CreateHostGeometry(result);
+                    if (finishingElement != null)
+                    {
+                        finishingElement.get_Parameter(finishingOffsetParameter).Set(result.Offset / 304.8);
+
+                        /// заполнение данных
+                        // Номер помещения конкретного элемента
+                        string roomNumber = result.Room.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString();
+                        Parameter pRoomNumber = finishingElement.LookupParameter("ТеррНИИ_Номер помещения");
+                        pRoomNumber.Set(roomNumber);
+
+                        // Название отделки для помещения
+                        pRoomFinishingName.Set(finishingElement.Name);
+
+                        // Идентификатор пола для помещения    
+                        pRoomFinishingId.Set(finishingElement.Id.IntegerValue);
+                        result.FinishingElement = finishingElement;
+
+                        // Восстановление старой марки
+                        if (oldTags != null)
                         {
-                            finishingElement.get_Parameter(finishingOffsetParameter).Set(result.Offset / 304.8);
-
-                            /// заполнение данных
-                            // Номер помещения конкретного элемента
-                            string roomNumber = result.Room.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString();
-                            Parameter pRoomNumber = finishingElement.LookupParameter("ТеррНИИ_Номер помещения");
-                            pRoomNumber.Set(roomNumber);
-
-                            // Название отделки для помещения
-                            pRoomFinishingName.Set(finishingElement.Name);
-
-                            // Идентификатор пола для помещения    
-                            pRoomFinishingId.Set(finishingElement.Id.IntegerValue);
-                            result.FinishingElement = finishingElement;
-
-                            // Восстановление старой марки
-                            if (oldTags != null)
+                            foreach (OldTag oldTag in oldTags)
                             {
-                                foreach (OldTag oldTag in oldTags)
-                                {
-                                    IndependentTag newTag = IndependentTag.Create(
-                                        doc,
-                                        oldTag.TypeId,
-                                        oldTag.OwnerView.Id,
-                                        new Reference(finishingElement),
-                                        false,
-                                        oldTag.TagOrientation,
-                                        oldTag.TagHeadPosition);
-                                    newTag.ChangeTypeId(oldTag.TypeId);
-                                }
+                                IndependentTag newTag = IndependentTag.Create(
+                                    doc,
+                                    oldTag.TypeId,
+                                    oldTag.OwnerView.Id,
+                                    new Reference(finishingElement),
+                                    false,
+                                    oldTag.TagOrientation,
+                                    oldTag.TagHeadPosition);
+                                newTag.ChangeTypeId(oldTag.TypeId);
                             }
-                        }
-                        else
-                        {
-                            // Идентификатор пола для помещения    
-                            pRoomFinishingId.Set(-1);
-                            // Название отделки для помещения
-                            pRoomFinishingName.Set(result.FinishingType.Name);
                         }
                     }
                     else
                     {
                         // Идентификатор пола для помещения    
                         pRoomFinishingId.Set(-1);
-                        result.FinishingElement = null;
                         // Название отделки для помещения
-                        pRoomFinishingName.Set("");
+                        pRoomFinishingName.Set(result.FinishingType.Name);
                     }
                 }
-                tr.Commit();
+                else
+                {
+                    // Идентификатор пола для помещения    
+                    pRoomFinishingId.Set(-1);
+                    result.FinishingElement = null;
+                    // Название отделки для помещения
+                    pRoomFinishingName.Set("");
+                }
             }
         }
 
@@ -188,23 +173,28 @@ namespace TerrTools
 
         protected Result Generation()
         {
-            using (TransactionGroup transGroup = new TransactionGroup(doc))
+            using (Transaction tr = new Transaction(doc))
             {
-                transGroup.Start("Генерация полов");
+                tr.Start("Генерация полов");
                 CheckDefaultSharedParameters();
                 var form = new HorizontalFinishingForm(rooms, finishingTypes, finishIdParameterName, roomFinishParameter, finishingOffsetParameter);
                 if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
                 {
                     this.FormResult = form.Result;
                     UpdateFinishingElement();
-                    CreateOpening();
-                    UpdateFinishingType();
-                    transGroup.Assimilate();
+                    tr.Commit();
+                    using (Transaction tr2 = new Transaction(doc))
+                    {
+                        tr2.Start("Генерация отверстий");
+                        CreateOpening();
+                        UpdateFinishingType();
+                        tr2.Commit();
+                    }
                     return Result.Succeeded;
                 }
                 else
                 {
-                    transGroup.RollBack();
+                    tr.RollBack();
                     return Result.Cancelled;
                 }
             }

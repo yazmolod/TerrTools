@@ -9,6 +9,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB.Architecture;
 
+
 namespace TerrTools
 {
     [Transaction(TransactionMode.Manual)]
@@ -34,11 +35,14 @@ namespace TerrTools
             string doorOpeningWidthParameterName = "ТеррНИИ_Ширина дверных проемов";
             string openingFinishingAreaParameterName = "ТеррНИИ_Площадь проемов отделка";
             string finishingHeightParameterName = "ТеррНИИ_Высота отделки помещения";
+            string finishingPerimeterParameterName = "ТеррНИИ_Периметр отделки";
             SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             SharedParameterUtils.AddSharedParameter(doc, doorOpeningWidthParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             SharedParameterUtils.AddSharedParameter(doc, openingFinishingAreaParameterName,
+                    new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+            SharedParameterUtils.AddSharedParameter(doc, finishingPerimeterParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             SharedParameterUtils.AddSharedParameter(doc, finishingHeightParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_CONSTRAINTS);
@@ -51,6 +55,7 @@ namespace TerrTools
             double openingArea = 0;
             double openingFinishingArea = 0;
             double doorOpeningsWidth = 0;
+            double finishingPerimeter = 0;
 
             List<ElementId> usedOpenings = new List<ElementId>();
 
@@ -58,6 +63,7 @@ namespace TerrTools
             {
                 foreach (var segment in boundary)
                 {
+                    finishingPerimeter += segment.GetCurve().Length;
                     if (segment.ElementId.IntegerValue == -1) continue;
                     double segLength = segment.GetCurve().Length;
                     string catName = doc.GetElement(segment.ElementId).Category.Name;
@@ -109,24 +115,37 @@ namespace TerrTools
                             }
                         }
                     }
-                }
-                room.LookupParameter(openingAreaParameterName).Set(openingArea);
-                room.LookupParameter(openingFinishingAreaParameterName).Set(openingFinishingArea);
-                room.LookupParameter(doorOpeningWidthParameterName).Set(doorOpeningsWidth);
+                }                
             }
+            room.LookupParameter(openingAreaParameterName).Set(openingArea);
+            room.LookupParameter(openingFinishingAreaParameterName).Set(openingFinishingArea);
+            room.LookupParameter(doorOpeningWidthParameterName).Set(doorOpeningsWidth);
+            room.LookupParameter(finishingPerimeterParameterName).Set(finishingPerimeter);
         }
-
-
         static public bool IsElementCollideRoom(Room room, Element elInsert)
         {
+            // Проверка параметров Room у FamilyInstance
+            FamilyInstance fi = elInsert as FamilyInstance;
+            if (fi != null && (fi.Room?.Id == room.Id || fi.ToRoom?.Id == room.Id || fi.FromRoom?.Id == room.Id)) return true;
+
+            // Проверка bbox
             BoundingBoxXYZ bb = elInsert.get_BoundingBox(null);
             BoundingBoxContainsPointFilter filterMin = new BoundingBoxContainsPointFilter(bb.Min);
             BoundingBoxContainsPointFilter filterMax = new BoundingBoxContainsPointFilter(bb.Max);
             filterMin.Tolerance = filterMax.Tolerance = 1;
-            return filterMin.PassesFilter(room.Document, room.Id) || filterMax.PassesFilter(room.Document, room.Id);
+            bool inter = filterMin.PassesFilter(room.Document, room.Id) || filterMax.PassesFilter(room.Document, room.Id);
+            return inter;
         }
         static public List<Room> GetCollidedRooms(Element el)
         {
+            // Проверка параметров Room у FamilyInstance
+            FamilyInstance fi = el as FamilyInstance;
+            if (fi != null)
+            {
+                Room[] rooms = new Room[] { fi?.Room, fi?.FromRoom, fi?.ToRoom };
+                if (rooms.Any(x => x != null)) return rooms.Where(x => x != null).ToList();
+            }
+
             BoundingBoxXYZ bb = el.get_BoundingBox(null);
             BoundingBoxContainsPointFilter filterMin = new BoundingBoxContainsPointFilter(bb.Min);
             BoundingBoxContainsPointFilter filterMax = new BoundingBoxContainsPointFilter(bb.Max);
@@ -145,12 +164,32 @@ namespace TerrTools
             {
                 FamilyInstance fi = elInsert as FamilyInstance;
                 XYZ dir = new XYZ();
-                CurveLoop curve = ExporterIFCUtils.GetInstanceCutoutFromWall(elHost.Document, elHost, fi, out dir);
-                Curve widthCurve = curve.Where(x => x.GetEndPoint(0).Z == x.GetEndPoint(1).Z).FirstOrDefault();
-                Curve heightCurve = curve.Where(x => x.GetEndPoint(0).X == x.GetEndPoint(1).X || x.GetEndPoint(0).Y == x.GetEndPoint(1).Y).FirstOrDefault();
-                width = widthCurve != null ? widthCurve.Length : 0;
-                height = heightCurve != null ? heightCurve.Length : 0;
-                area = width * height;
+                try
+                {
+                    CurveLoop curve = ExporterIFCUtils.GetInstanceCutoutFromWall(elHost.Document, elHost, fi, out dir);
+                    Curve widthCurve = curve.Where(x => x.GetEndPoint(0).Z == x.GetEndPoint(1).Z).FirstOrDefault();
+                    Curve heightCurve = curve.Where(x => x.GetEndPoint(0).X == x.GetEndPoint(1).X || x.GetEndPoint(0).Y == x.GetEndPoint(1).Y).FirstOrDefault();
+                    width = widthCurve != null ? widthCurve.Length : 0;
+                    height = heightCurve != null ? heightCurve.Length : 0;
+                    area = width * height;
+                }
+                catch (Autodesk.Revit.Exceptions.InvalidOperationException)
+                {
+                    Parameter wp = fi.LookupParameter("Ширина");
+                    Parameter wpp = fi.LookupParameter("Примерная ширина");
+                    Parameter hp = fi.LookupParameter("Высота");
+                    Parameter hpp = fi.LookupParameter("Примерная высота");
+
+                    if (wp != null) width = wp.AsDouble();
+                    else if (wpp != null) width = wpp.AsDouble();
+                    else width = 0;
+
+                    if (hp != null) height = hp.AsDouble();
+                    else if (hpp != null) height = hpp.AsDouble();
+                    else height = 0;
+
+                    area = width * height;
+                }
             }
             else if (elInsert is Wall) 
             {

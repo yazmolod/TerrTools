@@ -150,13 +150,13 @@ namespace TerrTools
                 "Radiator.png"));
             pbDict.Add("WallOpening",
            MakePushButton(
-                "IntersectOpening",
+                "WallOpeningHandler",
                 "В стенах",
                 "Вставляет отверстия в местах пересечений с системами"
                 ));
             pbDict.Add("FloorOpening",
             MakePushButton(
-                "DummyClass",
+                "FloorOpeningHandler",
                 "В перекрытиях"
                 ));
             pbDict.Add("GenerateFloor",
@@ -182,6 +182,12 @@ namespace TerrTools
                 MakePushButton(
                     "TypeChangerDeep",
                     "В проекте и семействах"
+                    ));
+            pbDict.Add("CopyRoomShape",
+                MakePushButton(
+                    "CopyRoomShape",
+                    "Создать контур\nпомещения",
+                    iconName:"Shape.png"
                     ));
 
             ///
@@ -223,6 +229,7 @@ namespace TerrTools
             /// Общая панель
             ///
             panelGeneral.AddItem(pbDict["FocusOnElement"]);
+            panelGeneral.AddItem(pbDict["CopyRoomShape"]);
             tempBtn = panelGeneral.AddItem(plDict["UpdateType"]) as PulldownButton;
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);

@@ -61,7 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application.cs" />
-    <Compile Include="Commands\Deprecated\CopyRoomShape.cs" />
+    <Compile Include="Commands\CopyRoomShape.cs" />
     <Compile Include="Commands\HorizontalFinishing.cs" />
     <Compile Include="Commands\Utilities.cs" />
     <Compile Include="Commands\FocusOnElement.cs" />
@@ -84,7 +84,7 @@
     <Compile Include="UI\HorizontalFinishingForm.Designer.cs">
       <DependentUpon>HorizontalFinishingForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Commands\IntersectOpening.cs" />
+    <Compile Include="Commands\Openings.cs" />
     <Compile Include="Commands\FinishingData.cs" />
     <Compile Include="Commands\Deprecated\FloorRooms.cs" />
     <Compile Include="Commands\HVAC.cs" />
@@ -102,6 +102,7 @@
     <Compile Include="UI\ProgressBar.Designer.cs">
       <DependentUpon>ProgressBar.cs</DependentUpon>
     </Compile>
+    <Compile Include="Updaters\RoomUpdater.cs" />
     <Compile Include="Updaters\Updaters.cs" />
   </ItemGroup>
   <ItemGroup>
