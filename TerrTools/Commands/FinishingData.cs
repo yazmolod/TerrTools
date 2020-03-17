@@ -36,6 +36,7 @@ namespace TerrTools
             string openingFinishingAreaParameterName = "ТеррНИИ_Площадь проемов отделка";
             string finishingHeightParameterName = "ТеррНИИ_Высота отделки помещения";
             string finishingPerimeterParameterName = "ТеррНИИ_Периметр отделки";
+            string slopeAreaParameterName = "ТеррНИИ_Площадь откосов";
             SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             SharedParameterUtils.AddSharedParameter(doc, doorOpeningWidthParameterName,
@@ -43,6 +44,8 @@ namespace TerrTools
             SharedParameterUtils.AddSharedParameter(doc, openingFinishingAreaParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             SharedParameterUtils.AddSharedParameter(doc, finishingPerimeterParameterName,
+                    new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+            SharedParameterUtils.AddSharedParameter(doc, slopeAreaParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             SharedParameterUtils.AddSharedParameter(doc, finishingHeightParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_CONSTRAINTS);
@@ -52,10 +55,11 @@ namespace TerrTools
             SpatialElementBoundaryOptions opt = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish };
             double roomHeight = room.UnboundedHeight;
             double finishingHeight = room.LookupParameter(finishingHeightParameterName).AsDouble();
-            double openingArea = 0;
-            double openingFinishingArea = 0;
+            double allOpeningsArea = 0;
+            double allOpeningsFinishingArea = 0;
             double doorOpeningsWidth = 0;
             double finishingPerimeter = 0;
+            double allOpeningsSlope = 0;
 
             List<ElementId> usedOpenings = new List<ElementId>();
 
@@ -70,8 +74,8 @@ namespace TerrTools
                     if (catName == "<Разделитель помещений>")
                     {
                         double area = segLength * roomHeight;
-                        openingArea += area;
-                        openingFinishingArea += area * finishingHeight / roomHeight;
+                        allOpeningsArea += area;
+                        allOpeningsFinishingArea += area * finishingHeight / roomHeight;
                         doorOpeningsWidth += segLength;
                     }
                     else if (catName == "Стены")
@@ -82,10 +86,12 @@ namespace TerrTools
                         if (wallType.Kind == WallKind.Curtain)
                         {
                             double wallHeight = wall.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM).AsDouble();
-                            double area = wallHeight <= roomHeight ? segLength * wallHeight : segLength * roomHeight;
-                            openingArea += area;
-                            openingFinishingArea += area * finishingHeight / roomHeight;
+                            double curtainRoomHeight = wallHeight <= roomHeight ? wallHeight : roomHeight;
+                            double area = segLength * curtainRoomHeight;
+                            allOpeningsArea += area;
+                            allOpeningsFinishingArea += area * finishingHeight / roomHeight;
                             doorOpeningsWidth += segment.GetCurve().Length;
+                            allOpeningsSlope = (segLength + 2 * curtainRoomHeight) * wall.Width / 2;
                         }
                         else
                         {
@@ -98,18 +104,23 @@ namespace TerrTools
                                 Element opening = doc.GetElement(insertId) as Element;
                                 double openingWidth;
                                 double openingHeight;
-                                double area;
-                                GetOpeningSize(wall, opening, out openingWidth, out openingHeight, out area);                               
+                                double openingThickness;
+                                GetOpeningSize(wall, opening, out openingWidth, out openingHeight, out openingThickness);
+
+                                double openingArea = openingWidth * openingHeight;
+                                double openingSlope = (openingWidth + openingHeight * 2) * openingThickness / 2;
+
                                 
                                 Parameter p = opening.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET) ?? opening.get_Parameter(BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM);
                                 double itemBottomOffset = p.AsDouble();
-                                double areaF = 0;
-                                if (finishingHeight >= itemBottomOffset + openingHeight) areaF = area;
-                                else if (finishingHeight > itemBottomOffset) areaF = area * (finishingHeight - itemBottomOffset) / openingHeight;
+                                double openingFinishingArea = 0;
+                                if (finishingHeight >= itemBottomOffset + openingHeight) openingFinishingArea = openingArea;
+                                else if (finishingHeight > itemBottomOffset) openingFinishingArea = openingArea * (finishingHeight - itemBottomOffset) / openingHeight;
 
-                                openingArea += area;
+                                allOpeningsArea += openingArea;
                                 doorOpeningsWidth += itemBottomOffset == 0 ? openingWidth : 0;
-                                openingFinishingArea += areaF;
+                                allOpeningsFinishingArea += openingFinishingArea;
+                                allOpeningsSlope += openingSlope;
 
                                 usedOpenings.Add(insertId);
                             }
@@ -117,10 +128,11 @@ namespace TerrTools
                     }
                 }                
             }
-            room.LookupParameter(openingAreaParameterName).Set(openingArea);
-            room.LookupParameter(openingFinishingAreaParameterName).Set(openingFinishingArea);
+            room.LookupParameter(openingAreaParameterName).Set(allOpeningsArea);
+            room.LookupParameter(openingFinishingAreaParameterName).Set(allOpeningsFinishingArea);
             room.LookupParameter(doorOpeningWidthParameterName).Set(doorOpeningsWidth);
             room.LookupParameter(finishingPerimeterParameterName).Set(finishingPerimeter);
+            room.LookupParameter(slopeAreaParameterName).Set(allOpeningsSlope);
         }
         static public bool IsElementCollideRoom(Room room, Element elInsert)
         {
@@ -155,11 +167,11 @@ namespace TerrTools
             return new FilteredElementCollector(el.Document).OfCategory(BuiltInCategory.OST_Rooms).WherePasses(filter).Cast<Room>().ToList();
         }
 
-        static private void GetOpeningSize(Wall elHost, Element elInsert, out double width, out double height, out double area)
+        static private void GetOpeningSize(Wall elHost, Element elInsert, out double width, out double height, out double thickness)
         {
             width = 0;
             height = 0;
-            area = 0;
+            thickness = elHost.Width;
             if (elInsert is FamilyInstance) 
             {
                 FamilyInstance fi = elInsert as FamilyInstance;
@@ -168,10 +180,9 @@ namespace TerrTools
                 {
                     CurveLoop curve = ExporterIFCUtils.GetInstanceCutoutFromWall(elHost.Document, elHost, fi, out dir);
                     Curve widthCurve = curve.Where(x => x.GetEndPoint(0).Z == x.GetEndPoint(1).Z).FirstOrDefault();
-                    Curve heightCurve = curve.Where(x => x.GetEndPoint(0).X == x.GetEndPoint(1).X || x.GetEndPoint(0).Y == x.GetEndPoint(1).Y).FirstOrDefault();
+                    Curve heightCurve = curve.Where(x => x.GetEndPoint(0).X == x.GetEndPoint(1).X && x.GetEndPoint(0).Z != x.GetEndPoint(1).Z).FirstOrDefault();
                     width = widthCurve != null ? widthCurve.Length : 0;
                     height = heightCurve != null ? heightCurve.Length : 0;
-                    area = width * height;
                 }
                 catch (Autodesk.Revit.Exceptions.InvalidOperationException)
                 {
@@ -187,8 +198,6 @@ namespace TerrTools
                     if (hp != null) height = hp.AsDouble();
                     else if (hpp != null) height = hpp.AsDouble();
                     else height = 0;
-
-                    area = width * height;
                 }
             }
             else if (elInsert is Wall) 
@@ -201,13 +210,11 @@ namespace TerrTools
                 {
                     width = l;
                     height = hIns;
-                    area = width * height;
                 }
                 else
                 {
                     width = l;
                     height = hHost;
-                    area = width * height;
                 }
             }
             else if (elInsert is Opening) 
@@ -215,9 +222,8 @@ namespace TerrTools
                 XYZ min = (elInsert as Opening).BoundaryRect[0];
                 XYZ max = (elInsert as Opening).BoundaryRect[1];
 
-                width = min.X != max.X ? Math.Abs(max.X - min.X) : Math.Abs(max.Y - max.Y);
+                width = min.X != max.X ? Math.Abs(max.X - min.X) : Math.Abs(max.Y - min.Y);
                 height = Math.Abs(max.Z - min.Z);
-                area = width * height;
             }
         }       
     }
