@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -59,7 +60,7 @@ namespace TerrTools
                     string value = String.Join(", ",
                         (from fl in allFloors
                          where fl.FloorType.Id == elType.Id
-                         select fl.LookupParameter("ТеррНИИ_Номер помещения").AsString()).OrderBy(x => x));
+                         select fl.LookupParameter("ТеррНИИ_Номер помещения").AsString()).Distinct().Where(x => x != "" && x != null).OrderBy(x => x));
                     Parameter pAllRooms = elType.LookupParameter("ТеррНИИ_Номера всех помещений");
                     pAllRooms?.Set(value);
                 }
@@ -254,8 +255,11 @@ namespace TerrTools
 
 
             return doc.Create.NewFloor(res.MainProfile, res.FinishingType as FloorType, res.Level, false); }
-            catch (Autodesk.Revit.Exceptions.ArgumentException)
+            catch (Autodesk.Revit.Exceptions.ArgumentException e)
             {
+                ModelCurveCreator mmc = new ModelCurveCreator(doc);
+                mmc.MakeModelCurve(res.MainProfile);
+                Debug.WriteLine(e.ToString());
                 TaskDialog td = new TaskDialog("Предупреждение");
                 td.MainIcon = TaskDialogIcon.TaskDialogIconWarning;
                 td.MainInstruction = string.Format("Помещение {0} имеет незамкнутый внешний контур. создание отделки пола для него было пропущено", res.Room.Number);

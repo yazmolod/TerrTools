@@ -173,6 +173,93 @@ namespace TerrTools
 
     static class GeometryUtils
     {
+        static Curve CreateReversedCurve(Curve orig)
+        {            
+            if (orig is Line)
+            {                
+                return Line.CreateBound(
+                  orig.GetEndPoint(1),
+                  orig.GetEndPoint(0));
+            }
+            else if (orig is Arc)
+            {
+                return Arc.Create(orig.GetEndPoint(1),
+                  orig.GetEndPoint(0),
+                  orig.Evaluate(0.5, true));
+            }
+            else
+            {
+                throw new Exception(
+                  "CreateReversedCurve - Unreachable");
+            }
+        }
+        public static void SortCurvesContiguous(IList<Curve> curves)
+        {
+            //взято с https://thebuildingcoder.typepad.com/blog/2013/03/sort-and-orient-curves-to-form-a-contiguous-loop.html
+            const double precision = (1.0 / 12.0) / 16.0;
+            int n = curves.Count;
+
+            // Walk through each curve (after the first) 
+            // to match up the curves in order
+
+            for (int i = 0; i < n; ++i)
+            {
+                Curve curve = curves[i];
+                XYZ endPoint = curve.GetEndPoint(1);
+                XYZ p;
+
+                // Find curve with start point = end point
+
+                bool found = (i + 1 >= n);
+
+                for (int j = i + 1; j < n; ++j)
+                {
+                    p = curves[j].GetEndPoint(0);
+
+                    // If there is a match end->start, 
+                    // this is the next curve
+
+                    if (precision > p.DistanceTo(endPoint))
+                    {
+                        if (i + 1 != j)
+                        {
+                            Curve tmp = curves[i + 1];
+                            curves[i + 1] = curves[j];
+                            curves[j] = tmp;
+                        }
+                        found = true;
+                        break;
+                    }
+
+                    p = curves[j].GetEndPoint(1);
+
+                    // If there is a match end->end, 
+                    // reverse the next curve
+
+                    if (precision > p.DistanceTo(endPoint))
+                    {
+                        if (i + 1 == j)
+                        {
+                            curves[i + 1] = CreateReversedCurve(curves[j]);
+                        }
+                        else
+                        {
+                            Curve tmp = curves[i + 1];
+                            curves[i + 1] = CreateReversedCurve(curves[j]);
+                            curves[j] = tmp;
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+                //if (!found)
+                //{
+                //    throw new Exception("SortCurvesContiguous:"
+                //      + " non-contiguous input curves");
+                //}
+            }
+        }        
+
         static public Solid GetSolid(Element e)
         {
             Options opt = new Options();
@@ -237,6 +324,84 @@ namespace TerrTools
                     profiles[i].Add(s.GetCurve());
                 }
             }
+            return profiles;
+        }
+        static public List<List<Curve>> GetRoomWithDoorsContour(SpatialElement spatial)
+        {
+            Document doc = spatial.Document;
+            List<List<Curve>> profiles = new List<List<Curve>>();
+            SpatialElementBoundaryOptions optFinish = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish};
+            SpatialElementBoundaryOptions optCenter = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.CoreCenter };
+
+            IList<IList<BoundarySegment>> boundariesFinish = spatial.GetBoundarySegments(optFinish);
+            IList<IList<BoundarySegment>> boundariesCenter = spatial.GetBoundarySegments(optCenter);
+            for (int i = 0; i < boundariesFinish.Count; i++)
+            {
+                profiles.Add(new List<Curve>());
+                foreach (BoundarySegment finSeg in boundariesFinish[i])
+                {
+                    Wall wall = doc.GetElement(finSeg.ElementId) as Wall;
+                    IEnumerable<ElementId> doorIds = wall.FindInserts(true, false, true, true)
+                                    .Where(x => doc.GetElement(x).Category.Name == "Двери")
+                                    .Where(x => FinishingData.IsElementCollideRoom((Room)spatial, doc.GetElement(x)));
+                    IEnumerable <BoundarySegment> cenSegments = boundariesCenter[i].Where(x => x.ElementId == finSeg.ElementId);
+                    if (wall != null && wall.WallType.Kind != WallKind.Curtain && doorIds.Count() > 0 && cenSegments.Count() > 0)
+                    {
+                        try
+                        {                            
+                            XYZ[] startPts = (from id in doorIds
+                                              select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
+                                                  (doc.GetElement(id) as FamilyInstance)).GetEndPoint(0)
+                                                  ).ToArray();
+                            XYZ[] endPts = (from id in doorIds
+                                            select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
+                                                (doc.GetElement(id) as FamilyInstance)).GetEndPoint(1)
+                                                  ).ToArray();
+                            Curve finLine = finSeg.GetCurve();                            
+                            //контур выемки в проеме
+                            for (int pti = 0; pti < startPts.Length; pti++)
+                            {
+                                for (int j = 0; j < cenSegments.Count(); j++)
+                                {
+                                    XYZ pt1 = cenSegments.ElementAt(j).GetCurve().Project(startPts[pti]).XYZPoint;
+                                    XYZ pt2 = cenSegments.ElementAt(j).GetCurve().Project(endPts[pti]).XYZPoint;
+                                    if (pt1.DistanceTo(pt2) > 1.0 / 12.0 / 16.0)
+                                    {
+                                        BoundarySegment cenSeg = cenSegments.ElementAt(j);
+                                        Curve cenLine = cenSeg.GetCurve();
+                                        new ModelCurveCreator(doc).MakeModelCurve(cenLine);
+                                        Curve pext = Line.CreateBound(cenLine.Project(startPts[pti]).XYZPoint, cenLine.Project(endPts[pti]).XYZPoint);
+                                        Curve perp1 = Line.CreateBound(finLine.Project(startPts[pti]).XYZPoint, cenLine.Project(startPts[pti]).XYZPoint);
+                                        Curve perp2 = Line.CreateBound(finLine.Project(endPts[pti]).XYZPoint, cenLine.Project(endPts[pti]).XYZPoint);
+                                        profiles[i].Add(pext);
+                                        profiles[i].Add(perp1);
+                                        profiles[i].Add(perp2);
+                                        break;
+                                    }
+                                }                                
+                            }
+                            //"нарезаем" контур по отделке по проемам
+                            double[] finLineInterParam = (from pt in startPts select finLine.Project(pt).Parameter)
+                                .Concat(from pt in endPts select finLine.Project(pt).Parameter)
+                                .Concat(new double[] { finLine.GetEndParameter(0), finLine.GetEndParameter(1) })
+                                .OrderBy(x => x)
+                                .ToArray();
+                            for (int di = 0; di < finLineInterParam.Length; di += 2)
+                            {
+                                Curve pint = finLine.Clone();
+                                pint.MakeBound(finLineInterParam[di], finLineInterParam[di + 1]);
+                                profiles[i].Add(pint);
+                            }
+                        }
+                        catch { }
+                    }
+                    else
+                    {
+                        profiles[i].Add(finSeg.GetCurve());
+                    }
+                }
+                SortCurvesContiguous(profiles[i]);
+            }              
             return profiles;
         }
         static public RevitLinkInstance GetLinkedDoc(Document doc)
@@ -306,6 +471,17 @@ namespace TerrTools
             }
         }
 
+        public ModelCurveArray MakeModelCurve(CurveArray arr)
+        {
+            ModelCurveArray array = new ModelCurveArray();
+            foreach (Curve c in arr)
+            {
+                ModelCurve mc = MakeModelCurve(c);
+                array.Append(mc);
+            }
+            return array;
+        }
+
         public ModelCurve MakeModelCurve(XYZ p1, XYZ p2)
         {
             Curve curve = Line.CreateBound(p1, p2);
@@ -332,8 +508,7 @@ namespace TerrTools
                 array.Append(modelCurve);
             }
             return array;
-        }
-                
+        }                
 
         public ModelCurveArray MakeModelCurve(IEnumerable<Curve> curves)
         {

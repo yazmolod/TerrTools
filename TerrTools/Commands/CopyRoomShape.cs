@@ -40,7 +40,7 @@ namespace TerrTools
             {
                 using (Transaction tr = new Transaction(doc, "Создание контуров"))
                 {
-                    tr.Start();
+                    tr.Start();                    
                     foreach (Reference roomref in rooms)
                     {
                         List<Curve> curves = new List<Curve>();
@@ -56,6 +56,7 @@ namespace TerrTools
                         Group group = doc.Create.NewGroup(roomShape.Cast<ModelCurve>().Select(x => x.Id).ToList());
                         group.GroupType.Name = string.Format("Контур {0} #{1}",room.Category.Name,room.Number);
                     }
+                    TaskDialog.Show("Результат", "Создано групп контуров: " + rooms.Count.ToString());
                     tr.Commit();
                 }
             }

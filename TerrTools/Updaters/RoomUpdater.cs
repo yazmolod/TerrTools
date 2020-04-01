@@ -39,7 +39,7 @@ namespace TerrTools.Updaters
             var modified = data.GetModifiedElementIds();
             var added = data.GetAddedElementIds();
             var deleted = data.GetDeletedElementIds();            
-            foreach (ElementId id in modified.Concat(added).Concat(deleted))
+            foreach (ElementId id in modified.Concat(added))
             {
                 try
                 {
@@ -62,7 +62,21 @@ namespace TerrTools.Updaters
                 {
                     Debug.WriteLine(ex.Message);
                     Debug.WriteLine(ex.StackTrace);
-                    Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
+                    Debug.WriteLine("Addition/Modification error: id " + id.IntegerValue.ToString());
+                }
+            }
+            if (deleted.Count > 0)
+            {
+                try
+                {
+                    foreach (Room r in new FilteredElementCollector(doc, doc.ActiveView.Id).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>()) FinishingData.Calculate(r);
+                }
+
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    Debug.WriteLine(ex.StackTrace);
+                    Debug.WriteLine("Deletion error");
                 }
             }
 

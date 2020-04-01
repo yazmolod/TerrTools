@@ -114,9 +114,11 @@ namespace TerrTools
             var filter1 = new ElementCategoryFilter(BuiltInCategory.OST_Rooms);
             var filter2 = new ElementCategoryFilter(BuiltInCategory.OST_Doors);
             var filter3 = new ElementCategoryFilter(BuiltInCategory.OST_Windows);
-            filter = new LogicalOrFilter(new List<ElementFilter>() { filter1, filter2, filter3 });
+            var filterRDW = new LogicalOrFilter(new List<ElementFilter>() { filter1, filter2, filter3 });
+            var filterDW = new LogicalOrFilter(filter2, filter3);
             UpdaterRegistry.RegisterUpdater(updater);
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, allChangeTypes);
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filterRDW, ChangeTypeAdditionAndModication);
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filterDW, Element.GetChangeTypeElementDeletion());
         }
 
         private void CreateRibbon()
@@ -245,6 +247,10 @@ namespace TerrTools
         public Result OnStartup(UIControlledApplication app)
         {
             this.app = app;
+            app.Idling += OverrideCommands;
+
+
+
             if (CheckUpdates(out string currentVersion, out string lastReleaseVersion, out string patchNote))
             {
                 TaskDialog td = new TaskDialog("Доступно обновление");
@@ -272,6 +278,28 @@ namespace TerrTools
             RegisterUpdaters();
             CreateRibbon();
             return Result.Succeeded;
+        }
+
+        // В этом методе можно перезаписать поведение стандартных комманд в Revit
+        // Список команд можно найти в файле commandids.txt в папке проекта
+        private void OverrideCommands(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
+        {
+            app.Idling -= OverrideCommands;
+            UIApplication uiapp = sender as UIApplication;
+            if (uiapp != null)
+            {
+                /*
+                RevitCommandId commandId = RevitCommandId.LookupCommandId("ID_BUTTON_DELETE");
+                try
+                {
+                    AddInCommandBinding deleteBinding = uiapp.CreateAddInCommandBinding(commandId);
+                    deleteBinding.Executed += new EventHandler<Autodesk.Revit.UI.Events.ExecutedEventArgs>(DeleteBinding_Executed);
+                }
+                catch
+                {
+                }
+                */
+            }
         }
 
         private void StartUpdaterService(string argLine)
