@@ -119,6 +119,12 @@ namespace TerrTools
             UpdaterRegistry.RegisterUpdater(updater);
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filterRDW, ChangeTypeAdditionAndModication);
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filterDW, Element.GetChangeTypeElementDeletion());
+
+            updater = new Updaters.PartUpdater();
+            updatersId.Add(updater.GetUpdaterId());
+            filter = new ElementCategoryFilter(BuiltInCategory.OST_Parts);
+            UpdaterRegistry.RegisterUpdater(updater);
+            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeAny());
         }
 
         private void CreateRibbon()

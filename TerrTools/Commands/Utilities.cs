@@ -12,6 +12,11 @@ using Autodesk.Revit.Attributes;
 
 namespace TerrTools
 {
+    static class GlobalVariables
+    {
+        public const double MinThreshold = 1.0/12.0/16.0;
+    }
+    
     static class SharedParameterUtils
     {
         static public string sharedParameterFilePath = @"\\serverL\PSD\REVIT\ФОП\ФОП2017.txt";
@@ -327,12 +332,12 @@ namespace TerrTools
             return profiles;
         }
         static public List<List<Curve>> GetRoomWithDoorsContour(SpatialElement spatial)
-        {
+        {       
+            
             Document doc = spatial.Document;
             List<List<Curve>> profiles = new List<List<Curve>>();
             SpatialElementBoundaryOptions optFinish = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish};
             SpatialElementBoundaryOptions optCenter = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.CoreCenter };
-
             IList<IList<BoundarySegment>> boundariesFinish = spatial.GetBoundarySegments(optFinish);
             IList<IList<BoundarySegment>> boundariesCenter = spatial.GetBoundarySegments(optCenter);
             for (int i = 0; i < boundariesFinish.Count; i++)
@@ -341,64 +346,71 @@ namespace TerrTools
                 foreach (BoundarySegment finSeg in boundariesFinish[i])
                 {
                     Wall wall = doc.GetElement(finSeg.ElementId) as Wall;
+                    if (wall == null || wall.WallType.Kind == WallKind.Curtain) 
+                    { 
+                        profiles[i].Add(finSeg.GetCurve());
+                        continue;
+                    }
                     IEnumerable<ElementId> doorIds = wall.FindInserts(true, false, true, true)
                                     .Where(x => doc.GetElement(x).Category.Name == "Двери")
                                     .Where(x => FinishingData.IsElementCollideRoom((Room)spatial, doc.GetElement(x)));
                     IEnumerable <BoundarySegment> cenSegments = boundariesCenter[i].Where(x => x.ElementId == finSeg.ElementId);
-                    if (wall != null && wall.WallType.Kind != WallKind.Curtain && doorIds.Count() > 0 && cenSegments.Count() > 0)
-                    {
-                        try
-                        {                            
-                            XYZ[] startPts = (from id in doorIds
-                                              select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
-                                                  (doc.GetElement(id) as FamilyInstance)).GetEndPoint(0)
-                                                  ).ToArray();
-                            XYZ[] endPts = (from id in doorIds
-                                            select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
-                                                (doc.GetElement(id) as FamilyInstance)).GetEndPoint(1)
-                                                  ).ToArray();
-                            Curve finLine = finSeg.GetCurve();                            
-                            //контур выемки в проеме
-                            for (int pti = 0; pti < startPts.Length; pti++)
-                            {
-                                for (int j = 0; j < cenSegments.Count(); j++)
-                                {
-                                    XYZ pt1 = cenSegments.ElementAt(j).GetCurve().Project(startPts[pti]).XYZPoint;
-                                    XYZ pt2 = cenSegments.ElementAt(j).GetCurve().Project(endPts[pti]).XYZPoint;
-                                    if (pt1.DistanceTo(pt2) > 1.0 / 12.0 / 16.0)
-                                    {
-                                        BoundarySegment cenSeg = cenSegments.ElementAt(j);
-                                        Curve cenLine = cenSeg.GetCurve();
-                                        new ModelCurveCreator(doc).MakeModelCurve(cenLine);
-                                        Curve pext = Line.CreateBound(cenLine.Project(startPts[pti]).XYZPoint, cenLine.Project(endPts[pti]).XYZPoint);
-                                        Curve perp1 = Line.CreateBound(finLine.Project(startPts[pti]).XYZPoint, cenLine.Project(startPts[pti]).XYZPoint);
-                                        Curve perp2 = Line.CreateBound(finLine.Project(endPts[pti]).XYZPoint, cenLine.Project(endPts[pti]).XYZPoint);
-                                        profiles[i].Add(pext);
-                                        profiles[i].Add(perp1);
-                                        profiles[i].Add(perp2);
-                                        break;
-                                    }
-                                }                                
-                            }
-                            //"нарезаем" контур по отделке по проемам
-                            double[] finLineInterParam = (from pt in startPts select finLine.Project(pt).Parameter)
-                                .Concat(from pt in endPts select finLine.Project(pt).Parameter)
-                                .Concat(new double[] { finLine.GetEndParameter(0), finLine.GetEndParameter(1) })
-                                .OrderBy(x => x)
-                                .ToArray();
-                            for (int di = 0; di < finLineInterParam.Length; di += 2)
-                            {
-                                Curve pint = finLine.Clone();
-                                pint.MakeBound(finLineInterParam[di], finLineInterParam[di + 1]);
-                                profiles[i].Add(pint);
-                            }
-                        }
-                        catch { }
-                    }
-                    else
+                    if (doorIds.Count() == 0 || cenSegments.Count() == 0)
                     {
                         profiles[i].Add(finSeg.GetCurve());
+                        continue;
                     }
+                    try
+                    {
+                        XYZ[] startPts = (from id in doorIds
+                                          select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
+                                              (doc.GetElement(id) as FamilyInstance)).GetEndPoint(0)
+                                              ).ToArray();
+                        XYZ[] endPts = (from id in doorIds
+                                        select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
+                                            (doc.GetElement(id) as FamilyInstance)).GetEndPoint(1)
+                                              ).ToArray();
+
+                        Curve finLine = finSeg.GetCurve();
+                        List<double> finCurveParameters = new List<double>() {finLine.GetEndParameter(0), finLine.GetEndParameter(1) };
+                        //контур выемки в проеме
+                        for (int pti = 0; pti < startPts.Length; pti++)
+                        {
+                            for (int j = 0; j < cenSegments.Count(); j++)
+                            {
+                                XYZ stPt = startPts[pti];
+                                XYZ enPt = endPts[pti];
+                                Curve cenLine = cenSegments.ElementAt(j).GetCurve();
+                                XYZ pt1 = cenLine.Project(stPt).XYZPoint;
+                                XYZ pt2 = cenLine.Project(enPt).XYZPoint;
+
+                                XYZ vec1 = enPt - stPt;
+                                XYZ vec2 = pt1 - stPt;
+                                // проверка перпендикулярности
+                                if (vec1.DotProduct(vec2) == 0)
+                                {
+                                    finCurveParameters.Add(finLine.Project(stPt).Parameter);
+                                    finCurveParameters.Add(finLine.Project(enPt).Parameter);
+                                    Curve pext = Line.CreateBound(cenLine.Project(stPt).XYZPoint, cenLine.Project(enPt).XYZPoint);
+                                    Curve perp1 = Line.CreateBound(finLine.Project(stPt).XYZPoint, cenLine.Project(stPt).XYZPoint);
+                                    Curve perp2 = Line.CreateBound(finLine.Project(enPt).XYZPoint, cenLine.Project(enPt).XYZPoint);
+                                    profiles[i].Add(pext);
+                                    profiles[i].Add(perp1);
+                                    profiles[i].Add(perp2);
+                                    break;
+                                }
+                            }
+                        }
+                        //"нарезаем" контур по отделке по проемам
+                        finCurveParameters.Sort();
+                        for (int di = 0; di < finCurveParameters.Count(); di += 2)
+                        {
+                            Curve pint = finLine.Clone();
+                            pint.MakeBound(finCurveParameters.ElementAt(di), finCurveParameters.ElementAt(di + 1));
+                            profiles[i].Add(pint);
+                        }
+                    }
+                    catch { }
                 }
                 SortCurvesContiguous(profiles[i]);
             }              

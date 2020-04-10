@@ -101,6 +101,7 @@ namespace TerrTools.Updaters
     {
         public static Guid Guid { get { return new Guid("93dc3d80-0c29-4af5-a509-c36dfd497d66"); } }
         public static UpdaterId UpdaterId { get { return new UpdaterId(App.AddInId, Guid); } }
+        Document doc;
 
         public UpdaterId GetUpdaterId()
         {
@@ -122,8 +123,12 @@ namespace TerrTools.Updaters
         private string GetDuctClass(Duct el)
         {
             bool isInsul = el.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0;
-            string cl = isInsul ? "\"А\" с огнезащитой" : "\"B\"";
-            return cl;
+            string insulType = el.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_TYPE).AsString();
+            Element[] insulTypes = new FilteredElementCollector(doc).OfClass(typeof(DuctInsulationType)).Where(x => x.Name == insulType).ToArray();
+            // Параметр "Комментарий к типоразмеру"
+            string comment = insulTypes.Length > 0 ? insulTypes[0].get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS).AsString() : "";
+            if (insulTypes.Length > 0 && comment?.IndexOf("огнезащит", StringComparison.OrdinalIgnoreCase) >= 0) return "А с огнезащитой";
+            return "B";
         }
         private double GetDuctThickness(Duct el)
         {
@@ -169,13 +174,22 @@ namespace TerrTools.Updaters
             return thickness;
         }
 
+        private double GetLevelHeight(Duct el)
+        {
+            double[] zs = (from Connector con in el.ConnectorManager.Connectors select con.Origin.Z).ToArray();
+            return zs.Min();
+        }
+
+
         public void Execute(UpdaterData data)
         {
-            Document doc = data.GetDocument();
+            doc = data.GetDocument();
             string thickParameter = "ADSK_Толщина стенки";
             string classParameter = "ТеррНИИ_Класс герметичности";
+            string levelParameter = "ТеррНИИ_Отметка от нуля";
             SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             SharedParameterUtils.AddSharedParameter(doc, classParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
+            SharedParameterUtils.AddSharedParameter(doc, levelParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))
             {
                 try
@@ -183,6 +197,7 @@ namespace TerrTools.Updaters
                     Duct el = (Duct)doc.GetElement(id);
                     el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
                     el.LookupParameter(classParameter).Set(GetDuctClass(el));
+                    el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
                 }
                 catch (Exception ex)
                 {
@@ -241,4 +256,77 @@ namespace TerrTools.Updaters
             }
         }
     }
+
+    public class PartUpdater : IUpdater
+    {
+        public static Guid Guid { get { return new Guid("79ef66cc-2d1a-4bdd-9bae-dae5aa8501f0"); } }
+        public static UpdaterId UpdaterId { get { return new UpdaterId(App.AddInId, Guid); } }
+        Document doc;
+        
+
+        public UpdaterId GetUpdaterId()
+        {
+            return UpdaterId;
+        }
+
+        public string GetUpdaterName()
+        {
+            return "PartUpdater";
+        }
+        public string GetAdditionalInformation()
+        {
+            return "Обновляет параметр толщины частей для расчета отделки фасада";
+        }
+        public ChangePriority GetChangePriority()
+        {
+            return ChangePriority.FloorsRoofsStructuralWalls;
+        }       
+        private double GetThickness(Part el)
+        {
+            double layerWidth = el.get_Parameter(BuiltInParameter.DPART_LAYER_WIDTH).AsDouble();
+            Options opt = new Options();
+            Solid solid = el.get_Geometry(opt).FirstOrDefault() as Solid;
+            if (solid != null)
+            {
+                List<Face> faces = new List<Face>();
+                foreach (Face face in solid.Faces)
+                {
+                    bool widthface = false;
+                    foreach (CurveLoop loop in face.GetEdgesAsCurveLoops())
+                    {
+                        foreach (Curve edge in loop)
+                        {
+                            widthface = widthface || Math.Abs(edge.Length - layerWidth) < GlobalVariables.MinThreshold;
+                        }
+                    }
+                    if (el.GetFaceOffset(face) != 0 && !widthface) faces.Add(face);
+                }
+                if (faces.Count() != 0) layerWidth += el.GetFaceOffset(faces[0]);
+            }
+            return layerWidth;
+        }
+        public void Execute(UpdaterData data)
+        {
+            doc = data.GetDocument();
+            string thickParameter = "ADSK_Размер_Толщина";
+            SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_Parts }, group: BuiltInParameterGroup.PG_GEOMETRY);
+
+            foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))
+            {
+                try
+                {
+                    Part el = (Part)doc.GetElement(id);
+                    el.LookupParameter(thickParameter).Set(GetThickness(el));
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    Debug.WriteLine(ex.StackTrace);                    
+                    Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
+                }
+            }
+        }
+    }
+
+
 }
