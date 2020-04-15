@@ -197,6 +197,12 @@ namespace TerrTools
                     "Создать контур\nпомещения",
                     iconName:"Shape.png"
                     ));
+            pbDict.Add("SystemScheduleExporter",
+                MakePushButton(
+                    "ScheduleExporter",
+                    "Экспорт\nспецификаций",
+                    iconName: "Tables.png"
+                    ));
 
             ///
             /// Pulldown buttons
@@ -241,6 +247,7 @@ namespace TerrTools
             tempBtn = panelGeneral.AddItem(plDict["UpdateType"]) as PulldownButton;
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
+            panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
         }
 
         public Result OnShutdown(UIControlledApplication application)
