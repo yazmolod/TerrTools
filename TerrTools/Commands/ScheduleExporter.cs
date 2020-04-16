@@ -18,6 +18,7 @@ namespace TerrTools
     class ScheduleExporter : IExternalCommand
     {
         private Document doc;
+        private ScheduleExportOptions opt;
         private string GetSaveFile()
         {
             Forms.SaveFileDialog dialog = new Forms.SaveFileDialog();
@@ -31,20 +32,12 @@ namespace TerrTools
         }
 
 
-        private void FillExcelWorksheet(Excel.Worksheet sheet, RevitDataSection section)
+        private void FillExcelWorksheet(Excel.Worksheet sheet, int startR, int startC, RevitDataSection section)
         {
-            try { sheet.Name = section.Name; }
-            catch (System.Runtime.InteropServices.COMException ex)
-            {
-                TaskDialog.Show("Ошибка", string.Format(
-                    "\"{0}\" невозможно использовать как имя для листа. Попробуйте сократить имя, убрать непечатемые символы или дать уникальное имя",
-                    section.Name));
-            }
-            finally
-            {
-                Excel.Range range = sheet.Range[sheet.Cells[1, 1], sheet.Cells[section.Height, section.Width]];
-                range.Value = section.ValueMatrix;
-            }
+            Excel.Range range = sheet.Range[sheet.Cells[startR, startC],
+                sheet.Cells[startR + section.Height - 1, startC + section.Width - 1]];
+            range.Value = section.ValueMatrix;
+
         }
 
         private void ExcelExport(string filepath, RevitDataTable table)
@@ -53,12 +46,33 @@ namespace TerrTools
             Excel.Workbook wb = excelApp.Workbooks.Add();
 
             // заполняем данными
-            foreach (var sect in table.Sections)
+            if (opt.SplitSheets)
             {
-                Excel.Worksheet ws = wb.Sheets.Add();
-                FillExcelWorksheet(ws, sect);
+                foreach (var sect in table.Sections)
+                {
+                    Excel.Worksheet ws = wb.Sheets.Add();
+                    try { ws.Name = sect.Name; }
+                    catch (System.Runtime.InteropServices.COMException ex)
+                    {
+                        TaskDialog.Show("Ошибка", string.Format(
+                            "\"{0}\" невозможно использовать как имя для листа. Попробуйте сократить имя, убрать непечатемые символы или дать уникальное имя",
+                            sect.Name));
+                    }
+                    finally { FillExcelWorksheet(ws, 1, 1, sect); }                    
+                }
             }
-
+            else
+            {
+                int currentRow = 1;
+                Excel.Worksheet ws = wb.ActiveSheet;
+                ws.Name = "Все системы";
+                foreach (var sect in table.Sections)
+                {
+                    ws.Cells[currentRow, 1] = sect.Name;
+                    FillExcelWorksheet(ws, currentRow + 1, 1, sect);
+                    currentRow += sect.Height + 2;
+                }
+            }
             wb.SaveAs(filepath);
             wb.Close();
         }
@@ -101,6 +115,7 @@ namespace TerrTools
             var viewSchedules = new FilteredElementCollector(doc).OfClass(typeof(ViewSchedule)).WhereElementIsNotElementType().ToArray();
             var form = new UI.ExportSchedulesForm(viewSchedules);
             if (form.DialogResult != Forms.DialogResult.OK || form.Result.Count() == 0) return Result.Cancelled;
+            opt = form.ExportOptions;
 
             string path = GetSaveFile();
             if (path == null) return Result.Cancelled;
@@ -114,6 +129,15 @@ namespace TerrTools
             ExcelExport(path, mergedTable);
             TaskDialog.Show("Успешно", "Экспорт завершен");
             return Result.Succeeded;
+        }
+    }
+
+    public class ScheduleExportOptions
+    {
+        public bool SplitSheets { get; set; }
+        public ScheduleExportOptions()
+        {
+            SplitSheets = false;
         }
     }
 

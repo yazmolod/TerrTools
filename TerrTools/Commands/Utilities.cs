@@ -201,7 +201,6 @@ namespace TerrTools
         public static void SortCurvesContiguous(IList<Curve> curves)
         {
             //взято с https://thebuildingcoder.typepad.com/blog/2013/03/sort-and-orient-curves-to-form-a-contiguous-loop.html
-            const double precision = (1.0 / 12.0) / 16.0;
             int n = curves.Count;
 
             // Walk through each curve (after the first) 
@@ -224,7 +223,7 @@ namespace TerrTools
                     // If there is a match end->start, 
                     // this is the next curve
 
-                    if (precision > p.DistanceTo(endPoint))
+                    if (GlobalVariables.MinThreshold > p.DistanceTo(endPoint))
                     {
                         if (i + 1 != j)
                         {
@@ -241,7 +240,7 @@ namespace TerrTools
                     // If there is a match end->end, 
                     // reverse the next curve
 
-                    if (precision > p.DistanceTo(endPoint))
+                    if (GlobalVariables.MinThreshold > p.DistanceTo(endPoint))
                     {
                         if (i + 1 == j)
                         {

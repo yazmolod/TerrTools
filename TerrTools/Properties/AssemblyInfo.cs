@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 Общее
 - Добавлен инструмент экспорта спецификаций в Excel (одновременный экспорт нескольких спецификаций с объединением по настроенной сортировке)
 *Функция в тестовом режиме, будет дорабатываться*
+
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -36,4 +37,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.10.0")]
+[assembly: AssemblyFileVersion("0.10.1")]

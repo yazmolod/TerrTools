@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.Attributes;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Diagnostics;
@@ -130,6 +131,7 @@ namespace TerrTools
         private void CreateRibbon()
         {
             app.CreateRibbonTab(tabName);
+            RibbonPanel panelInfo = app.CreateRibbonPanel(tabName, "ТеррНИИ BIM");
             RibbonPanel panelArch = app.CreateRibbonPanel(tabName, "АР");
             RibbonPanel panelStruct = app.CreateRibbonPanel(tabName, "КР");
             RibbonPanel panelMEP = app.CreateRibbonPanel(tabName, "ОВиК");
@@ -142,7 +144,7 @@ namespace TerrTools
 
             ///
             /// Push buttons
-            ///
+            ///            
             pbDict.Add("DiffuserProcessing",
             MakePushButton(
                 "DiffuserProcessing",
@@ -219,6 +221,7 @@ namespace TerrTools
                     "Обновление всех шрифтов в проекте под стандарты предприятия",
                     "Type.png"
                     ));
+
             ///
             /// Архитектурная панель
             ///
@@ -248,6 +251,11 @@ namespace TerrTools
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
             panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
+
+            ///
+            /// Настройки
+            ///
+            panelInfo.AddItem(MakePushButton("AboutWindow", "About", iconName: "Logo.png"));
         }
 
         public Result OnShutdown(UIControlledApplication application)
@@ -319,6 +327,25 @@ namespace TerrTools
         {
             if (File.Exists(updaterPath)) Process.Start(updaterPath, argLine);
             else TaskDialog.Show("Ошибка", "Программа обновления отсутствует на сервере. Обновитесь самостоятельно");
+        }
+    }
+
+    [Transaction(TransactionMode.Manual)]
+    public class AboutWindow : IExternalCommand
+    {
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        {
+            string loc = Assembly.GetExecutingAssembly().Location;
+            string version = FileVersionInfo.GetVersionInfo(loc).FileVersion;
+            string patchNote = FileVersionInfo.GetVersionInfo(loc).Comments;
+
+            TaskDialog td = new TaskDialog("Информация")
+            {
+                MainInstruction = "Версия плагина: " + version,
+                MainContent = "*Обновления этой версии*\n" + patchNote
+            };
+            td.Show();
+            return Result.Succeeded;
         }
     }
 }

@@ -206,6 +206,9 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\Logo.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
