@@ -4,7 +4,7 @@
     <Name>Инструменты ТеррНИИ</Name>
     <Assembly>C:\ProgramData\Autodesk\Revit\Addins\2019\TerrTools.dll</Assembly>
     <AddInId>4e6830af-73c4-45fa-aea0-82df352d5157</AddInId>
-    <FullClassName>TerrTools.App</FullClassName>
+    <FullClassName>TerrTools.TerrToolsApp</FullClassName>
     <Text>Инструменты</Text>
     <VendorId>TerrNII</VendorId>
     <VendorDescription>ТеррНИИгражданпроект</VendorDescription>

@@ -178,6 +178,22 @@ namespace TerrTools
 
     static class GeometryUtils
     {
+            public static CurveArray ClosedCurveFromPoints(IEnumerable<XYZ> pts)
+        {
+            XYZ startPt = pts.OrderBy(x => x.Y).ThenBy(x => x.X).First();
+            List<XYZ>sortedArray = pts.Skip(1).OrderBy(x => startPt.AngleTo(x)).ThenBy(x => startPt.DistanceTo(x)).ToList();
+            sortedArray.Insert(0, startPt);
+            CurveArray curveArray = new CurveArray();
+            for (int i = 0; i < sortedArray.Count()-1; i++)
+            {
+                Curve c = Line.CreateBound(sortedArray[0], sortedArray[1]);
+                curveArray.Append(c);
+            }
+            Curve endC = Line.CreateBound(sortedArray.Last(), sortedArray.First());
+            curveArray.Append(endC);
+            return curveArray;
+        }
+
         static Curve CreateReversedCurve(Curve orig)
         {            
             if (orig is Line)
@@ -330,92 +346,131 @@ namespace TerrTools
             }
             return profiles;
         }
+
+
         static public List<List<Curve>> GetRoomWithDoorsContour(SpatialElement spatial)
-        {       
-            
-            Document doc = spatial.Document;
-            List<List<Curve>> profiles = new List<List<Curve>>();
-            SpatialElementBoundaryOptions optFinish = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish};
-            SpatialElementBoundaryOptions optCenter = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.CoreCenter };
-            IList<IList<BoundarySegment>> boundariesFinish = spatial.GetBoundarySegments(optFinish);
-            IList<IList<BoundarySegment>> boundariesCenter = spatial.GetBoundarySegments(optCenter);
-            for (int i = 0; i < boundariesFinish.Count; i++)
-            {
-                profiles.Add(new List<Curve>());
-                foreach (BoundarySegment finSeg in boundariesFinish[i])
-                {
-                    Wall wall = doc.GetElement(finSeg.ElementId) as Wall;
-                    if (wall == null || wall.WallType.Kind == WallKind.Curtain) 
-                    { 
-                        profiles[i].Add(finSeg.GetCurve());
-                        continue;
-                    }
-                    IEnumerable<ElementId> doorIds = wall.FindInserts(true, false, true, true)
-                                    .Where(x => doc.GetElement(x).Category.Name == "Двери")
-                                    .Where(x => FinishingData.IsElementCollideRoom((Room)spatial, doc.GetElement(x)));
-                    IEnumerable <BoundarySegment> cenSegments = boundariesCenter[i].Where(x => x.ElementId == finSeg.ElementId);
-                    if (doorIds.Count() == 0 || cenSegments.Count() == 0)
-                    {
-                        profiles[i].Add(finSeg.GetCurve());
-                        continue;
-                    }
-                    try
-                    {
-                        XYZ[] startPts = (from id in doorIds
-                                          select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
-                                              (doc.GetElement(id) as FamilyInstance)).GetEndPoint(0)
-                                              ).ToArray();
-                        XYZ[] endPts = (from id in doorIds
-                                        select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
-                                            (doc.GetElement(id) as FamilyInstance)).GetEndPoint(1)
-                                              ).ToArray();
-
-                        Curve finLine = finSeg.GetCurve();
-                        List<double> finCurveParameters = new List<double>() {finLine.GetEndParameter(0), finLine.GetEndParameter(1) };
-                        //контур выемки в проеме
-                        for (int pti = 0; pti < startPts.Length; pti++)
+        {
+            throw new NotImplementedException();
+        }
+            /*
+                        Document doc = spatial.Document;
+                        SpatialElementBoundaryOptions optFinish = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish };
+                        IList<IList<BoundarySegment>> boundariesFinish = spatial.GetBoundarySegments(optFinish);
+                        List<XYZ> points = new List<XYZ>();
+                        for (int i = 0; i < boundariesFinish.Count; i++)
                         {
-                            for (int j = 0; j < cenSegments.Count(); j++)
+                            foreach (BoundarySegment finSeg in boundariesFinish[i])
                             {
-                                XYZ stPt = startPts[pti];
-                                XYZ enPt = endPts[pti];
-                                Curve cenLine = cenSegments.ElementAt(j).GetCurve();
-                                XYZ pt1 = cenLine.Project(stPt).XYZPoint;
-                                XYZ pt2 = cenLine.Project(enPt).XYZPoint;
-
-                                XYZ vec1 = enPt - stPt;
-                                XYZ vec2 = pt1 - stPt;
-                                // проверка перпендикулярности
-                                if (vec1.DotProduct(vec2) == 0)
+                                Wall wall = doc.GetElement(finSeg.ElementId) as Wall;
+                                if (wall == null || wall.WallType.Kind == WallKind.Curtain)
                                 {
-                                    finCurveParameters.Add(finLine.Project(stPt).Parameter);
-                                    finCurveParameters.Add(finLine.Project(enPt).Parameter);
-                                    Curve pext = Line.CreateBound(cenLine.Project(stPt).XYZPoint, cenLine.Project(enPt).XYZPoint);
-                                    Curve perp1 = Line.CreateBound(finLine.Project(stPt).XYZPoint, cenLine.Project(stPt).XYZPoint);
-                                    Curve perp2 = Line.CreateBound(finLine.Project(enPt).XYZPoint, cenLine.Project(enPt).XYZPoint);
-                                    profiles[i].Add(pext);
-                                    profiles[i].Add(perp1);
-                                    profiles[i].Add(perp2);
-                                    break;
+                                    Curve c = finSeg.GetCurve();
+                                    points.Add(c.GetEndPoint(0));
+                                    points.Add(c.GetEndPoint(1));
+                                    continue;
+                                }
+                                IEnumerable<ElementId> doorIds = wall.FindInserts(true, false, true, true)
+                                                .Where(x => doc.GetElement(x).Category.Name == "Двери")
+                                                .Where(x => FinishingData.IsElementCollideRoom((Room)spatial, doc.GetElement(x)));
+                                IEnumerable<BoundarySegment> cenSegments = boundariesCenter[i].Where(x => x.ElementId == finSeg.ElementId);
+                                if (doorIds.Count() == 0 || cenSegments.Count() == 0)
+                                {
+                                    profiles[i].Add(finSeg.GetCurve());
+                                    continue;
+                                }
+                                */
+
+
+            /*
+            static public List<List<Curve>> GetRoomWithDoorsContour(SpatialElement spatial)
+            {       
+
+                Document doc = spatial.Document;
+                List<List<Curve>> profiles = new List<List<Curve>>();
+                SpatialElementBoundaryOptions optFinish = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish};
+                SpatialElementBoundaryOptions optCenter = new SpatialElementBoundaryOptions() { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.CoreCenter };
+                IList<IList<BoundarySegment>> boundariesFinish = spatial.GetBoundarySegments(optFinish);
+                IList<IList<BoundarySegment>> boundariesCenter = spatial.GetBoundarySegments(optCenter);
+                for (int i = 0; i < boundariesFinish.Count; i++)
+                {
+                    profiles.Add(new List<Curve>());
+                    foreach (BoundarySegment finSeg in boundariesFinish[i])
+                    {
+                        Wall wall = doc.GetElement(finSeg.ElementId) as Wall;
+                        if (wall == null || wall.WallType.Kind == WallKind.Curtain) 
+                        { 
+                            profiles[i].Add(finSeg.GetCurve());
+                            continue;
+                        }
+                        IEnumerable<ElementId> doorIds = wall.FindInserts(true, false, true, true)
+                                        .Where(x => doc.GetElement(x).Category.Name == "Двери")
+                                        .Where(x => FinishingData.IsElementCollideRoom((Room)spatial, doc.GetElement(x)));
+                        IEnumerable <BoundarySegment> cenSegments = boundariesCenter[i].Where(x => x.ElementId == finSeg.ElementId);
+                        if (doorIds.Count() == 0 || cenSegments.Count() == 0)
+                        {
+                            profiles[i].Add(finSeg.GetCurve());
+                            continue;
+                        }
+                        try
+                        {
+                            XYZ[] startPts = (from id in doorIds
+                                              select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
+                                                  (doc.GetElement(id) as FamilyInstance)).GetEndPoint(0)
+                                                  ).ToArray();
+                            XYZ[] endPts = (from id in doorIds
+                                            select ModelCurveCreator.GetFamilyInstanceCutBaseLine(
+                                                (doc.GetElement(id) as FamilyInstance)).GetEndPoint(1)
+                                                  ).ToArray();
+
+                            Curve finLine = finSeg.GetCurve();
+                            List<double> finCurveParameters = new List<double>() {finLine.GetEndParameter(0), finLine.GetEndParameter(1) };
+                            //контур выемки в проеме
+                            for (int pti = 0; pti < startPts.Length; pti++)
+                            {
+                                for (int j = 0; j < cenSegments.Count(); j++)
+                                {
+                                    XYZ stPt = startPts[pti];
+                                    XYZ enPt = endPts[pti];
+                                    Curve cenLine = cenSegments.ElementAt(j).GetCurve();
+                                    XYZ pt1 = cenLine.Project(stPt).XYZPoint;
+                                    XYZ pt2 = cenLine.Project(enPt).XYZPoint;
+
+                                    XYZ vec1 = enPt - stPt;
+                                    XYZ vec2 = pt1 - stPt;
+                                    // проверка перпендикулярности
+                                    if (vec1.DotProduct(vec2) == 0)
+                                    {
+                                        finCurveParameters.Add(finLine.Project(stPt).Parameter);
+                                        finCurveParameters.Add(finLine.Project(enPt).Parameter);
+                                        Curve pext = Line.CreateBound(cenLine.Project(stPt).XYZPoint, cenLine.Project(enPt).XYZPoint);
+                                        Curve perp1 = Line.CreateBound(finLine.Project(stPt).XYZPoint, cenLine.Project(stPt).XYZPoint);
+                                        Curve perp2 = Line.CreateBound(finLine.Project(enPt).XYZPoint, cenLine.Project(enPt).XYZPoint);
+                                        profiles[i].Add(pext);
+                                        profiles[i].Add(perp1);
+                                        profiles[i].Add(perp2);
+                                        break;
+                                    }
                                 }
                             }
+                            //"нарезаем" контур по отделке по проемам
+                            finCurveParameters.Sort();
+                            for (int di = 0; di < finCurveParameters.Count(); di += 2)
+                            {
+                                Curve pint = finLine.Clone();
+                                pint.MakeBound(finCurveParameters.ElementAt(di), finCurveParameters.ElementAt(di + 1));
+                                profiles[i].Add(pint);
+                            }
                         }
-                        //"нарезаем" контур по отделке по проемам
-                        finCurveParameters.Sort();
-                        for (int di = 0; di < finCurveParameters.Count(); di += 2)
-                        {
-                            Curve pint = finLine.Clone();
-                            pint.MakeBound(finCurveParameters.ElementAt(di), finCurveParameters.ElementAt(di + 1));
-                            profiles[i].Add(pint);
-                        }
+                        catch { }
                     }
-                    catch { }
-                }
-                SortCurvesContiguous(profiles[i]);
-            }              
-            return profiles;
-        }
-        static public RevitLinkInstance GetLinkedDoc(Document doc)
+                    SortCurvesContiguous(profiles[i]);
+                }              
+                return profiles;
+            }
+            */
+
+
+            static public RevitLinkInstance GetLinkedDoc(Document doc)
         {
             RevitLinkInstance[] linkedDocs = new FilteredElementCollector(doc).OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().ToArray();
             var form = new UI.OneComboboxForm("Выберите связанный файл", (from d in linkedDocs select d.Name).ToArray());

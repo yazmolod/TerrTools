@@ -11,15 +11,16 @@ using System.Diagnostics;
 
 namespace TerrTools
 {
-    public class App : IExternalApplication
+    public class TerrToolsApp : IExternalApplication
     {
-        UIControlledApplication app;
+        public static UIControlledApplication Application;
+        public static List<IUpdater> Updaters = new List<IUpdater>();
         public static AddInId AddInId { get { return new AddInId(new Guid("4e6830af-73c4-45fa-aea0-82df352d5157")); } }
         string tabName = "ТеррНИИ BIM";
         string DLLPath { get { return @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrTools.dll"; } }
         string updaterPath { get { return @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrToolsUpdater.exe"; } }
 
-        List<UpdaterId> updatersId = new List<UpdaterId>();
+        
         int btnCounter = 0;
         int pullBtnCounter = 0;
 
@@ -92,26 +93,26 @@ namespace TerrTools
             //UpdaterRegistry.RegisterUpdater(updater);
             //UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeGeometry());
 
-            updater = new Updaters.SpaceUpdater();
-            updatersId.Add(updater.GetUpdaterId());
+            updater = new Updaters.SpaceUpdater("SpaceUpdater", "b49432e1-c88d-4020-973d-1464f2d7b121", "", ChangePriority.RoomsSpacesZones);
+            Updaters.Add(updater);
             filter = new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces);
             UpdaterRegistry.RegisterUpdater(updater);
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
 
-            updater = new Updaters.DuctsUpdater();
-            updatersId.Add(updater.GetUpdaterId());
+            updater = new Updaters.DuctsUpdater("DuctUpdater", "93dc3d80-0c29-4af5-a509-c36dfd497d66", "", ChangePriority.MEPAccessoriesFittingsSegmentsWires);
+            Updaters.Add(updater);
             filter = new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves), new ElementIsElementTypeFilter(true));
             UpdaterRegistry.RegisterUpdater(updater);
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
 
-            updater = new Updaters.DuctsAccessoryUpdater();
-            updatersId.Add(updater.GetUpdaterId());
+            updater = new Updaters.DuctsAccessoryUpdater("DuctAccessoryUpdater", "79e309d3-bd2d-4255-84b8-2133c88b695d", "", ChangePriority.MEPAccessoriesFittingsSegmentsWires);
+            Updaters.Add(updater);
             filter = new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory), new ElementIsElementTypeFilter(true));
             UpdaterRegistry.RegisterUpdater(updater);
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
 
-            updater = new Updaters.RoomUpdater();
-            updatersId.Add(updater.GetUpdaterId());
+            updater = new Updaters.RoomUpdater("RoomUpdater", "a82a5ae5-9c21-4645-b029-d3d0b67312f1", "", ChangePriority.RoomsSpacesZones);
+            Updaters.Add(updater);
             var filter1 = new ElementCategoryFilter(BuiltInCategory.OST_Rooms);
             var filter2 = new ElementCategoryFilter(BuiltInCategory.OST_Doors);
             var filter3 = new ElementCategoryFilter(BuiltInCategory.OST_Windows);
@@ -121,8 +122,8 @@ namespace TerrTools
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filterRDW, ChangeTypeAdditionAndModication);
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filterDW, Element.GetChangeTypeElementDeletion());
 
-            updater = new Updaters.PartUpdater();
-            updatersId.Add(updater.GetUpdaterId());
+            updater = new Updaters.PartUpdater("PartUpdater", "79ef66cc-2d1a-4bdd-9bae-dae5aa8501f0", "", ChangePriority.FloorsRoofsStructuralWalls);
+            Updaters.Add(updater);
             filter = new ElementCategoryFilter(BuiltInCategory.OST_Parts);
             UpdaterRegistry.RegisterUpdater(updater);
             UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeAny());
@@ -130,12 +131,12 @@ namespace TerrTools
 
         private void CreateRibbon()
         {
-            app.CreateRibbonTab(tabName);
-            RibbonPanel panelInfo = app.CreateRibbonPanel(tabName, "ТеррНИИ BIM");
-            RibbonPanel panelArch = app.CreateRibbonPanel(tabName, "АР");
-            RibbonPanel panelStruct = app.CreateRibbonPanel(tabName, "КР");
-            RibbonPanel panelMEP = app.CreateRibbonPanel(tabName, "ОВиК");
-            RibbonPanel panelGeneral = app.CreateRibbonPanel(tabName, "Общие");
+            Application.CreateRibbonTab(tabName);
+            RibbonPanel panelInfo = Application.CreateRibbonPanel(tabName, "ТеррНИИ BIM");
+            RibbonPanel panelArch = Application.CreateRibbonPanel(tabName, "АР");
+            RibbonPanel panelStruct = Application.CreateRibbonPanel(tabName, "КР");
+            RibbonPanel panelMEP = Application.CreateRibbonPanel(tabName, "ОВиК");
+            RibbonPanel panelGeneral = Application.CreateRibbonPanel(tabName, "Общие");
 
             Dictionary<string, PushButtonData> pbDict = new Dictionary<string, PushButtonData>();
             Dictionary<string, PulldownButtonData> plDict = new Dictionary<string, PulldownButtonData>();
@@ -255,21 +256,20 @@ namespace TerrTools
             ///
             /// Настройки
             ///
-            panelInfo.AddItem(MakePushButton("AboutWindow", "About", iconName: "Logo.png"));
+            panelInfo.AddItem(MakePushButton("SettingsWindow", "Настройки", iconName: "Settings.png"));
         }
 
         public Result OnShutdown(UIControlledApplication application)
         {   
-            foreach (UpdaterId id in updatersId) UpdaterRegistry.UnregisterUpdater(id);
+            foreach (IUpdater upd in Updaters) UpdaterRegistry.UnregisterUpdater(upd.GetUpdaterId());
             return Result.Succeeded;
         }
 
 
         public Result OnStartup(UIControlledApplication app)
         {
-            this.app = app;
+            TerrToolsApp.Application = app;
             app.Idling += OverrideCommands;
-
 
 
             if (CheckUpdates(out string currentVersion, out string lastReleaseVersion, out string patchNote))
@@ -305,7 +305,7 @@ namespace TerrTools
         // Список команд можно найти в файле commandids.txt в папке проекта
         private void OverrideCommands(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
         {
-            app.Idling -= OverrideCommands;
+            Application.Idling -= OverrideCommands;
             UIApplication uiapp = sender as UIApplication;
             if (uiapp != null)
             {
@@ -331,20 +331,11 @@ namespace TerrTools
     }
 
     [Transaction(TransactionMode.Manual)]
-    public class AboutWindow : IExternalCommand
+    public class SettingsWindow : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            string loc = Assembly.GetExecutingAssembly().Location;
-            string version = FileVersionInfo.GetVersionInfo(loc).FileVersion;
-            string patchNote = FileVersionInfo.GetVersionInfo(loc).Comments;
-
-            TaskDialog td = new TaskDialog("Информация")
-            {
-                MainInstruction = "Версия плагина: " + version,
-                MainContent = "*Обновления этой версии*\n" + patchNote
-            };
-            td.Show();
+            var form = new UI.SettingsForm();
             return Result.Succeeded;
         }
     }

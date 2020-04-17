@@ -37,6 +37,7 @@ namespace TerrTools
             string finishingHeightParameterName = "ТеррНИИ_Высота отделки помещения";
             string finishingPerimeterParameterName = "ТеррНИИ_Периметр отделки";
             string slopeAreaParameterName = "ТеррНИИ_Площадь откосов";
+            string doorOpeningPlaneAreaParameterName = "ТеррНИИ_Площадь проемов в плане";
             SharedParameterUtils.AddSharedParameter(doc, openingAreaParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             SharedParameterUtils.AddSharedParameter(doc, doorOpeningWidthParameterName,
@@ -46,6 +47,8 @@ namespace TerrTools
             SharedParameterUtils.AddSharedParameter(doc, finishingPerimeterParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             SharedParameterUtils.AddSharedParameter(doc, slopeAreaParameterName,
+                    new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
+            SharedParameterUtils.AddSharedParameter(doc, doorOpeningPlaneAreaParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
             SharedParameterUtils.AddSharedParameter(doc, finishingHeightParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_Rooms }, BuiltInParameterGroup.PG_CONSTRAINTS);
@@ -60,6 +63,7 @@ namespace TerrTools
             double doorOpeningsWidth = 0;
             double finishingPerimeter = 0;
             double allOpeningsSlope = 0;
+            double doorOpeningPlaneArea = 0;
 
             List<ElementId> usedOpenings = new List<ElementId>();
 
@@ -113,15 +117,19 @@ namespace TerrTools
                                 
                                 Parameter p = opening.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET) ?? opening.get_Parameter(BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM);
                                 double itemBottomOffset = p.AsDouble();
+                                double roomBottomOffset = room.get_Parameter(BuiltInParameter.ROOM_LOWER_OFFSET).AsDouble();
                                 double openingFinishingArea = 0;
-                                if (finishingHeight >= itemBottomOffset + openingHeight) openingFinishingArea = openingArea;
-                                else if (finishingHeight > itemBottomOffset) openingFinishingArea = openingArea * (finishingHeight - itemBottomOffset) / openingHeight;
-
-                                allOpeningsArea += openingArea;
-                                doorOpeningsWidth += itemBottomOffset == 0 ? openingWidth : 0;
+                                if (finishingHeight + roomBottomOffset >= itemBottomOffset + openingHeight) openingFinishingArea = openingArea;
+                                else if (finishingHeight + roomBottomOffset > itemBottomOffset) openingFinishingArea = openingArea * (finishingHeight + roomBottomOffset - itemBottomOffset) / openingHeight;
+                                                                
+                                allOpeningsArea += openingArea;                                
                                 allOpeningsFinishingArea += openingFinishingArea;
                                 allOpeningsSlope += openingSlope;
-
+                                if (itemBottomOffset == roomBottomOffset)
+                                {
+                                    doorOpeningsWidth += openingWidth;
+                                    doorOpeningPlaneArea += openingWidth * wall.Width / 2;
+                                }
                                 usedOpenings.Add(insertId);
                             }
                         }
@@ -133,6 +141,7 @@ namespace TerrTools
             room.LookupParameter(doorOpeningWidthParameterName).Set(doorOpeningsWidth);
             room.LookupParameter(finishingPerimeterParameterName).Set(finishingPerimeter);
             room.LookupParameter(slopeAreaParameterName).Set(allOpeningsSlope);
+            room.LookupParameter(doorOpeningPlaneAreaParameterName).Set(doorOpeningPlaneArea);
         }
         static public bool IsElementCollideRoom(Room room, Element elInsert)
         {

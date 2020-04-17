@@ -146,7 +146,7 @@ namespace TerrTools.UI
     public class BindedElement
     {
         public BindedElement(Element el) { Element = el; }
-        public Element Element { get; }
+        public Element Element { get; set; }
         public string ShowName { get { return Element.Category.Name; } }
     }
     public class BindedParameter
@@ -154,5 +154,5 @@ namespace TerrTools.UI
         public BindedParameter(Parameter p) { Parameter = p; }
         public Parameter Parameter { get; set; }
         public string ShowName { get { return Parameter.Definition.Name; } }
-    }
+    }    
 }

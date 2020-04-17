@@ -11,31 +11,61 @@ using System.Diagnostics;
 
 namespace TerrTools.Updaters
 {
-    public class MirroredInstancesUpdater : IUpdater
+    public abstract class TerrUpdater : IUpdater
     {
-        public static Guid Guid { get { return new Guid("a0643a35-5e9d-4569-9a29-53042c023725"); } }
-        public static UpdaterId UpdaterId { get { return new UpdaterId(App.AddInId, Guid); } }
+        private string mName;
+        private string mInfo;
+        private Guid mGuid;
+        private ChangePriority mPriority;
+        protected Document doc;
+        public bool IsActive { get; set; }
+
+        public TerrUpdater(string name, string guid, string info, ChangePriority priority)
+        {
+            mName = name;
+            mInfo = info;
+            mGuid = new Guid(guid);
+            mPriority = priority;
+            IsActive = true;
+        }
+        public abstract void InnerExecute(UpdaterData data);
+
+        public void Execute(UpdaterData data)
+        {
+            if (IsActive)
+            {
+                doc = data.GetDocument();
+                InnerExecute(data);
+            }
+        }
+
+        public string GetAdditionalInformation()
+        {
+            return mInfo;
+        }
+
+        public ChangePriority GetChangePriority()
+        {
+            return mPriority;
+        }
 
         public UpdaterId GetUpdaterId()
         {
-            return UpdaterId;
+            return new UpdaterId(TerrToolsApp.AddInId, mGuid);
         }
 
         public string GetUpdaterName()
         {
-            return "Family Instance Mirror Updater";
+            return mName;
         }
-        public string GetAdditionalInformation()
+    }
+
+public class MirroredInstancesUpdater : TerrUpdater
+    {
+        public MirroredInstancesUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
+
+        public override void InnerExecute(UpdaterData data)
         {
-            return "Текст";
-        }
-        public ChangePriority GetChangePriority()
-        {
-            return ChangePriority.DoorsOpeningsWindows;
-        }
-        public void Execute(UpdaterData data)
-        {
-            Document doc = data.GetDocument();
             string paramName = "ТеррНИИ_Элемент отзеркален";
             foreach (ElementId changedElemId in data.GetModifiedElementIds())
             {
@@ -48,37 +78,18 @@ namespace TerrTools.Updaters
                     int value = el.Mirrored ? 1 : 0;
                     el.LookupParameter(paramName).Set(value);
                 }
-            }
+            }            
         }
     }
 
-    public class SpaceUpdater : IUpdater
+    public class SpaceUpdater : TerrUpdater
     {
-        public static Guid Guid { get { return new Guid("b49432e1-c88d-4020-973d-1464f2d7b121"); } }
-        public static UpdaterId UpdaterId { get { return new UpdaterId(App.AddInId, Guid); } }
+        public SpaceUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
 
-        public UpdaterId GetUpdaterId()
+        public override void InnerExecute(UpdaterData data)
         {
-            return UpdaterId;
-        }
-
-        public string GetUpdaterName()
-        {
-            return "Space Updater";
-        }
-        public string GetAdditionalInformation()
-        {
-            return "Текст";
-        }
-        public ChangePriority GetChangePriority()
-        {
-            return ChangePriority.RoomsSpacesZones;
-        }
-        public void Execute(UpdaterData data)
-        {
-            Document doc = data.GetDocument();
             var modified = data.GetModifiedElementIds();
-            var added = data.GetAddedElementIds();
+             var added = data.GetAddedElementIds();
             foreach (ElementId id in added.Concat(modified))
             {
                 try
@@ -92,34 +103,13 @@ namespace TerrTools.Updaters
                     Debug.WriteLine(ex.StackTrace);
                     Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
                 }
-            }
+            }            
         }
     }
-
-    
-    public class DuctsUpdater : IUpdater
+        
+    public class DuctsUpdater : TerrUpdater
     {
-        public static Guid Guid { get { return new Guid("93dc3d80-0c29-4af5-a509-c36dfd497d66"); } }
-        public static UpdaterId UpdaterId { get { return new UpdaterId(App.AddInId, Guid); } }
-        Document doc;
-
-        public UpdaterId GetUpdaterId()
-        {
-            return UpdaterId;
-        }
-
-        public string GetUpdaterName()
-        {
-            return "DuctUpdater";
-        }
-        public string GetAdditionalInformation()
-        {
-            return "Обновляет параметры толщины стенки и класса герметичности в зависимости от габаритов";
-        }
-        public ChangePriority GetChangePriority()
-        {
-            return ChangePriority.MEPAccessoriesFittingsSegmentsWires;
-        }
+        public DuctsUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
         private string GetDuctClass(Duct el)
         {
             bool isInsul = el.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0;
@@ -180,10 +170,8 @@ namespace TerrTools.Updaters
             return zs.Min();
         }
 
-
-        public void Execute(UpdaterData data)
+        public override void InnerExecute(UpdaterData data)
         {
-            doc = data.GetDocument();
             string thickParameter = "ADSK_Толщина стенки";
             string classParameter = "ТеррНИИ_Класс герметичности";
             string levelParameter = "ТеррНИИ_Отметка от нуля";
@@ -207,35 +195,16 @@ namespace TerrTools.Updaters
                 }
             }
         }
+        
     }
 
-
-    public class DuctsAccessoryUpdater : IUpdater
+    public class DuctsAccessoryUpdater : TerrUpdater
     {
-        public static Guid Guid { get { return new Guid("79e309d3-bd2d-4255-84b8-2133c88b695d"); } }
-        public static UpdaterId UpdaterId { get { return new UpdaterId(App.AddInId, Guid); } }
+        public DuctsAccessoryUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
 
-        public UpdaterId GetUpdaterId()
+        public override void InnerExecute(UpdaterData data)
         {
-            return UpdaterId;
-        }
 
-        public string GetUpdaterName()
-        {
-            return "DuctsAccessoryUpdater";
-        }
-        public string GetAdditionalInformation()
-        {
-            return "Задает корректную марку для арматуры воздуховодов";
-        }
-        public ChangePriority GetChangePriority()
-        {
-            return ChangePriority.MEPAccessoriesFittingsSegmentsWires;
-        }
-        
-        public void Execute(UpdaterData data)
-        {
-            Document doc = data.GetDocument();
             var modified = data.GetModifiedElementIds();
             var added = data.GetAddedElementIds();
             foreach (ElementId id in modified.Concat(added))
@@ -257,30 +226,9 @@ namespace TerrTools.Updaters
         }
     }
 
-    public class PartUpdater : IUpdater
+    public class PartUpdater : TerrUpdater
     {
-        public static Guid Guid { get { return new Guid("79ef66cc-2d1a-4bdd-9bae-dae5aa8501f0"); } }
-        public static UpdaterId UpdaterId { get { return new UpdaterId(App.AddInId, Guid); } }
-        Document doc;
-        
-
-        public UpdaterId GetUpdaterId()
-        {
-            return UpdaterId;
-        }
-
-        public string GetUpdaterName()
-        {
-            return "PartUpdater";
-        }
-        public string GetAdditionalInformation()
-        {
-            return "Обновляет параметр толщины частей для расчета отделки фасада";
-        }
-        public ChangePriority GetChangePriority()
-        {
-            return ChangePriority.FloorsRoofsStructuralWalls;
-        }       
+        public PartUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
         private double GetThickness(Part el)
         {
             double layerWidth = el.get_Parameter(BuiltInParameter.DPART_LAYER_WIDTH).AsDouble();
@@ -305,9 +253,8 @@ namespace TerrTools.Updaters
             }
             return layerWidth;
         }
-        public void Execute(UpdaterData data)
+        public override void InnerExecute(UpdaterData data)
         {
-            doc = data.GetDocument();
             string thickParameter = "ADSK_Размер_Толщина";
             SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_Parts }, group: BuiltInParameterGroup.PG_GEOMETRY);
 
@@ -321,10 +268,11 @@ namespace TerrTools.Updaters
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
-                    Debug.WriteLine(ex.StackTrace);                    
+                    Debug.WriteLine(ex.StackTrace);
                     Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
                 }
             }
+
         }
     }
 
