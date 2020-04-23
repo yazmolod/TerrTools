@@ -30,6 +30,23 @@ namespace TerrToolsUpdater
         const int SW_HIDE = 0;
         const int SW_SHOW = 5;
 
+        public static bool IsFileReady(string filename)
+        {
+            try
+            {
+                using (FileStream inputStream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.None))
+                    return inputStream.Length > 0;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+        public static void WaitForFile(string filename)
+        {
+            while (!IsFileReady(filename)) { }
+        }
+
         static void CopyFiles()
         {
             foreach (string folderTo in foldersTo)
@@ -42,6 +59,7 @@ namespace TerrToolsUpdater
                     else if (!Directory.Exists(folderTo)) Console.WriteLine(string.Format("Не удалось скопировать в путь {0}", folderTo));
                     else
                     {
+                        WaitForFile(dst);
                         File.Copy(src, dst, true);
                         Console.WriteLine(string.Format("Файл {0} успешно скопирован в папку {1}", fileName, folderTo));
                     }
@@ -53,26 +71,40 @@ namespace TerrToolsUpdater
         {
             bool isRestart = (args.Length > 1 && args[1] == "-restart");
             bool isFromRevit = (args.Length > 0 && args[0] == "-fromRevit");
-            // запуск из ревита
-            if (isFromRevit)
+            try
             {
-                ShowWindow(GetConsoleWindow(), SW_HIDE);
-                Process[] processes = Process.GetProcessesByName("Revit");
-                if (processes.Length > 0)
+                // запуск из ревита
+                if (isFromRevit)
                 {
-                    Process revitProcess = processes.First();
-                    string processPath = revitProcess.MainModule.FileName;
-                    if (isRestart) revitProcess.CloseMainWindow();
-                    revitProcess.WaitForExit();
+                    ShowWindow(GetConsoleWindow(), SW_HIDE);
+                    Process[] processes = Process.GetProcessesByName("Revit");
+                    if (processes.Length > 0)
+                    {
+                        Process revitProcess = processes.First();
+                        string processPath = revitProcess.MainModule.FileName;
+                        if (isRestart) revitProcess.Kill();
+                        revitProcess.WaitForExit();
+                        CopyFiles();
+                        if (isRestart) Process.Start(processPath);
+                    }
+                    else
+                    {
+                        throw new Exception("Не найден процесс Revit");
+                    }
+                }
+                // запуск с диска
+                else
+                {
                     CopyFiles();
-                    if (isRestart) Process.Start(processPath);
+                    Thread.Sleep(1000);
                 }
             }
-            // запуск с диска
-            else
+            catch (Exception ex)
             {
-                CopyFiles();
-                Thread.Sleep(1000);
+                Console.WriteLine("***ПРОИЗОШЛА ОШИБКА, ОБНОВЛЕНИЕ НЕ ПРОИЗВЕДЕНО***");
+                Console.WriteLine(ex.ToString());
+                Console.WriteLine("\nНажмите любую клавишу или закройте окно...");                
+                Console.ReadKey();
             }
             
         }

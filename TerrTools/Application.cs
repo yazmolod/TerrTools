@@ -8,31 +8,31 @@ using Autodesk.Revit.Attributes;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Diagnostics;
+using TerrTools.Updaters;
 
 namespace TerrTools
 {
     public class App : IExternalApplication
     {
-        public static UIControlledApplication Application;
-        public static List<IUpdater> Updaters = new List<IUpdater>();
-        public static AddInId AddInId { get { return new AddInId(new Guid("4e6830af-73c4-45fa-aea0-82df352d5157")); } }
-        string tabName = "ТеррНИИ BIM";
-        string DLLPath { get { return @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrTools.dll"; } }
-        string updaterPath { get { return @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrToolsUpdater.exe"; } }
-
+        public static UIControlledApplication Application { get; set; }
+        public static List<TerrUpdater> Updaters = new List<TerrUpdater>();
+        public static AddInId AddInId { get => new AddInId(new Guid("4e6830af-73c4-45fa-aea0-82df352d5157")); }
+        public static string AppName { get => "ТеррНИИ BIM"; }
+        public static string DLLPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrTools.dll";  }
+        public static string UpdaterPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrToolsUpdater.exe";  }
+        public static string Version { get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion; }
+        public static string PatchNote { get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).Comments; }
         
         int btnCounter = 0;
         int pullBtnCounter = 0;
 
-        private bool CheckUpdates(out string currentVersion, out string lastReleaseVersion, out string patchNote)
+        static public bool CheckUpdates(out string lastReleaseVersion, out string patchNote)
         {
-            currentVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
-
             try
             {
                 lastReleaseVersion = FileVersionInfo.GetVersionInfo(DLLPath).FileVersion;
                 patchNote = FileVersionInfo.GetVersionInfo(DLLPath).Comments;
-                return currentVersion != lastReleaseVersion;
+                return App.Version != lastReleaseVersion;
             }
             catch
             {
@@ -81,62 +81,58 @@ namespace TerrTools
 
         private void RegisterUpdaters()
         {            
-            IUpdater updater;
-            ElementFilter filter;
-
             ChangeType ChangeTypeAdditionAndModication = ChangeType.ConcatenateChangeTypes(Element.GetChangeTypeAny(), Element.GetChangeTypeElementAddition());
             ChangeType allChangeTypes = ChangeType.ConcatenateChangeTypes(ChangeTypeAdditionAndModication, Element.GetChangeTypeElementDeletion());
 
-            //updater = new MirroredInstancesUpdater();
-            //updatersId.Add(updater.GetUpdaterId());
-            //filter = new ElementCategoryFilter(BuiltInCategory.OST_Doors);
-            //UpdaterRegistry.RegisterUpdater(updater);
-            //UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeGeometry());
+            Updaters.Add(new SpaceUpdater(                 
+                new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces),
+                ChangeTypeAdditionAndModication));
 
-            updater = new Updaters.SpaceUpdater("SpaceUpdater", "b49432e1-c88d-4020-973d-1464f2d7b121", "", ChangePriority.RoomsSpacesZones);
-            Updaters.Add(updater);
-            filter = new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces);
-            UpdaterRegistry.RegisterUpdater(updater);
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
+            Updaters.Add(new DuctsUpdater(                
+                new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves), new ElementIsElementTypeFilter(true)),
+                ChangeTypeAdditionAndModication));
 
-            updater = new Updaters.DuctsUpdater("DuctUpdater", "93dc3d80-0c29-4af5-a509-c36dfd497d66", "", ChangePriority.MEPAccessoriesFittingsSegmentsWires);
-            Updaters.Add(updater);
-            filter = new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves), new ElementIsElementTypeFilter(true));
-            UpdaterRegistry.RegisterUpdater(updater);
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
+            Updaters.Add(new DuctsAccessoryUpdater(                
+                new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory), new ElementIsElementTypeFilter(true)),
+                ChangeTypeAdditionAndModication));
 
-            updater = new Updaters.DuctsAccessoryUpdater("DuctAccessoryUpdater", "79e309d3-bd2d-4255-84b8-2133c88b695d", "", ChangePriority.MEPAccessoriesFittingsSegmentsWires);
-            Updaters.Add(updater);
-            filter = new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory), new ElementIsElementTypeFilter(true));
-            UpdaterRegistry.RegisterUpdater(updater);
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, ChangeTypeAdditionAndModication);
+            Updaters.Add(new PartUpdater(                
+                new ElementCategoryFilter(BuiltInCategory.OST_Parts),
+                Element.GetChangeTypeAny()));
 
-            updater = new Updaters.RoomUpdater("RoomUpdater", "a82a5ae5-9c21-4645-b029-d3d0b67312f1", "", ChangePriority.RoomsSpacesZones);
-            Updaters.Add(updater);
-            var filter1 = new ElementCategoryFilter(BuiltInCategory.OST_Rooms);
-            var filter2 = new ElementCategoryFilter(BuiltInCategory.OST_Doors);
-            var filter3 = new ElementCategoryFilter(BuiltInCategory.OST_Windows);
-            var filterRDW = new LogicalOrFilter(new List<ElementFilter>() { filter1, filter2, filter3 });
-            var filterDW = new LogicalOrFilter(filter2, filter3);
-            UpdaterRegistry.RegisterUpdater(updater);
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filterRDW, ChangeTypeAdditionAndModication);
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filterDW, Element.GetChangeTypeElementDeletion());
+            var filterRDW = new LogicalOrFilter(new List<ElementFilter>() 
+            { new ElementCategoryFilter(BuiltInCategory.OST_Rooms), 
+                new ElementCategoryFilter(BuiltInCategory.OST_Doors), 
+                new ElementCategoryFilter(BuiltInCategory.OST_Windows)});            
+            Updaters.Add(new RoomUpdater(                
+                filterRDW,
+                ChangeTypeAdditionAndModication));
 
-            updater = new Updaters.PartUpdater("PartUpdater", "79ef66cc-2d1a-4bdd-9bae-dae5aa8501f0", "", ChangePriority.FloorsRoofsStructuralWalls);
-            Updaters.Add(updater);
-            filter = new ElementCategoryFilter(BuiltInCategory.OST_Parts);
-            UpdaterRegistry.RegisterUpdater(updater);
-            UpdaterRegistry.AddTrigger(updater.GetUpdaterId(), filter, Element.GetChangeTypeAny());
+
+            foreach (var upd in Updaters)
+            {
+                UpdaterRegistry.RegisterUpdater(upd);
+                UpdaterRegistry.AddTrigger(upd.GetUpdaterId(), upd.Filter, upd.ChangeType);
+            }
+
+            //доп триггер для помещений
+            var filterDW = new LogicalOrFilter(new List<ElementFilter>()
+            {  new ElementCategoryFilter(BuiltInCategory.OST_Doors),
+                new ElementCategoryFilter(BuiltInCategory.OST_Windows) });
+            UpdaterRegistry.AddTrigger(
+                Updaters.Find(x => x.Name == "RoomUpdater").GetUpdaterId(), 
+                filterDW, 
+                Element.GetChangeTypeElementDeletion());
         }
 
         private void CreateRibbon()
         {
-            Application.CreateRibbonTab(tabName);
-            RibbonPanel panelInfo = Application.CreateRibbonPanel(tabName, "ТеррНИИ BIM");
-            RibbonPanel panelArch = Application.CreateRibbonPanel(tabName, "АР");
-            RibbonPanel panelStruct = Application.CreateRibbonPanel(tabName, "КР");
-            RibbonPanel panelMEP = Application.CreateRibbonPanel(tabName, "ОВиК");
-            RibbonPanel panelGeneral = Application.CreateRibbonPanel(tabName, "Общие");
+            Application.CreateRibbonTab(AppName);
+            RibbonPanel panelInfo = Application.CreateRibbonPanel(AppName, "ТеррНИИ BIM");
+            RibbonPanel panelArch = Application.CreateRibbonPanel(AppName, "АР");
+            RibbonPanel panelStruct = Application.CreateRibbonPanel(AppName, "КР");
+            RibbonPanel panelMEP = Application.CreateRibbonPanel(AppName, "ОВиК");
+            RibbonPanel panelGeneral = Application.CreateRibbonPanel(AppName, "Общие");
 
             Dictionary<string, PushButtonData> pbDict = new Dictionary<string, PushButtonData>();
             Dictionary<string, PulldownButtonData> plDict = new Dictionary<string, PulldownButtonData>();
@@ -264,37 +260,11 @@ namespace TerrTools
             foreach (IUpdater upd in Updaters) UpdaterRegistry.UnregisterUpdater(upd.GetUpdaterId());
             return Result.Succeeded;
         }
-
-
+        
         public Result OnStartup(UIControlledApplication app)
         {
             App.Application = app;
-            app.Idling += OverrideCommands;
-
-
-            if (CheckUpdates(out string currentVersion, out string lastReleaseVersion, out string patchNote))
-            {
-                TaskDialog td = new TaskDialog("Доступно обновление");
-                td.MainInstruction = "На сервере доступна новая версия плагина. Рекомендуем закрыть программу, обновить плагин и возобновить работу";
-                td.MainContent = string.Format("Текущая версия: {0}\nДоступная версия: {1}\n\nЧто нового: \n{2}", currentVersion, lastReleaseVersion, patchNote);
-                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Обновить сейчас (перезагрузка программы)");
-                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Обновить позже (автоматически, после закрытия программы)");
-                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Не обновлять");
-                TaskDialogResult tdResult = td.Show();
-                switch (tdResult)
-                {
-                    case TaskDialogResult.CommandLink1:
-                        StartUpdaterService("-fromRevit -restart");
-                        return Result.Cancelled;
-
-                    case TaskDialogResult.CommandLink2:
-                        StartUpdaterService("-fromRevit");
-                        break;
-
-                    case TaskDialogResult.CommandLink3:
-                        break;
-                }
-            }
+            CheckUpdateDialog();
             RegisterUpdaters();
             CreateRibbon();
             return Result.Succeeded;
@@ -322,23 +292,47 @@ namespace TerrTools
             }
         }
 
-        private void StartUpdaterService(string argLine)
+        static public void CheckUpdateDialog()
+        {
+            if (CheckUpdates(out string lastReleaseVersion, out string patchNote))
+            {
+                TaskDialog td = new TaskDialog("Доступно обновление");
+                td.MainInstruction = "На сервере доступна новая версия плагина. Обновить прямо сейчас?";
+                td.MainContent = string.Format("Текущая версия: {0}\nДоступная версия: {1}\n\nЧто нового: \n{2}", App.Version, lastReleaseVersion, patchNote);
+                td.FooterText = "Да - Revit перезапустится и плагин обновится прямо сейчас. Нет - плагин обновится сразу после того, как вы закроете программу";
+                td.AllowCancellation = false;
+                td.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;                
+
+                TaskDialogResult tdResult = td.Show();
+                switch (tdResult)
+                {
+                    case TaskDialogResult.Yes:
+                        StartUpdaterService("-fromRevit -restart");
+                        break;
+
+                    case TaskDialogResult.No:
+                        StartUpdaterService("-fromRevit");
+                        break;
+                }
+            }
+        }
+
+        public static void StartUpdaterService(string argLine)
         {
             System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo();
             psi.FileName = @"cmd";
-            psi.Arguments = "/C start " + updaterPath + " " + argLine;
+            psi.Arguments = "/C start " + UpdaterPath + " " + argLine;
             psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-            if (File.Exists(updaterPath)) Process.Start(psi);
+            if (File.Exists(UpdaterPath)) Process.Start(psi);
             else TaskDialog.Show("Ошибка", "Программа обновления отсутствует на сервере. Обновитесь самостоятельно");
         }
     }
-
     [Transaction(TransactionMode.Manual)]
     public class SettingsWindow : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            var form = new UI.SettingsForm();
+            var form = new UI.SettingsForm(commandData.Application.ActiveUIDocument.Document);
             return Result.Succeeded;
         }
     }

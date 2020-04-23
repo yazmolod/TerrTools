@@ -12,13 +12,16 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 using System.Reflection;
 using System.Diagnostics;
+using TerrTools.Updaters;
 
 namespace TerrTools.UI
 {
     public partial class SettingsForm : WF.Form
     {
-        public SettingsForm()
+        Document Document { get; set; }
+        public SettingsForm(Document doc)
         {
+            Document = doc;
             InitializeComponent();
             InitAboutPage();
             InitUpdatersPage();
@@ -27,24 +30,14 @@ namespace TerrTools.UI
 
         private void InitAboutPage()
         {
-            string loc = Assembly.GetExecutingAssembly().Location;
-            string version = FileVersionInfo.GetVersionInfo(loc).FileVersion;
-            string patchNote = FileVersionInfo.GetVersionInfo(loc).Comments;
-
-            versionLabel.Text = "Версия плагина: " + version;
-            patchnoteLabel.Text = "Обновления этой версии\n" + patchNote;
+            versionLabel.Text = "Версия плагина: " + App.Version;
+            richTextBox1.Text = "Обновления этой версии\n" + App.PatchNote;
         }
 
         private void InitUpdatersPage()
         {
-            List<BindedUpdater> updaters = new List<BindedUpdater>();
-            foreach (var u in App.Updaters)
-            {
-                updaters.Add(new BindedUpdater(u as Updaters.TerrUpdater));
-            }
-            ((WF.ListBox)updatersListBox).DataSource = updaters;
-            ((WF.ListBox)updatersListBox).DisplayMember = "ShowName";
-            ((WF.ListBox)updatersListBox).ValueMember = "ShowValue";
+            dataGridView1.DataSource = App.Updaters;
+            dataGridView1.Columns["IsActive"].ReadOnly = false;
         }
             
 
@@ -59,13 +52,19 @@ namespace TerrTools.UI
             this.DialogResult = WF.DialogResult.OK;
             this.Close();
         }
-    }
 
-    public class BindedUpdater
-    {
-        public BindedUpdater(Updaters.TerrUpdater upd) { Updater = upd; }
-        public Updaters.TerrUpdater Updater { get; set; }
-        public string ShowName { get { return Updater.GetUpdaterName(); } }
-        public bool ShowValue { get { return Updater.IsActive; } }
+        private void updateButton_Click(object sender, EventArgs e)
+        {
+            App.CheckUpdateDialog();
+        }
+
+        private void runCurrentButton_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < dataGridView1.SelectedCells.Count; i++)
+            {
+                TerrUpdater updater = App.Updaters[dataGridView1.SelectedCells[i].RowIndex];
+                updater.GlobalUpdate(Document);
+            }
+        }
     }
 }

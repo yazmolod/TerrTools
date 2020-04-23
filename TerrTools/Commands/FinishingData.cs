@@ -27,6 +27,22 @@ namespace TerrTools
             return Result.Succeeded;
         }
 
+        static public void AggregateFloors(Element el)
+        {
+            var p1 = el.LookupParameter("ADSK_Позиция отделки");
+            var p2 = el.LookupParameter("Номер помещения (полы)");
+            if (p1 != null && p2 != null)
+            {
+                var rooms = new FilteredElementCollector(el.Document).OfCategory(BuiltInCategory.OST_Rooms)
+                    .Where(x => x.LookupParameter("ADSK_Позиция отделки").AsString() == p1.AsString()).Cast<Room>();
+                var floors = rooms.Select(x => x.Number).ToList();
+                floors.Sort();
+                string floorsStr = string.Join(", ", floors);
+                foreach (var r in rooms) r.LookupParameter("Номер помещения (полы)").Set(floorsStr);
+            }
+        }
+
+
         static public void Calculate(Room room)
         {
             if (room == null) return;

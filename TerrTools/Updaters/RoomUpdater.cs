@@ -13,7 +13,13 @@ namespace TerrTools.Updaters
 {
     public class RoomUpdater : TerrUpdater
     {
-        public RoomUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
+        public override string Name => "RoomUpdater";
+        public override string Info => "";
+        public override string Guid => "a82a5ae5-9c21-4645-b029-d3d0b67312f1";
+        public override ChangePriority Priority => ChangePriority.RoomsSpacesZones;
+        public RoomUpdater
+            (ElementFilter filter, ChangeType chtype)
+            : base(filter, chtype) { }
         public override void InnerExecute(UpdaterData data)
         {
             var modified = data.GetModifiedElementIds();
@@ -24,7 +30,11 @@ namespace TerrTools.Updaters
                 try
                 {
                     Element el = doc.GetElement(id);
-                    if (el is Room) FinishingData.Calculate(el as Room);
+                    if (el is Room)
+                    {
+                        FinishingData.Calculate(el as Room);
+                        FinishingData.AggregateFloors(el);
+                    }
                     else
                     {
                         if (el != null)
@@ -57,6 +67,15 @@ namespace TerrTools.Updaters
                     Debug.WriteLine(ex.StackTrace);
                     Debug.WriteLine("Deletion error");
                 }
+            }
+        }
+
+        public override void GlobalExecute(Document doc)
+        {
+            foreach (Room r in new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>())
+            { 
+                FinishingData.Calculate(r);
+                FinishingData.AggregateFloors(r);
             }
         }
     }

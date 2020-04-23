@@ -13,81 +13,104 @@ namespace TerrTools.Updaters
 {
     public abstract class TerrUpdater : IUpdater
     {
-        private string mName;
-        private string mInfo;
-        private Guid mGuid;
-        private ChangePriority mPriority;
+        public abstract string Name { get; }
+        public abstract string Info { get; }
+        public abstract string Guid { get; }
+        public abstract ChangePriority Priority { get; }
+        private bool SelfInvoked { get; set; }
+        
         protected Document doc;
-        public bool IsActive { get; set; }
-
-        public TerrUpdater(string name, string guid, string info, ChangePriority priority)
+        public bool IsActive
         {
-            mName = name;
-            mInfo = info;
-            mGuid = new Guid(guid);
-            mPriority = priority;
-            IsActive = true;
-        }
-        public abstract void InnerExecute(UpdaterData data);
-
-        public void Execute(UpdaterData data)
-        {
-            if (IsActive)
+            get
             {
-                doc = data.GetDocument();
-                InnerExecute(data);
+                return UpdaterRegistry.IsUpdaterEnabled(GetUpdaterId());
+            }
+            set
+            {
+                if (value) UpdaterRegistry.EnableUpdater(GetUpdaterId());
+                else UpdaterRegistry.DisableUpdater(GetUpdaterId());
             }
         }
 
+        public ElementFilter Filter { get; set; }
+        public ChangeType ChangeType { get; set; }
+
+        public TerrUpdater(ElementFilter filter, ChangeType chtype)
+        {
+            Filter = filter;
+            ChangeType = chtype;
+            SelfInvoked = false;
+        }
+        public abstract void InnerExecute(UpdaterData data);
+        public abstract void GlobalExecute(Document doc);
+
+        public void GlobalUpdate(Document doc)
+        {
+            using (Transaction tr = new Transaction(doc, Name))
+            {
+                tr.Start();
+                GlobalExecute(doc);                
+                tr.Commit();
+                SelfInvoked = true;
+                TaskDialog.Show("Отчет апдейтера", "Обновление прошло успешно");
+            }            
+        }
+
+        public void Execute(UpdaterData data)
+        {
+            if (IsActive && !SelfInvoked)
+            {
+                try
+                {
+                    doc = data.GetDocument();
+                    InnerExecute(data);
+                }
+                catch (Exception e)
+                {
+                    var td = new TaskDialog("Ошибка");
+                    td.MainInstruction = "В апдейтере " + Name + " возникла ошибка. Рекомендуется отключить его в наcтройках и сообщить об ошибке BIM-менеджеру";
+                    td.MainContent = e.ToString();
+                    td.Show();
+                }
+            }
+            SelfInvoked = false;
+        }       
+
         public string GetAdditionalInformation()
         {
-            return mInfo;
+            return Info;
         }
 
         public ChangePriority GetChangePriority()
         {
-            return mPriority;
+            return Priority;
         }
 
         public UpdaterId GetUpdaterId()
         {
-            return new UpdaterId(App.AddInId, mGuid);
+            return new UpdaterId(App.AddInId, new Guid(Guid));
         }
 
         public string GetUpdaterName()
         {
-            return mName;
-        }
-    }
-
-public class MirroredInstancesUpdater : TerrUpdater
-    {
-        public MirroredInstancesUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
-
-        public override void InnerExecute(UpdaterData data)
-        {
-            string paramName = "ТеррНИИ_Элемент отзеркален";
-            foreach (ElementId changedElemId in data.GetModifiedElementIds())
-            {
-                FamilyInstance el = doc.GetElement(changedElemId) as FamilyInstance;
-                if (el != null)
-                {
-                    BuiltInCategory cat = (BuiltInCategory)el.Category.Id.IntegerValue;
-                    bool result = SharedParameterUtils.AddSharedParameter(doc, paramName,
-                         new BuiltInCategory[] { cat }, BuiltInParameterGroup.PG_ANALYSIS_RESULTS);
-                    int value = el.Mirrored ? 1 : 0;
-                    el.LookupParameter(paramName).Set(value);
-                }
-            }            
+            return Name;
         }
     }
 
     public class SpaceUpdater : TerrUpdater
     {
-        public SpaceUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
+        public override string Name => "SpaceUpdater";
+        public override string Info => "";
+        public override string Guid => "b49432e1-c88d-4020-973d-1464f2d7b121";
+        public override ChangePriority Priority => ChangePriority.RoomsSpacesZones;
+
+        public SpaceUpdater
+            (ElementFilter filter, ChangeType chtype)
+            : base(filter, chtype) { }
 
         public override void InnerExecute(UpdaterData data)
-        {
+        {            
             var modified = data.GetModifiedElementIds();
              var added = data.GetAddedElementIds();
             foreach (ElementId id in added.Concat(modified))
@@ -105,11 +128,23 @@ public class MirroredInstancesUpdater : TerrUpdater
                 }
             }            
         }
+
+        public override void GlobalExecute(Document doc)
+        {
+            throw new NotImplementedException();
+        }
     }
         
     public class DuctsUpdater : TerrUpdater
     {
-        public DuctsUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
+        public override string Name => "DuctsUpdater";
+        public override string Info => "";
+        public override string Guid => "93dc3d80-0c29-4af5-a509-c36dfd497d66";
+        public override ChangePriority Priority => ChangePriority.MEPAccessoriesFittingsSegmentsWires;
+
+        public DuctsUpdater
+            (ElementFilter filter, ChangeType chtype)
+            : base(filter, chtype) { }
         private string GetDuctClass(Duct el)
         {
             bool isInsul = el.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0;
@@ -195,12 +230,22 @@ public class MirroredInstancesUpdater : TerrUpdater
                 }
             }
         }
-        
+
+        public override void GlobalExecute(Document doc)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class DuctsAccessoryUpdater : TerrUpdater
     {
-        public DuctsAccessoryUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
+        public override string Name => "DuctsAccessoryUpdater";
+        public override string Info => "";
+        public override string Guid => "79e309d3-bd2d-4255-84b8-2133c88b695d";
+        public override ChangePriority Priority => ChangePriority.MEPAccessoriesFittingsSegmentsWires;
+        public DuctsAccessoryUpdater
+            (ElementFilter filter, ChangeType chtype)
+            : base(filter, chtype) { }
 
         public override void InnerExecute(UpdaterData data)
         {
@@ -224,11 +269,22 @@ public class MirroredInstancesUpdater : TerrUpdater
                 }
             }
         }
+
+        public override void GlobalExecute(Document doc)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class PartUpdater : TerrUpdater
     {
-        public PartUpdater(string name, string guid, string info, ChangePriority priority) : base(name, guid, info, priority) { }
+        public override string Name => "PartUpdater";
+        public override string Info => "";
+        public override string Guid => "79ef66cc-2d1a-4bdd-9bae-dae5aa8501f0";
+        public override ChangePriority Priority => ChangePriority.FloorsRoofsStructuralWalls;
+        public PartUpdater
+            (ElementFilter filter, ChangeType chtype)
+            : base(filter, chtype) { }
         private double GetThickness(Part el)
         {
             double layerWidth = el.get_Parameter(BuiltInParameter.DPART_LAYER_WIDTH).AsDouble();
@@ -272,7 +328,14 @@ public class MirroredInstancesUpdater : TerrUpdater
                     Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
                 }
             }
+        }
 
+        public override void GlobalExecute(Document doc)
+        {
+            foreach (Part part in new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Parts))
+            {
+                part.LookupParameter("ADSK_Размер_Толщина").Set(GetThickness(part));
+            }
         }
     }
 
