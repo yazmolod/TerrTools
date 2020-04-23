@@ -51,7 +51,7 @@ namespace TerrTools.Updaters
 
         public UpdaterId GetUpdaterId()
         {
-            return new UpdaterId(TerrToolsApp.AddInId, mGuid);
+            return new UpdaterId(App.AddInId, mGuid);
         }
 
         public string GetUpdaterName()

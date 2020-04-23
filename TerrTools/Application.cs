@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 namespace TerrTools
 {
-    public class TerrToolsApp : IExternalApplication
+    public class App : IExternalApplication
     {
         public static UIControlledApplication Application;
         public static List<IUpdater> Updaters = new List<IUpdater>();
@@ -268,7 +268,7 @@ namespace TerrTools
 
         public Result OnStartup(UIControlledApplication app)
         {
-            TerrToolsApp.Application = app;
+            App.Application = app;
             app.Idling += OverrideCommands;
 
 
@@ -285,7 +285,6 @@ namespace TerrTools
                 {
                     case TaskDialogResult.CommandLink1:
                         StartUpdaterService("-fromRevit -restart");
-                        Process.GetCurrentProcess().CloseMainWindow();
                         return Result.Cancelled;
 
                     case TaskDialogResult.CommandLink2:
@@ -325,7 +324,11 @@ namespace TerrTools
 
         private void StartUpdaterService(string argLine)
         {
-            if (File.Exists(updaterPath)) Process.Start(updaterPath, argLine);
+            System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo();
+            psi.FileName = @"cmd";
+            psi.Arguments = "/C start " + updaterPath + " " + argLine;
+            psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+            if (File.Exists(updaterPath)) Process.Start(psi);
             else TaskDialog.Show("Ошибка", "Программа обновления отсутствует на сервере. Обновитесь самостоятельно");
         }
     }

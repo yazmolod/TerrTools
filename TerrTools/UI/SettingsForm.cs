@@ -38,7 +38,7 @@ namespace TerrTools.UI
         private void InitUpdatersPage()
         {
             List<BindedUpdater> updaters = new List<BindedUpdater>();
-            foreach (var u in TerrToolsApp.Updaters)
+            foreach (var u in App.Updaters)
             {
                 updaters.Add(new BindedUpdater(u as Updaters.TerrUpdater));
             }

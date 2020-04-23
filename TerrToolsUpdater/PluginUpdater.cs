@@ -51,8 +51,10 @@ namespace TerrToolsUpdater
         
         static void Main(string[] args)
         {
+            bool isRestart = (args.Length > 1 && args[1] == "-restart");
+            bool isFromRevit = (args.Length > 0 && args[0] == "-fromRevit");
             // запуск из ревита
-            if (args.Length > 0 && args[0] == "-fromRevit")
+            if (isFromRevit)
             {
                 ShowWindow(GetConsoleWindow(), SW_HIDE);
                 Process[] processes = Process.GetProcessesByName("Revit");
@@ -60,17 +62,17 @@ namespace TerrToolsUpdater
                 {
                     Process revitProcess = processes.First();
                     string processPath = revitProcess.MainModule.FileName;
+                    if (isRestart) revitProcess.CloseMainWindow();
                     revitProcess.WaitForExit();
                     CopyFiles();
-                    if (args.Length > 1 && args[1] == "-restart") 
-                        Process.Start(processPath);
+                    if (isRestart) Process.Start(processPath);
                 }
             }
             // запуск с диска
             else
             {
                 CopyFiles();
-                Thread.Sleep(3000);
+                Thread.Sleep(1000);
             }
             
         }
