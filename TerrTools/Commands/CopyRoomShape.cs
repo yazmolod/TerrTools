@@ -43,18 +43,16 @@ namespace TerrTools
                     tr.Start();                    
                     foreach (Reference roomref in rooms)
                     {
-                        List<Curve> curves = new List<Curve>();
+                        CurveArray curves = new CurveArray();
                         SpatialElement room = doc.GetElement(roomref.ElementId) as SpatialElement;
                         foreach (var boundary in GeometryUtils.GetCurvesListFromSpatialElement(room))
                         {
                             foreach (var curve in boundary)
                             {
-                                curves.Add(curve);
+                                curves.Append(curve);
                             }
                         }
-                        ModelCurveArray roomShape = mmc.MakeModelCurve(curves);
-                        Group group = doc.Create.NewGroup(roomShape.Cast<ModelCurve>().Select(x => x.Id).ToList());
-                        group.GroupType.Name = string.Format("Контур {0} #{1}",room.Category.Name,room.Number);
+                        mmc.DrawGroup(curves, string.Format("Контур {0} #{1}", room.Category.Name, room.Number));
                     }
                     TaskDialog.Show("Результат", "Создано групп контуров: " + rooms.Count.ToString());
                     tr.Commit();

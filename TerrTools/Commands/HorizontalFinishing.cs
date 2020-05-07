@@ -257,9 +257,9 @@ namespace TerrTools
             return doc.Create.NewFloor(res.MainProfile, res.FinishingType as FloorType, res.Level, false); }
             catch (Autodesk.Revit.Exceptions.ArgumentException e)
             {
-                //ModelCurveCreator mmc = new ModelCurveCreator(doc);
-                //mmc.MakeModelCurve(res.MainProfile);
-                //Debug.WriteLine(e.ToString());
+                ModelCurveCreator mmc = new ModelCurveCreator(doc);
+                mmc.DrawGroup(res.MainProfile, "Debug");
+                Debug.WriteLine(e.ToString());
                 TaskDialog td = new TaskDialog("Предупреждение");
                 td.MainIcon = TaskDialogIcon.TaskDialogIconWarning;
                 td.MainInstruction = string.Format("Помещение {0} имеет незамкнутый внешний контур. создание отделки пола для него было пропущено", res.Room.Number);

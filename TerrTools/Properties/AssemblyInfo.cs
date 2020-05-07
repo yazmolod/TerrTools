@@ -7,13 +7,9 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-Общее
-- Переписан модуль обновления. Чтобы обновления были регулярными, установите новое обновление самостоятельно с сервера
-- Добавлены настройки апдейтеров
-
-АР
-- Исправление ошибок в расчете отделки
-
+ОВ
+- Переписан модуль подбора радиаторов
+- Добавлен апдейтер для общих систем (ТеррНИИ_Наименовании системы)
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -40,4 +36,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.11.0")]
+[assembly: AssemblyFileVersion("0.12.1")]

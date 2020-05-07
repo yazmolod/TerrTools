@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
@@ -100,29 +101,54 @@ namespace TerrTools
                 new ElementCategoryFilter(BuiltInCategory.OST_Parts),
                 Element.GetChangeTypeAny()));
 
+            BuiltInCategory[] elemCats = new BuiltInCategory[]
+            {
+                BuiltInCategory.OST_DuctAccessory,
+                BuiltInCategory.OST_PipeAccessory,
+                BuiltInCategory.OST_DuctCurves,
+                BuiltInCategory.OST_PlaceHolderDucts,
+                BuiltInCategory.OST_DuctTerminal,
+                BuiltInCategory.OST_FlexDuctCurves,
+                BuiltInCategory.OST_FlexPipeCurves,
+                BuiltInCategory.OST_DuctInsulations,
+                BuiltInCategory.OST_PipeInsulations,
+                BuiltInCategory.OST_PipeCurves,
+                BuiltInCategory.OST_DuctSystem,
+                BuiltInCategory.OST_PipingSystem,
+                BuiltInCategory.OST_PlaceHolderPipes,
+                BuiltInCategory.OST_DuctFitting,
+                BuiltInCategory.OST_PipeFitting,
+                BuiltInCategory.OST_MechanicalEquipment,
+                BuiltInCategory.OST_Sprinklers
+            };
+            var filter = new ElementMulticategoryFilter(elemCats);
+            Updaters.Add(new SystemNamingUpdater(filter, ChangeTypeAdditionAndModication));
+            Updaters.Last().AddTriggerPair(
+                new ElementMulticategoryFilter(new BuiltInCategory[] { BuiltInCategory.OST_DuctSystem, BuiltInCategory.OST_PipingSystem }),
+                Element.GetChangeTypeAny()
+                );
+
             var filterRDW = new LogicalOrFilter(new List<ElementFilter>() 
             { new ElementCategoryFilter(BuiltInCategory.OST_Rooms), 
                 new ElementCategoryFilter(BuiltInCategory.OST_Doors), 
-                new ElementCategoryFilter(BuiltInCategory.OST_Windows)});            
+                new ElementCategoryFilter(BuiltInCategory.OST_Windows)});
+            var filterDW = new LogicalOrFilter(new List<ElementFilter>()
+            {  new ElementCategoryFilter(BuiltInCategory.OST_Doors),
+                new ElementCategoryFilter(BuiltInCategory.OST_Windows) });
             Updaters.Add(new RoomUpdater(                
                 filterRDW,
                 ChangeTypeAdditionAndModication));
+            Updaters.Last().AddTriggerPair(filterDW, Element.GetChangeTypeElementDeletion());
 
 
             foreach (var upd in Updaters)
             {
                 UpdaterRegistry.RegisterUpdater(upd);
-                UpdaterRegistry.AddTrigger(upd.GetUpdaterId(), upd.Filter, upd.ChangeType);
+                foreach (var trigger in upd.TriggerPairs)
+                {
+                    UpdaterRegistry.AddTrigger(upd.GetUpdaterId(), trigger.Filter, trigger.ChangeType);
+                }
             }
-
-            //доп триггер для помещений
-            var filterDW = new LogicalOrFilter(new List<ElementFilter>()
-            {  new ElementCategoryFilter(BuiltInCategory.OST_Doors),
-                new ElementCategoryFilter(BuiltInCategory.OST_Windows) });
-            UpdaterRegistry.AddTrigger(
-                Updaters.Find(x => x.Name == "RoomUpdater").GetUpdaterId(), 
-                filterDW, 
-                Element.GetChangeTypeElementDeletion());
         }
 
         private void CreateRibbon()
@@ -327,6 +353,8 @@ namespace TerrTools
             else TaskDialog.Show("Ошибка", "Программа обновления отсутствует на сервере. Обновитесь самостоятельно");
         }
     }
+
+
     [Transaction(TransactionMode.Manual)]
     public class SettingsWindow : IExternalCommand
     {
@@ -335,5 +363,14 @@ namespace TerrTools
             var form = new UI.SettingsForm(commandData.Application.ActiveUIDocument.Document);
             return Result.Succeeded;
         }
+    }
+
+
+    static public class TerrSettings
+    {
+        // Настройки для поиска радиатора
+        public static List<int> RadiatorLengths { get; set; } = new List<int> { 400,500,600,700,800,900,1000,1100,1200,1400,1600,1800,2000,2300,2600,3000 };
+        public static List<int> RadiatorHeights { get; set; } = new List<int> { 300,400,450,500,550,600,900 };
+        public static List<int> RadiatorTypes { get; set; } = new List<int> { 10, 11, 20, 22, 30, 33 };
     }
 }
