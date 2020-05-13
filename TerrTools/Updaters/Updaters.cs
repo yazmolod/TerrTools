@@ -165,8 +165,8 @@ namespace TerrTools.Updaters
             Element[] insulTypes = new FilteredElementCollector(doc).OfClass(typeof(DuctInsulationType)).Where(x => x.Name == insulType).ToArray();
             // Параметр "Комментарий к типоразмеру"
             string comment = insulTypes.Length > 0 ? insulTypes[0].get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS).AsString() : "";
-            if (insulTypes.Length > 0 && comment?.IndexOf("огнезащит", StringComparison.OrdinalIgnoreCase) >= 0) return "А с огнезащитой";
-            return "B";
+            if (insulTypes.Length > 0 && comment?.IndexOf("огнезащит", StringComparison.OrdinalIgnoreCase) >= 0) return "B с огнезащитой";
+            return "А";
         }
         private double GetDuctThickness(Duct el)
         {
@@ -218,11 +218,12 @@ namespace TerrTools.Updaters
             return zs.Min();
         }
 
+        string thickParameter = "ADSK_Толщина стенки";
+        string classParameter = "ТеррНИИ_Класс герметичности";
+        string levelParameter = "ТеррНИИ_Отметка от нуля";
         public override void InnerExecute(UpdaterData data)
         {
-            string thickParameter = "ADSK_Толщина стенки";
-            string classParameter = "ТеррНИИ_Класс герметичности";
-            string levelParameter = "ТеррНИИ_Отметка от нуля";
+            
             SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             SharedParameterUtils.AddSharedParameter(doc, classParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             SharedParameterUtils.AddSharedParameter(doc, levelParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
@@ -246,7 +247,12 @@ namespace TerrTools.Updaters
 
         public override void GlobalExecute(Document doc)
         {
-            throw new NotImplementedException();
+            foreach (Duct el in new FilteredElementCollector(doc).WherePasses(TriggerPairs[0].Filter).ToElements())
+            {
+                el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
+                el.LookupParameter(classParameter).Set(GetDuctClass(el));
+                el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
+            }
         }
     }
 
@@ -402,17 +408,15 @@ namespace TerrTools.Updaters
         {
             string localSystem = system.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString();
             string globalSystem = system.LookupParameter(systemNameP).AsString();
-            if (globalSystem != null)
+            globalSystem = globalSystem ?? "";
+            var collector = new FilteredElementCollector(doc).WherePasses(elemFilter);
+            foreach (var item in collector)
             {
-                var collector = new FilteredElementCollector(doc).WherePasses(elemFilter);
-                foreach (var item in collector)
+                Parameter itemLocalP = item.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
+                string itemLocal = itemLocalP != null ? itemLocalP.AsString() : null;
+                if (itemLocal != null && itemLocal.Split(',').Contains(localSystem))
                 {
-                    Parameter itemLocalP = item.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
-                    string itemLocal = itemLocalP != null ? itemLocalP.AsString() : null;
-                    if (itemLocal != null && itemLocal.Split(',').Contains(localSystem))
-                    {
-                        item.LookupParameter(systemNameP).Set(globalSystem);
-                    }
+                    item.LookupParameter(systemNameP).Set(globalSystem);
                 }
             }
         }

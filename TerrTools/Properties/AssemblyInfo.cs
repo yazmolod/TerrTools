@@ -8,8 +8,11 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
 ОВ
-- Переписан модуль подбора радиаторов
-- Добавлен апдейтер для общих систем (ТеррНИИ_Наименовании системы)
+- Изменено назначение класса теплозащиты воздуховода
+- При подборе радиатора теперь можно блокировать значения (соответствующие параметры внесены в семества радиаторов ТеррНИИ)
+
+Общее
+- При попытке удалить вид или спецификацию, расположенных на листе, теперь будет выдаваться предупреждение
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -36,4 +39,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.12.1")]
+[assembly: AssemblyFileVersion("0.12.2")]

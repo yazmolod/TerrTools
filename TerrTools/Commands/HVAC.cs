@@ -62,6 +62,7 @@ namespace TerrTools
         protected string skipParameterName = "ТеррНИИ_Пропустить";
         protected string thermalPowerParameterName = "ADSK_Тепловая мощность";
         protected string spaceTemperatureParameterName = "ADSK_Температура в помещении";
+        protected string spacePowerParameterName = "ТеррНИИ_Тепловая нагрузка";
 
         protected bool CheckDefaultSharedParameters()
         {
@@ -81,6 +82,8 @@ namespace TerrTools
 
                 done &= SharedParameterUtils.AddSharedParameter(doc, spaceTemperatureParameterName,
                     new BuiltInCategory[] { BuiltInCategory.OST_MEPSpaces }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
+                done &= SharedParameterUtils.AddSharedParameter(doc, spacePowerParameterName,
+                    new BuiltInCategory[] { BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
 
                 /* 
                  * Эти параметры должны быть внутри семейства, нет смысла назначать их всей категории
@@ -516,7 +519,6 @@ namespace TerrTools
                 // Температуру помещения определяем из свойств пространства
                 Space space = GetSpaceOfPlant(plunt);
                 double spaceTi = space != null ? space.LookupParameter(spaceTemperatureParameterName).AsDouble() : 0;
-
                 // Температуру подачи и обратки определяем из свойств подключенных систем
                 ConnectorManager connMng = plunt.MEPModel.ConnectorManager;
                 if (connMng == null)
@@ -542,8 +544,6 @@ namespace TerrTools
 
         protected void UpdatePluntGeometry(List<FamilyInstance> allPlunts)
         {
-            // создаем массив со всеми размерами
-            
             // logging            
             ElementProcessingLog lostParameterLog = LoggingMachine.NewLog("Обновление геометрии радиаторов", allPlunts, "В семействе отсутствуют необходимые параметры");
             ElementProcessingLog highWattLog = LoggingMachine.NewLog("Обновление геометрии радиаторов", allPlunts, "Ни один из вариантов не подходит под такую нагрузку");
@@ -559,6 +559,7 @@ namespace TerrTools
                 }
                 int count = allPlunts.Where(x => x.LookupParameter("ТеррНИИ_Номер помещения").AsString() == space.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString()).Count();
                 double requiredValue = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_HEATING_LOAD_PARAM).AsDouble() / count;
+                plunt.LookupParameter(spacePowerParameterName).Set(requiredValue); // для проверки найденных типораразмеров
                 requiredValue = UnitUtils.ConvertFromInternalUnits(requiredValue, DisplayUnitType.DUT_WATTS);
 
                 FamilySizeTableManager sizeMng = FamilySizeTableManager.GetFamilySizeTableManager(doc, plunt.Symbol.Family.Id);
@@ -568,7 +569,7 @@ namespace TerrTools
                 Parameter TiParam = plunt.LookupParameter("ADSK_Температура в помещении");
                 Parameter hParam = plunt.LookupParameter("ADSK_Размер_Высота");
                 Parameter lParam = plunt.LookupParameter("ADSK_Размер_Длина");
-                Parameter radTypeParam = plunt.LookupParameter("ТеррНИИ_Тип радиатора");
+                Parameter radTypeParam = plunt.LookupParameter("ТеррНИИ_Тип радиатора");                
 
                 if (hParam == null || lParam == null || radTypeParam == null || TzParam == null ||
                     TpParam == null || TiParam == null || sizeMng == null || tableNameParam == null)
@@ -584,15 +585,32 @@ namespace TerrTools
 
                 string sN, sQn, sTzn, sTpn, sTin;
                 double N, Qn, Tzn, Tpn, Tin, powerValue;
-
                 bool wattFinded = false;
                 bool rowFinded = false;
-                for (int t = 0; t < TerrSettings.RadiatorTypes.Count() && !wattFinded; t++)
+
+                Parameter keepHeightParam = plunt.LookupParameter("Не изменять высоту");
+                Parameter keepLengthParam = plunt.LookupParameter("Не изменять длину");
+                Parameter keepTypeParam = plunt.LookupParameter("Не изменять тип");
+                var iteratedHeights = keepHeightParam != null && keepHeightParam.AsInteger() == 1
+                    ?
+                    new List<int>() { Convert.ToInt32(UnitUtils.ConvertFromInternalUnits(hParam.AsDouble(), DisplayUnitType.DUT_MILLIMETERS)) } 
+                    : 
+                    TerrSettings.RadiatorHeights;
+                var iteratedLengths = keepLengthParam != null && keepLengthParam.AsInteger() == 1
+                    ?
+                    new List<int>() { Convert.ToInt32(UnitUtils.ConvertFromInternalUnits(lParam.AsDouble(), DisplayUnitType.DUT_MILLIMETERS)) }
+                    :
+                    TerrSettings.RadiatorLengths;
+                var iteratedTypes = keepTypeParam != null && keepTypeParam.AsInteger() == 1
+                    ?
+                    new List<int>() { radTypeParam.AsInteger() }
+                    :
+                    TerrSettings.RadiatorTypes;
+
+                foreach (int type in iteratedTypes)
                 {
-                    int type = TerrSettings.RadiatorTypes[t];
-                    for (int h = 0; h < TerrSettings.RadiatorHeights.Count() && !wattFinded; h++)
+                    foreach (int height in iteratedHeights)
                     {
-                        int height = TerrSettings.RadiatorHeights[h];
                         sN = FamilyInstanceUtils.SizeLookup(sizeTable, "N", new string[] { type.ToString(), height.ToString() });
                         sQn = FamilyInstanceUtils.SizeLookup(sizeTable, "Qn", new string[] { type.ToString(), height.ToString() });
                         sTzn = FamilyInstanceUtils.SizeLookup(sizeTable, "Tz", new string[] { type.ToString(), height.ToString() });
@@ -607,9 +625,8 @@ namespace TerrTools
                         Tpn = double.Parse(sTpn, System.Globalization.CultureInfo.InvariantCulture);
                         Tin = double.Parse(sTin, System.Globalization.CultureInfo.InvariantCulture);
 
-                        for (int l = 0; l < TerrSettings.RadiatorLengths.Count() && !wattFinded; l++)
+                        foreach (int length in iteratedLengths)
                         {
-                            int length = TerrSettings.RadiatorLengths[l];
                             powerValue = (length / 1000.0) * Qn * Math.Pow(
                                 (
                                     (Tz - Tp)
@@ -638,7 +655,6 @@ namespace TerrTools
             }
         }
 
-
         protected override List<FamilyInstance> GetPlunts()
         {
             // Выбираем все элементы трубуемой категории
@@ -653,3 +669,4 @@ namespace TerrTools
         }
     }
 }
+

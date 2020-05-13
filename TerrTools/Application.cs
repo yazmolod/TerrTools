@@ -10,6 +10,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Diagnostics;
 using TerrTools.Updaters;
+using Autodesk.Revit.UI.Events;
 
 namespace TerrTools
 {
@@ -125,7 +126,7 @@ namespace TerrTools
             Updaters.Add(new SystemNamingUpdater(filter, ChangeTypeAdditionAndModication));
             Updaters.Last().AddTriggerPair(
                 new ElementMulticategoryFilter(new BuiltInCategory[] { BuiltInCategory.OST_DuctSystem, BuiltInCategory.OST_PipingSystem }),
-                Element.GetChangeTypeAny()
+                ChangeTypeAdditionAndModication
                 );
 
             var filterRDW = new LogicalOrFilter(new List<ElementFilter>() 
@@ -293,7 +294,13 @@ namespace TerrTools
             CheckUpdateDialog();
             RegisterUpdaters();
             CreateRibbon();
+            RegisterEvents();            
             return Result.Succeeded;
+        }
+
+        private void RegisterEvents()
+        {
+            Application.Idling += OverrideCommands;
         }
 
         // В этом методе можно перезаписать поведение стандартных комманд в Revit
@@ -304,7 +311,7 @@ namespace TerrTools
             UIApplication uiapp = sender as UIApplication;
             if (uiapp != null)
             {
-                /*
+                
                 RevitCommandId commandId = RevitCommandId.LookupCommandId("ID_BUTTON_DELETE");
                 try
                 {
@@ -314,7 +321,69 @@ namespace TerrTools
                 catch
                 {
                 }
-                */
+                
+            }
+        }
+
+        private void DeleteBinding_Executed(object sender, ExecutedEventArgs e)
+        {
+            UIApplication uiapp = sender as UIApplication;            
+            Document doc = uiapp.ActiveUIDocument.Document;
+            var ids = uiapp.ActiveUIDocument.Selection.GetElementIds();
+            using (Transaction tr = new Transaction(doc, "Удаление элементов"))
+            {
+                tr.Start();
+                foreach (var id in ids)
+                {
+                    BuiltInCategory cat = (BuiltInCategory)doc.GetElement(id).Category.Id.IntegerValue;
+                    switch (cat)
+                    {
+                        case BuiltInCategory.OST_Views:
+                            ViewDeletingProcess(doc, id);
+                            break;
+                        default:
+                            doc.Delete(id);
+                            break;
+                    }
+                }
+                tr.Commit();
+            }
+        }
+
+        private void ViewDeletingProcess(Document doc, ElementId id)
+        {
+            View view = doc.GetElement(id) as View;
+            ElementId sheetId;            
+            if (view is ViewSchedule)
+            {
+                var col = new FilteredElementCollector(doc)
+                    .OfClass(typeof(ScheduleSheetInstance))
+                    .Cast<ScheduleSheetInstance>()
+                    .Where(x=>x.ScheduleId.IntegerValue == id.IntegerValue);
+                sheetId = col.Count() > 0 ? col.First().OwnerViewId : null;
+            }
+            else
+            {
+                var col = new FilteredElementCollector(doc)
+                    .OfClass(typeof(Viewport))
+                    .Cast<Viewport>()
+                    .Where(x => x.ViewId.IntegerValue == id.IntegerValue);
+                sheetId = col.Count() > 0 ? col.First().OwnerViewId : null;
+            }
+            if (sheetId != null)
+            {
+                var td = new TaskDialog("Удаление");
+                td.MainInstruction = string.Format(
+                    "Удаляемый вид {0} расположен на листе {1}. После удаления он пропадает с листа, а отменить удаление будет невозможно. Вы уверены?",
+                    doc.GetElement(id).Name, doc.GetElement(sheetId).Name);
+                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Удалить");
+                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Отмена");
+                var res = td.Show();
+                if (res == TaskDialogResult.CommandLink1) doc.Delete(id);                
+            }
+            else
+            {
+                doc.Delete(id);
             }
         }
 

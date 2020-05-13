@@ -129,7 +129,6 @@ namespace TerrTools
 
                                 double openingArea = openingWidth * openingHeight;
                                 double openingSlope = (openingWidth + openingHeight * 2) * openingThickness / 2;
-
                                 
                                 Parameter p = opening.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET) ?? opening.get_Parameter(BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM);
                                 double itemBottomOffset = p.AsDouble();
