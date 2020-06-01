@@ -59,26 +59,38 @@ namespace TerrTools
                 .Cast<FamilyInstance>()
                 .Where(x => x.Symbol.Id == openingFamilySymbol.Id)
                 .ToArray();
+
+            
+            // Весь этот код требует тщательной перепроверки, потому что он выдает неадекватные результаты
+            // Поэтмому пока что просто удалим все что насоздавали
+            
             foreach (Element op in existingOpenings)
             {
-                Parameter p = op.LookupParameter("Идентификатор пересечения");
-                ElementId opDesignOption = op.DesignOption != null ? op.DesignOption.Id : ElementId.InvalidElementId;
-                if (p != null) 
-                {
-                    string opId = p.AsString();
-                    ElementId hostId = new ElementId(int.Parse(opId.Split('-')[0]));
-                    ElementId curveId = new ElementId(int.Parse(opId.Split('-')[1]));
-                    MEPCurve mc = linkedDoc.GetElement(curveId) as MEPCurve;
-                    Curve c = GeometryUtils.FindDuctCurve(mc);
-                    Element host = doc.GetElement(hostId);
-                    var faces = GeometryUtils.GetFaces(host);
-                    XYZ[] interPts = (from face in faces select FindFaceIntersection(c, face)).ToArray();
-
-                    if (interPts.Any(x => x != null)){
-                        doc.Delete(op.Id);
-                    }
-                }
+                //Parameter p = op.LookupParameter("Идентификатор пересечения");
+                //ElementId opDesignOption = op.DesignOption != null ? op.DesignOption.Id : ElementId.InvalidElementId;
+                //if (p != null) 
+                //{
+                //    string opId = p.AsString();
+                //    ElementId hostId = new ElementId(int.Parse(opId.Split('-')[0]));
+                //    ElementId curveId = new ElementId(int.Parse(opId.Split('-')[1]));
+                //    MEPCurve mc = linkedDoc.GetElement(curveId) as MEPCurve;
+                //    Curve c = GeometryUtils.FindDuctCurve(mc);
+                //    Element host = doc.GetElement(hostId);
+                //    var faces = GeometryUtils.GetFaces(host);
+                //    if (c != null) 
+                //    { 
+                //    XYZ[] interPts = (from face in faces select FindFaceIntersection(c, face)).ToArray();
+                //        if (interPts.Any(x => x != null))
+                //        {
+                            doc.Delete(op.Id);
+                //        }
+                //    }
+                //}
             }
+            
+
+
+
         }
 
         protected bool PlaceOpeningFamilies(List<Intersection> intersections)
@@ -165,7 +177,6 @@ namespace TerrTools
                     foreach (MEPCurve m in meps)
                     {
                         Curve mepCurve = GeometryUtils.FindDuctCurve(m);
-                        Wall w = host as Wall;
                         if (mepCurve != null)
                         {
                             XYZ[] interPts = (from wallFace in hostFaces select FindFaceIntersection(mepCurve, wallFace)).ToArray();
@@ -204,15 +215,15 @@ namespace TerrTools
                                     double x = Math.Abs(res.X);
                                     double y = Math.Abs(res.Y);
                                     double z = Math.Abs(res.Z);
-                                    i.PipeWidth = w != null ? m.Width : x;
-                                    i.PipeHeight = w != null ? m.Height : y;
+                                    i.PipeWidth = host != null ? m.Width : x;
+                                    i.PipeHeight = host != null ? m.Height : y;
                                     i.IsRound = false;
                                 }
                                 //Определение, кирпичная ли стена
                                 i.IsBrick = false;                                
-                                if (w != null)
+                                if (host != null && host is Wall)
                                 {
-                                    foreach (var layer in w.WallType.GetCompoundStructure().GetLayers())
+                                    foreach (var layer in (host as Wall).WallType.GetCompoundStructure().GetLayers())
                                     {
                                         Element materialElement = doc.GetElement(layer.MaterialId);
                                         i.IsBrick = materialElement != null ? materialElement.Name.Contains("Кирпич") || i.IsBrick : false;
@@ -240,12 +251,20 @@ namespace TerrTools
                 if (linkedDocInstance == null)
                     return Result.Cancelled;
 
+                if (linkedDocInstance.GetLinkDocument() == null)
+                {
+                    TaskDialog.Show("Ошибка", "Обновите элемент связи в проекте");
+                    return Result.Failed;
+                }
+
                 openingFamilySymbol = FindOpeningFamily();
                 if (openingFamilySymbol == null)
                     return Result.Failed;
 
                 DeleteUnusedOpenings();
+                tr.Commit();
 
+                tr.Start();
                 List<Intersection> intersections = GetIntersections(hosts);
                 UI.IntersectionsForm form = new UI.IntersectionsForm(intersections);
 

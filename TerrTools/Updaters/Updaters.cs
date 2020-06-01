@@ -433,10 +433,15 @@ namespace TerrTools.Updaters
 
             foreach (var el in systems) UpdateSystem(el);
 
-            var localSystems = items
-                .Select(x => x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString().Split(','))
-                .SelectMany(x => x)
-                .Distinct();
+            HashSet<string> localSystems = new HashSet<string>();
+            foreach (var item in items)
+            {
+                Parameter p = item.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
+                string value = p.AsString();
+                if (value == null) continue;
+                string[] values = value.Split(',');
+                foreach (string v in values) localSystems.Add(v);
+            }
             foreach (var el in systems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))) UpdateSystem(el);
         }
     }

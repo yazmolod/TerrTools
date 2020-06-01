@@ -46,7 +46,7 @@ namespace TerrTools
             Excel.Workbook wb = excelApp.Workbooks.Add();
 
             // заполняем данными
-            if (opt.SplitSheets)
+            if (true)
             {
                 foreach (var sect in table.Sections)
                 {
@@ -112,7 +112,7 @@ namespace TerrTools
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             doc = commandData.Application.ActiveUIDocument.Document;
-            var viewSchedules = new FilteredElementCollector(doc).OfClass(typeof(ViewSchedule)).WhereElementIsNotElementType().ToArray();
+            var viewSchedules = new FilteredElementCollector(doc).OfClass(typeof(ViewSchedule)).WhereElementIsNotElementType().Where(x => x.Name != "Ведомость изменений").ToArray();
             var form = new UI.ExportSchedulesForm(viewSchedules);
             if (form.DialogResult != Forms.DialogResult.OK || form.Result.Count() == 0) return Result.Cancelled;
             opt = form.ExportOptions;
@@ -134,10 +134,11 @@ namespace TerrTools
 
     public class ScheduleExportOptions
     {
-        public bool SplitSheets { get; set; }
+        public enum SplitFileOptions { MultipleFiles, OneFileMultiSheet, OneFileOneSheet}
+        public enum SplitDataOptions { NoSplit, OneSheet, MultipleSheet }
         public ScheduleExportOptions()
         {
-            SplitSheets = false;
+            //SplitSheets = false;
         }
     }
 

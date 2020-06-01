@@ -229,6 +229,13 @@ namespace TerrTools
                     "Экспорт\nспецификаций",
                     iconName: "Tables.png"
                     ));
+            pbDict.Add("PythonExecuter",
+                MakePushButton(
+                    "PythonExecuter",
+                    "Запуск скрипта",
+                    iconName: "Python.png",
+                    toolTip: "Позволяет запускать файлы скриптов с форматов .py"
+                    ));
 
             ///
             /// Pulldown buttons
@@ -275,6 +282,7 @@ namespace TerrTools
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
             panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
+            panelGeneral.AddItem(pbDict["PythonExecuter"]);
 
             ///
             /// Настройки
@@ -335,15 +343,22 @@ namespace TerrTools
                 tr.Start();
                 foreach (var id in ids)
                 {
-                    BuiltInCategory cat = (BuiltInCategory)doc.GetElement(id).Category.Id.IntegerValue;
-                    switch (cat)
+                    try
                     {
-                        case BuiltInCategory.OST_Views:
-                            ViewDeletingProcess(doc, id);
-                            break;
-                        default:
-                            doc.Delete(id);
-                            break;
+                        BuiltInCategory cat = (BuiltInCategory)doc.GetElement(id).Category.Id.IntegerValue;
+                        switch (cat)
+                        {
+                            case BuiltInCategory.OST_Views:
+                                ViewDeletingProcess(doc, id);
+                                break;
+                            default:
+                                doc.Delete(id);
+                                break;
+                        }
+                    }
+                    catch
+                    {
+                        doc.Delete(id);
                     }
                 }
                 tr.Commit();

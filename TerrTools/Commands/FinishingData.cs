@@ -127,6 +127,9 @@ namespace TerrTools
                                 double openingThickness;
                                 GetOpeningSize(wall, opening, out openingWidth, out openingHeight, out openingThickness);
 
+                                // Проверяем, чтобы ширина отверстия не была больше самой комнаты
+                                openingWidth = openingWidth > segLength ? segLength : openingWidth;
+
                                 double openingArea = openingWidth * openingHeight;
                                 double openingSlope = (openingWidth + openingHeight * 2) * openingThickness / 2;
                                 

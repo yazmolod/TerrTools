@@ -89,6 +89,15 @@ namespace TerrTools
             foreach (HorizontalFinishingResult result in FormResult)
             {
                 Parameter pRoomFinishingName = result.Room.get_Parameter(roomFinishParameter);
+                try
+                {                    
+                    pRoomFinishingName.Set(result.FinishingType.Name);
+                }
+                catch (Autodesk.Revit.Exceptions.InvalidOperationException)
+                {
+                    TaskDialog.Show("Ошибка", "Параметр Отделка пола задействован в ключевой спецификации и не может быть обновлен");
+                    break;
+                }
 
                 // Удаляем старый объект и замещаем новым
                 Parameter pRoomFinishingId = result.Room.LookupParameter(finishIdParameterName);
@@ -146,9 +155,10 @@ namespace TerrTools
                         // Идентификатор пола для помещения    
                         pRoomFinishingId.Set(-1);
                         // Название отделки для помещения
-                        pRoomFinishingName.Set(result.FinishingType.Name);
+                        pRoomFinishingName.Set(result.FinishingType.Name);                        
                     }
                 }
+
                 else
                 {
                     // Идентификатор пола для помещения    

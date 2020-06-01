@@ -86,14 +86,13 @@ namespace TerrTools
                     new BuiltInCategory[] { BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_ENERGY_ANALYSIS);
 
                 /* 
-                 * Эти параметры должны быть внутри семейства, нет смысла назначать их всей категории
+                  Эти параметры должны быть внутри семейства, нет смысла назначать их всей категории
 
                     done &= CustomSharedParameter.AddSharedParameter(doc, thermalPowerParameterName, "ADSK_Main_MEP", true,
                         new BuiltInCategory[] { BuiltInCategory.OST_MechanicalEquipment }, BuiltInParameterGroup.PG_MECHANICAL);
 
                     done &= CustomSharedParameter.AddSharedParameter(doc, airflowParameterName, "ADSK_Main_MEP", true,
                         new BuiltInCategory[] { BuiltInCategory.OST_DuctTerminal }, BuiltInParameterGroup.PG_MECHANICAL_AIRFLOW);
-
                 */
 
                 done &= SharedParameterUtils.AddSharedParameter(doc, skipParameterName,
@@ -607,26 +606,29 @@ namespace TerrTools
                     :
                     TerrSettings.RadiatorTypes;
 
-                foreach (int type in iteratedTypes)
+                for (int t = 0; t < iteratedTypes.Count() && !wattFinded; t++)
                 {
-                    foreach (int height in iteratedHeights)
+                    int type = iteratedTypes[t];
+                    for (int h = 0; h < iteratedHeights.Count() && !wattFinded; h++)
                     {
+                        int height = iteratedHeights[h];
                         sN = FamilyInstanceUtils.SizeLookup(sizeTable, "N", new string[] { type.ToString(), height.ToString() });
                         sQn = FamilyInstanceUtils.SizeLookup(sizeTable, "Qn", new string[] { type.ToString(), height.ToString() });
                         sTzn = FamilyInstanceUtils.SizeLookup(sizeTable, "Tz", new string[] { type.ToString(), height.ToString() });
                         sTpn = FamilyInstanceUtils.SizeLookup(sizeTable, "Tp", new string[] { type.ToString(), height.ToString() });
                         sTin = FamilyInstanceUtils.SizeLookup(sizeTable, "Ti", new string[] { type.ToString(), height.ToString() });
                         if (sN == null || sQn == null || sTzn == null || sTpn == null || sTin == null) continue;
-
                         rowFinded = true;
+
                         N = double.Parse(sN, System.Globalization.CultureInfo.InvariantCulture);
                         Qn = double.Parse(sQn, System.Globalization.CultureInfo.InvariantCulture);
                         Tzn = double.Parse(sTzn, System.Globalization.CultureInfo.InvariantCulture);
                         Tpn = double.Parse(sTpn, System.Globalization.CultureInfo.InvariantCulture);
                         Tin = double.Parse(sTin, System.Globalization.CultureInfo.InvariantCulture);
 
-                        foreach (int length in iteratedLengths)
+                        for (int l = 0; l < iteratedLengths.Count() && !wattFinded; l++)
                         {
+                            int length = iteratedLengths[l];
                             powerValue = (length / 1000.0) * Qn * Math.Pow(
                                 (
                                     (Tz - Tp)
