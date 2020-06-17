@@ -379,7 +379,9 @@ namespace TerrTools.Updaters
                 BuiltInCategory.OST_DuctFitting,
                 BuiltInCategory.OST_PipeFitting,
                 BuiltInCategory.OST_MechanicalEquipment,
-                BuiltInCategory.OST_Sprinklers
+                BuiltInCategory.OST_Sprinklers,
+                BuiltInCategory.OST_PlumbingFixtures
+
         };
         static BuiltInCategory[] sysCats = new BuiltInCategory[]
         {
@@ -441,6 +443,7 @@ namespace TerrTools.Updaters
                 if (value == null) continue;
                 string[] values = value.Split(',');
                 foreach (string v in values) localSystems.Add(v);
+
             }
             foreach (var el in systems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))) UpdateSystem(el);
         }

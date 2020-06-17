@@ -45,7 +45,7 @@ namespace TerrTools
                     {
                         CurveArray curves = new CurveArray();
                         SpatialElement room = doc.GetElement(roomref.ElementId) as SpatialElement;
-                        foreach (var boundary in GeometryUtils.GetCurvesListFromSpatialElement(room))
+                        foreach (var boundary in CurveUtils.GetCurvesListFromSpatialElement(room))
                         {
                             foreach (var curve in boundary)
                             {

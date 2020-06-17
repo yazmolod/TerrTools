@@ -66,9 +66,9 @@ namespace TerrTools
             
             foreach (Element op in existingOpenings)
             {
-                //Parameter p = op.LookupParameter("Идентификатор пересечения");
-                //ElementId opDesignOption = op.DesignOption != null ? op.DesignOption.Id : ElementId.InvalidElementId;
-                //if (p != null) 
+                Parameter p = op.LookupParameter("Идентификатор пересечения");
+                ElementId opDesignOption = op.DesignOption != null ? op.DesignOption.Id : ElementId.InvalidElementId;
+                if (p != null && p.AsString().Contains('-') )
                 //{
                 //    string opId = p.AsString();
                 //    ElementId hostId = new ElementId(int.Parse(opId.Split('-')[0]));
@@ -81,16 +81,12 @@ namespace TerrTools
                 //    { 
                 //    XYZ[] interPts = (from face in faces select FindFaceIntersection(c, face)).ToArray();
                 //        if (interPts.Any(x => x != null))
-                //        {
+                        {
                             doc.Delete(op.Id);
-                //        }
+                        }
                 //    }
                 //}
-            }
-            
-
-
-
+            }         
         }
 
         protected bool PlaceOpeningFamilies(List<Intersection> intersections)
@@ -116,22 +112,11 @@ namespace TerrTools
                     {
                         failedIntersections.Add(i);
                     }
-                }
-                TaskDialog dialog = new TaskDialog("Результат");
-                dialog.MainInstruction = String.Format("Количество добавленных отверстий: {0}\nПропущенные отверстия: {1}", intersections.Count - failedIntersections.Count, failedIntersections.Count);
-                dialog.MainContent = failedIntersections.Count > 0 ?
-                    String.Format(
-                    "Нижеперечисленные стены находятся в другом варианте конструкции и были пропущены при расстановке отверстий:" +
-                    "\n{0}\n" +
-                    "Чтобы добавить эти пересечения в проект, переключитесь на вариант конструкции, в котором содержатся эти стены и повторите попытку",
-                    String.Join(", ", (from e in failedIntersections select e.Host.Id.ToString())))
-                    : null;
-                dialog.Show();
+                }                
                 return true;
             }
             catch (NullReferenceException)
-            {
-                TaskDialog.Show("Ошибка", "Отсутствуют требуемые параметры в семействе отверстий. Операция отменена");
+            {                
                 return false;
             }
         }
@@ -157,6 +142,7 @@ namespace TerrTools
 
         internal List<Intersection> GetIntersections(IEnumerable<HostObject> hosts)
         {
+            var progress = new UI.ProgressBar("Поиск пересечений...", hosts.Count());
             Transform tr = GeometryUtils.GetCorrectionTransform(linkedDocInstance);
             List<Intersection> intersectionList = new List<Intersection>();
             foreach (HostObject host in hosts)
@@ -234,6 +220,7 @@ namespace TerrTools
                         }
                     }
                 }
+                progress.StepUp();
             }
             return intersectionList;
         }
@@ -273,6 +260,14 @@ namespace TerrTools
                     intersections = form.UpdatedIntersections;
                     bool result = PlaceOpeningFamilies(intersections);
                     tr.Commit();
+                    if (result)
+                    {
+                        TaskDialog.Show("Успешно", "Отверстия расставлены, но не забудьте их проверить");
+                    }
+                    else
+                    {
+                        TaskDialog.Show("Ошибка", "Отсутствуют требуемые параметры в семействе отверстий. Операция отменена");
+                    }                    
                     return Result.Succeeded;
                 }
                 else return Result.Cancelled;

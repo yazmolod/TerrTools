@@ -162,16 +162,20 @@ namespace TerrTools
             ///
             /// Находим все профили помещения и сортируем по периметру. Самый длинный - контур перекрытия
             ///
-            List<List<Curve>> tmp = GeometryUtils.GetCurvesListFromSpatialElement(room);
-            tmp = tmp.OrderBy(x => x.Sum(y => y.Length)).ToList();
-            MainProfile = ConvertListToCurveArray(tmp.Last());
+            List<List<Curve>> roomsCountours = CurveUtils.GetCurvesListFromSpatialElement(room);
+            for (int i = 0; i < roomsCountours.Count; i++)
+            {
+                CurveUtils.FixContourProblems(roomsCountours[i]);
+            }
+            roomsCountours = roomsCountours.OrderBy(x => x.Sum(y => y.Length)).ToList();
+            MainProfile = ConvertListToCurveArray(roomsCountours.Last());
             ///
             /// Остальное - вырезы
             ///
             OpeningProfiles = new List<CurveArray>();
-            for (int i = 0; i < tmp.Count-1; i++)
+            for (int i = 0; i < roomsCountours.Count-1; i++)
             {
-                OpeningProfiles.Add(ConvertListToCurveArray(tmp[i]));
+                OpeningProfiles.Add(ConvertListToCurveArray(roomsCountours[i]));
             }
         }
         private CurveArray ConvertListToCurveArray(List<Curve> curves)

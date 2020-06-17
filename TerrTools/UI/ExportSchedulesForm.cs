@@ -15,25 +15,43 @@ namespace TerrTools.UI
     {
         public IEnumerable<Element> Result { get; set; }
         public ScheduleExportOptions ExportOptions { get; set; }
-        public ExportSchedulesForm(Element[] schedules)
+        public ExportSchedulesForm(List<Element> schedules)
         {
-            InitializeComponent();            
-            listBox1.DataSource = schedules;
-            listBox1.DisplayMember = "Name";
-            
+            InitializeComponent();
+
+            foreach (var item in schedules)
+            {
+                leftListBox.Items.Add(item);
+            }
+
+            leftListBox.DisplayMember = "Name";
+            rightListBox.DisplayMember = "Name";
+
             ShowDialog();
         }
 
         private ScheduleExportOptions MakeExportOptions()
         {
-            var opt = new ScheduleExportOptions();
-            //opt.SplitSheets = oneFileMultipleSheetRB.Checked;
+            SplitFileOptions splitFile;
+            SplitDataOptions splitData;
+            if (multipleFilesRB.Checked) splitFile = SplitFileOptions.MultipleFiles;
+            else if (oneFileMultipleSheetRB.Checked) splitFile = SplitFileOptions.OneFileMultiSheet;
+            else splitFile = SplitFileOptions.OneFileOneSheet;
+
+            if (splitMultiSheetRB.Checked) splitData = SplitDataOptions.MultipleSheet;
+            else if (splitOneSheetRB.Checked) splitData = SplitDataOptions.OneSheet;
+            else splitData = SplitDataOptions.NoSplit;
+
+            bool merge = mergeCheckBox.Checked;
+            bool headers = headerCheckBox.Checked;
+
+            var opt = new ScheduleExportOptions(splitFile, splitData, merge, headers);
             return opt;
         }
 
         private void exportBtn_Click(object sender, EventArgs e)
         {
-            Result = listBox2.Items.Cast<Element>();
+            Result = rightListBox.Items.Cast<Element>();
             this.ExportOptions = MakeExportOptions();
             this.DialogResult = WF.DialogResult.OK;
             this.Close();
@@ -41,45 +59,53 @@ namespace TerrTools.UI
 
         private void inBtn_Click(object sender, EventArgs e)
         {
-            int index = listBox1.SelectedIndex;
-            listBox2.Items.Add(listBox1.Items[index]);
-            listBox1.Items.RemoveAt(index);
+            var indexes = leftListBox.SelectedIndices;
+            for (int i = indexes.Count - 1; i >= 0; i--)
+            {
+                rightListBox.Items.Insert(0, leftListBox.Items[indexes[i]]);
+                leftListBox.Items.RemoveAt(indexes[i]);
+            }
         }
 
         private void outBtn_Click(object sender, EventArgs e)
         {
-            int index = listBox2.SelectedIndex;
-            listBox1.Items.Add(listBox2.Items[index]);
-            listBox2.Items.RemoveAt(index);
+            var indexes = rightListBox.SelectedIndices;
+            for (int i = indexes.Count - 1; i >= 0; i--)
+            {
+                leftListBox.Items.Insert(0, rightListBox.Items[indexes[i]]);
+                rightListBox.Items.RemoveAt(indexes[i]);
+            }
         }
 
-        private void upBtn_Click(object sender, EventArgs e)
+        private void updownBtn_Click(object sender, EventArgs e)
         {
-            int index = listBox2.SelectedIndex;
-            var item = listBox2.SelectedItem;
-            listBox2.Items.RemoveAt(index);
-            listBox2.Items.Insert(index - 1, item);
-        }
-
-        private void downBtn_Click(object sender, EventArgs e)
-        {
-            int index = listBox2.SelectedIndex;
-            var item = listBox2.SelectedItem;
-            listBox2.Items.RemoveAt(index);
-            listBox2.Items.Insert(index + 1, item);
-        }
-
-        private void checkBox1_CheckedChanged(object sender, EventArgs e)
-        {
-            bool status = (sender as WF.CheckBox).Checked;
-            splitMultiSheetRB.Enabled = status;
-            splitOneSheetRB.Enabled = status;
+            var btn = (WF.Button)sender;
+            int index = rightListBox.SelectedIndex;
+            if (index >= 0)
+            {
+                int new_index = btn.Name == "upBtn" ? index - 1 : index + 1;
+                if (-1 < new_index && new_index < rightListBox.Items.Count)
+                {
+                    var item = rightListBox.SelectedItem;
+                    rightListBox.Items.RemoveAt(index);
+                    rightListBox.Items.Insert(new_index, item);
+                    rightListBox.SelectedIndex = new_index;
+                }
+            }
         }
 
         private void oneFileOneSheetRB_CheckedChanged(object sender, EventArgs e)
         {
-            bool status = (sender as WF.RadioButton).Checked;
-            checkBox1.Enabled = status;
+            var radio = (WF.RadioButton)sender;
+            splitMultiSheetRB.Enabled = headerCheckBox.Enabled = !radio.Checked;
+            mergeCheckBox.Enabled = mergeCheckBox.Checked = radio.Checked;
+            if (radio.Checked)
+            {
+                NoSplitRB.Checked = true;
+                headerCheckBox.Checked = false;                
+            }
+            
         }
-    }    
+    }
 }
+    

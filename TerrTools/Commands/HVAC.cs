@@ -525,8 +525,8 @@ namespace TerrTools
                     tempLog.FailedElementIds.Push(plunt.Id);
                     continue;
                 }
-                Connector connTz = connMng.Connectors.Cast<Connector>().Where(x => x.PipeSystemType == PipeSystemType.SupplyHydronic && x.MEPSystem != null).FirstOrDefault();                
-                Connector connTp = connMng.Connectors.Cast<Connector>().Where(x => x.PipeSystemType == PipeSystemType.ReturnHydronic && x.MEPSystem != null).FirstOrDefault();
+                Connector connTz = connMng.Connectors.Cast<Connector>().Where(x => x.Domain == Domain.DomainPiping && x.PipeSystemType == PipeSystemType.SupplyHydronic && x.MEPSystem != null).FirstOrDefault();                
+                Connector connTp = connMng.Connectors.Cast<Connector>().Where(x => x.Domain == Domain.DomainPiping && x.PipeSystemType == PipeSystemType.ReturnHydronic && x.MEPSystem != null).FirstOrDefault();
 
                 // Назначаем температуру
                 if (pluntTi != null && pluntTp != null && pluntTz != null && connTp != null && connTz != null)

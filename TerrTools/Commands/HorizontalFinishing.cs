@@ -194,13 +194,12 @@ namespace TerrTools
                     this.FormResult = form.Result;
                     UpdateFinishingElement();
                     tr.Commit();
-                    using (Transaction tr2 = new Transaction(doc))
-                    {
-                        tr2.Start("Генерация отверстий");
-                        CreateOpening();
-                        UpdateFinishingType();
-                        tr2.Commit();
-                    }
+
+                    tr.Start("Генерация отверстий");
+                    CreateOpening();
+                    UpdateFinishingType();
+                    tr.Commit();
+
                     return Result.Succeeded;
                 }
                 else
@@ -268,12 +267,13 @@ namespace TerrTools
             catch (Autodesk.Revit.Exceptions.ArgumentException e)
             {
                 ModelCurveCreator mmc = new ModelCurveCreator(doc);
-                mmc.DrawGroup(res.MainProfile, "Debug");
+                mmc.MakeModelCurve(res.MainProfile);
+                mmc.DrawGroup(res.MainProfile, "Незамкнутый контур помещения #" + res.Room.Number.ToString());
                 Debug.WriteLine(e.ToString());
                 TaskDialog td = new TaskDialog("Предупреждение");
                 td.MainIcon = TaskDialogIcon.TaskDialogIconWarning;
                 td.MainInstruction = string.Format("Помещение {0} имеет незамкнутый внешний контур. создание отделки пола для него было пропущено", res.Room.Number);
-                td.MainContent = "Проверьте контур помещения, а также же правильность соединения внешних стен";
+                td.MainContent = "Проверьте контур помещения. Он автоматически сгенерирован, проверьте группы моделей";
                 td.Show();
                 return null;
             }

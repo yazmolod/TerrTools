@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Diagnostics;
 using TerrTools.Updaters;
 using Autodesk.Revit.UI.Events;
+using Autodesk.Revit.DB.Events;
 
 namespace TerrTools
 {
@@ -120,7 +121,8 @@ namespace TerrTools
                 BuiltInCategory.OST_DuctFitting,
                 BuiltInCategory.OST_PipeFitting,
                 BuiltInCategory.OST_MechanicalEquipment,
-                BuiltInCategory.OST_Sprinklers
+                BuiltInCategory.OST_Sprinklers,
+                BuiltInCategory.OST_PlumbingFixtures
             };
             var filter = new ElementMulticategoryFilter(elemCats);
             Updaters.Add(new SystemNamingUpdater(filter, ChangeTypeAdditionAndModication));
@@ -297,7 +299,8 @@ namespace TerrTools
         }
         
         public Result OnStartup(UIControlledApplication app)
-        {
+        {           
+            
             App.Application = app;
             CheckUpdateDialog();
             RegisterUpdaters();
@@ -309,6 +312,28 @@ namespace TerrTools
         private void RegisterEvents()
         {
             Application.Idling += OverrideCommands;
+            Application.ControlledApplication.FailuresProcessing += Application_FailureProcessing;
+        }
+
+        /// <summary>
+        /// Обрабатывает возникающие ошибки во время транзакции
+        /// В Revit выглядит как окно предупреждения. Правильная настройка позволит убрать
+        /// надоедливые предупреждения
+        /// </summary>
+        private void Application_FailureProcessing(object sender, FailuresProcessingEventArgs e)
+        {
+            FailuresAccessor fa = e.GetFailuresAccessor();
+            IList<FailureMessageAccessor>  failList = fa.GetFailureMessages(); // Inside event handler, get all warnings
+            foreach (FailureMessageAccessor failure in failList)
+            {
+                // check FailureDefinitionIds against ones that you want to dismiss, FailureDefinitionId failID = failure.GetFailureDefinitionId();
+                // prevent Revit from showing Unenclosed room warnings
+                FailureDefinitionId failID = failure.GetFailureDefinitionId();
+                if (failID == BuiltInFailures.GeneralFailures.DuplicateValue)
+                {
+                    fa.DeleteWarning(failure);
+                }
+            }
         }
 
         // В этом методе можно перезаписать поведение стандартных комманд в Revit
