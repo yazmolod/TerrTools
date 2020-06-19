@@ -27,6 +27,11 @@ namespace TerrTools
     {
         static public string sharedParameterFilePath = @"\\serverL\PSD\REVIT\ФОП\ФОП2017.txt";
 
+        static public bool AddSharedParameter(Document doc, Updaters.SharedParameterSettings s)
+        {
+            return AddSharedParameter(doc, s.ParameterName, s.Categories, s.ParameterGroup, s.IsInstance);
+        }
+
         static public bool AddSharedParameter(
             Document doc,
             string parameterName,

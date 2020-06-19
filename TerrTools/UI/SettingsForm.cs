@@ -110,6 +110,17 @@ namespace TerrTools.UI
                     break;
             }
         }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            foreach (var upd in App.Updaters)
+            {
+                foreach (var trigger in upd.TriggerPairs)
+                {
+                    UpdaterRegistry.AddTrigger(upd.GetUpdaterId(), trigger.Filter, trigger.ChangeType);
+                }
+            }
+        }
     }
 }
 

@@ -7,11 +7,8 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-Общее:
-- Полностью переработан экспортер спецификаций. 
-Теперь можно в два клика экспортировать все нужные спецификации в Excel за один раз.
-Предусмотрена возможность разбиение спецификаций по заголовкам, а также объединение заголовков
-из разных спецификаций
+ОВиК:
+ - Исправлен баг апдейтера наименования системы
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -38,4 +35,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.14.0")]
+[assembly: AssemblyFileVersion("0.14.1")]

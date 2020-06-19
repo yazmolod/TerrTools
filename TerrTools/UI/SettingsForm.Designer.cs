@@ -197,7 +197,6 @@
             this.lengthPlusBtn.Size = new System.Drawing.Size(53, 23);
             this.lengthPlusBtn.TabIndex = 4;
             this.lengthPlusBtn.UseVisualStyleBackColor = true;
-            this.lengthPlusBtn.Click += new System.EventHandler(this.PlusBtn_Click);
             this.lengthPlusBtn.Click += new System.EventHandler(this.UpdateSettings);
             // 
             // lengthMinusBtn
@@ -209,7 +208,6 @@
             this.lengthMinusBtn.Size = new System.Drawing.Size(53, 23);
             this.lengthMinusBtn.TabIndex = 3;
             this.lengthMinusBtn.UseVisualStyleBackColor = true;
-            this.lengthMinusBtn.Click += new System.EventHandler(this.MinusBtn_Click);
             this.lengthMinusBtn.Click += new System.EventHandler(this.UpdateSettings);
             // 
             // lengthLE
@@ -265,7 +263,6 @@
             this.heightPlusBtn.Size = new System.Drawing.Size(53, 23);
             this.heightPlusBtn.TabIndex = 4;
             this.heightPlusBtn.UseVisualStyleBackColor = true;
-            this.heightPlusBtn.Click += new System.EventHandler(this.PlusBtn_Click);
             this.heightPlusBtn.Click += new System.EventHandler(this.UpdateSettings);
             // 
             // heightMinusBtn
@@ -277,7 +274,6 @@
             this.heightMinusBtn.Size = new System.Drawing.Size(53, 23);
             this.heightMinusBtn.TabIndex = 3;
             this.heightMinusBtn.UseVisualStyleBackColor = true;
-            this.heightMinusBtn.Click += new System.EventHandler(this.MinusBtn_Click);
             this.heightMinusBtn.Click += new System.EventHandler(this.UpdateSettings);
             // 
             // heightLE
@@ -333,7 +329,6 @@
             this.typePlusBtn.Size = new System.Drawing.Size(53, 23);
             this.typePlusBtn.TabIndex = 4;
             this.typePlusBtn.UseVisualStyleBackColor = true;
-            this.typePlusBtn.Click += new System.EventHandler(this.PlusBtn_Click);
             this.typePlusBtn.Click += new System.EventHandler(this.UpdateSettings);
             // 
             // typeMinusBtn
@@ -345,7 +340,6 @@
             this.typeMinusBtn.Size = new System.Drawing.Size(53, 23);
             this.typeMinusBtn.TabIndex = 3;
             this.typeMinusBtn.UseVisualStyleBackColor = true;
-            this.typeMinusBtn.Click += new System.EventHandler(this.MinusBtn_Click);
             this.typeMinusBtn.Click += new System.EventHandler(this.UpdateSettings);
             // 
             // typeLE
@@ -432,7 +426,6 @@
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage VersionPage;
         private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Label versionLabel;
         private System.Windows.Forms.Button updateButton;
         private System.Windows.Forms.TabPage UpdatersPage;
@@ -458,5 +451,6 @@
         private System.Windows.Forms.MaskedTextBox heightLE;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ListBox heightListBox;
+        private System.Windows.Forms.Button button2;
     }
 }

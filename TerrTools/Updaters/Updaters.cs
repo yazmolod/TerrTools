@@ -21,6 +21,44 @@ namespace TerrTools.Updaters
             ChangeType = c;
         }
     }
+    public class SharedParameterSettings
+    {
+        public BuiltInCategory[] Categories { get; set; }
+        public string ParameterName { get; set; }
+        public BuiltInParameterGroup ParameterGroup { get; set; }
+        public bool IsInstance { get; set; }
+        public SharedParameterSettings(BuiltInCategory[] c, string p)
+        {
+            Categories = c;
+            ParameterName = p;
+            ParameterGroup = BuiltInParameterGroup.PG_ADSK_MODEL_PROPERTIES;
+            IsInstance = true;
+        }
+        public SharedParameterSettings(BuiltInCategory[] c, string p, BuiltInParameterGroup g)
+        {
+            Categories = c;
+            ParameterName = p;
+            ParameterGroup = g;
+            IsInstance = true;
+        }
+        public SharedParameterSettings(BuiltInCategory[] c, string p, bool inst)
+        {
+            Categories = c;
+            ParameterName = p;
+            ParameterGroup = BuiltInParameterGroup.PG_ADSK_MODEL_PROPERTIES;
+            IsInstance = inst;
+        }
+        public SharedParameterSettings(BuiltInCategory[] c, string p, BuiltInParameterGroup g, bool inst)
+        {
+            Categories = c;
+            ParameterName = p;
+            ParameterGroup = g;
+            IsInstance = inst;
+        }
+
+
+    }
+
     public abstract class TerrUpdater : IUpdater
     {
         public abstract string Name { get; }
@@ -44,10 +82,12 @@ namespace TerrTools.Updaters
         }
 
         public List<TriggerPair> TriggerPairs { get; set; }
+        public List<SharedParameterSettings> SharedParameterSettings { get; set; }
 
         public TerrUpdater(ElementFilter filter, ChangeType chtype)
         {
             TriggerPairs = new List<TriggerPair>() { new TriggerPair(filter, chtype) };
+            SharedParameterSettings = new List<SharedParameterSettings>();
             SelfInvoked = false;
         }
         public abstract void InnerExecute(UpdaterData data);
@@ -56,6 +96,10 @@ namespace TerrTools.Updaters
         public void AddTriggerPair(ElementFilter filter, ChangeType chtype)
         {
             TriggerPairs.Add(new TriggerPair(filter, chtype));
+        }
+        public void AddSharedSettings(SharedParameterSettings item)
+        {
+            SharedParameterSettings.Add(item);
         }
 
         public void GlobalUpdate(Document doc)
@@ -360,46 +404,27 @@ namespace TerrTools.Updaters
 
     public class SystemNamingUpdater : TerrUpdater
     {
-        string systemNameP = "ТеррНИИ_Наименование системы";
-        static BuiltInCategory[] elemCats = new BuiltInCategory[]
-        {
-                BuiltInCategory.OST_DuctAccessory,
-                BuiltInCategory.OST_PipeAccessory,
-                BuiltInCategory.OST_DuctCurves,
-                BuiltInCategory.OST_PlaceHolderDucts,
-                BuiltInCategory.OST_DuctTerminal,
-                BuiltInCategory.OST_FlexDuctCurves,
-                BuiltInCategory.OST_FlexPipeCurves,
-                BuiltInCategory.OST_DuctInsulations,
-                BuiltInCategory.OST_PipeInsulations,
-                BuiltInCategory.OST_PipeCurves,
-                BuiltInCategory.OST_DuctSystem,
-                BuiltInCategory.OST_PipingSystem,
-                BuiltInCategory.OST_PlaceHolderPipes,
-                BuiltInCategory.OST_DuctFitting,
-                BuiltInCategory.OST_PipeFitting,
-                BuiltInCategory.OST_MechanicalEquipment,
-                BuiltInCategory.OST_Sprinklers,
-                BuiltInCategory.OST_PlumbingFixtures
+        string systemNameP = "ТеррНИИ_Наименование системы"; 
 
-        };
-        static BuiltInCategory[] sysCats = new BuiltInCategory[]
-        {
-                BuiltInCategory.OST_DuctSystem,
-                BuiltInCategory.OST_PipingSystem,
-        };
-        ElementFilter sysFilter = new LogicalAndFilter(new ElementMulticategoryFilter(sysCats), new ElementIsElementTypeFilter(true));
-        ElementFilter elemFilter = new LogicalAndFilter(new ElementMulticategoryFilter(elemCats), new ElementIsElementTypeFilter(true));
+        // Порядок был объявлен при инициализации апдейтера в Application.cs
+        ElementFilter elemFilter { get => this.TriggerPairs[0].Filter; }         
+        ElementFilter sysFilter { get => this.TriggerPairs[1].Filter; }
+        BuiltInCategory[] elemCats { get; set; }
+        BuiltInCategory[] sysCats { get; set; }
 
         public SystemNamingUpdater
-        (ElementFilter filter, ChangeType chtype) : base(filter, chtype) { }
+        (ElementFilter filter, ChangeType chtype, BuiltInCategory[] ecats, BuiltInCategory[] scats) : base(filter, chtype) 
+        {
+            elemCats = ecats;
+            sysCats = scats;
+        }
         public override string Name => "SystemNamingUpdater";
 
         public override string Info => "";
 
         public override string Guid => "66f6e035-e2d7-4c81-a253-c6b3efe38d9d";
 
-        public override ChangePriority Priority =>  ChangePriority.MEPAccessoriesFittingsSegmentsWires;
+        public override ChangePriority Priority =>  ChangePriority.MEPSystems;
 
         public override void GlobalExecute(Document doc)
         {
@@ -411,7 +436,7 @@ namespace TerrTools.Updaters
             string localSystem = system.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString();
             string globalSystem = system.LookupParameter(systemNameP).AsString();
             globalSystem = globalSystem ?? "";
-            var collector = new FilteredElementCollector(doc).WherePasses(elemFilter);
+            var collector = new FilteredElementCollector(doc).WherePasses(elemFilter).ToElements();
             foreach (var item in collector)
             {
                 Parameter itemLocalP = item.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
@@ -423,18 +448,18 @@ namespace TerrTools.Updaters
             }
         }
         public override void InnerExecute(UpdaterData data)
-        {
-            SharedParameterUtils.AddSharedParameter(doc, systemNameP, elemCats, BuiltInParameterGroup.PG_TEXT);
-            SharedParameterUtils.AddSharedParameter(doc, systemNameP, sysCats, BuiltInParameterGroup.PG_TEXT);
-
+        {            
             IEnumerable<ElementId>ids = data.GetModifiedElementIds().Concat(data.GetAddedElementIds());
 
             Element[] elements = (from id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()) select doc.GetElement(id)).ToArray();
             Element[] systems = elements.Where(x => sysFilter.PassesFilter(x)).ToArray();
             Element[] items = elements.Where(x => elemFilter.PassesFilter(x)).ToArray();
-
+            // обновление имени от системы к элементам
             foreach (var el in systems) UpdateSystem(el);
 
+            // обновление от элементов к системам
+            // скорее всего там блокирующие вызовы, рекурсии и прочие гадости     
+            /*
             HashSet<string> localSystems = new HashSet<string>();
             foreach (var item in items)
             {
@@ -445,7 +470,8 @@ namespace TerrTools.Updaters
                 foreach (string v in values) localSystems.Add(v);
 
             }
-            foreach (var el in systems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))) UpdateSystem(el);
+            foreach (var el in systems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))) UpdateSystem(el);            
+       */ 
         }
     }
 }

@@ -82,7 +82,7 @@ namespace TerrTools
             return btnData;
         }
 
-        private void RegisterUpdaters()
+        private void InitUpdaters()
         {            
             ChangeType ChangeTypeAdditionAndModication = ChangeType.ConcatenateChangeTypes(Element.GetChangeTypeAny(), Element.GetChangeTypeElementAddition());
             ChangeType allChangeTypes = ChangeType.ConcatenateChangeTypes(ChangeTypeAdditionAndModication, Element.GetChangeTypeElementDeletion());
@@ -103,6 +103,7 @@ namespace TerrTools
                 new ElementCategoryFilter(BuiltInCategory.OST_Parts),
                 Element.GetChangeTypeAny()));
 
+           
             BuiltInCategory[] elemCats = new BuiltInCategory[]
             {
                 BuiltInCategory.OST_DuctAccessory,
@@ -115,8 +116,6 @@ namespace TerrTools
                 BuiltInCategory.OST_DuctInsulations,
                 BuiltInCategory.OST_PipeInsulations,
                 BuiltInCategory.OST_PipeCurves,
-                BuiltInCategory.OST_DuctSystem,
-                BuiltInCategory.OST_PipingSystem,
                 BuiltInCategory.OST_PlaceHolderPipes,
                 BuiltInCategory.OST_DuctFitting,
                 BuiltInCategory.OST_PipeFitting,
@@ -124,26 +123,56 @@ namespace TerrTools
                 BuiltInCategory.OST_Sprinklers,
                 BuiltInCategory.OST_PlumbingFixtures
             };
-            var filter = new ElementMulticategoryFilter(elemCats);
-            Updaters.Add(new SystemNamingUpdater(filter, ChangeTypeAdditionAndModication));
-            Updaters.Last().AddTriggerPair(
-                new ElementMulticategoryFilter(new BuiltInCategory[] { BuiltInCategory.OST_DuctSystem, BuiltInCategory.OST_PipingSystem }),
-                ChangeTypeAdditionAndModication
-                );
+            BuiltInCategory[] sysCats = new BuiltInCategory[]
+            {
+                BuiltInCategory.OST_DuctSystem,
+                BuiltInCategory.OST_PipingSystem,
+            };
+            var elemFilter = new LogicalAndFilter(new ElementMulticategoryFilter(elemCats), new ElementIsElementTypeFilter(inverted: true));
+            var sysFilter = new LogicalAndFilter(new ElementMulticategoryFilter(sysCats), new ElementIsElementTypeFilter(inverted: true));
+            SystemNamingUpdater updater = new SystemNamingUpdater(elemFilter, ChangeTypeAdditionAndModication, elemCats, sysCats);          
+            SharedParameterSettings settings = new SharedParameterSettings(elemCats.Concat(sysCats).ToArray(),
+                                                                            "ТеррНИИ_Наименование системы",
+                                                                            BuiltInParameterGroup.PG_TEXT);
+            updater.AddSharedSettings(settings);
+            updater.AddTriggerPair(sysFilter, ChangeTypeAdditionAndModication);
+            Updaters.Add(updater);
 
-            var filterRDW = new LogicalOrFilter(new List<ElementFilter>() 
-            { new ElementCategoryFilter(BuiltInCategory.OST_Rooms), 
-                new ElementCategoryFilter(BuiltInCategory.OST_Doors), 
-                new ElementCategoryFilter(BuiltInCategory.OST_Windows)});
-            var filterDW = new LogicalOrFilter(new List<ElementFilter>()
-            {  new ElementCategoryFilter(BuiltInCategory.OST_Doors),
-                new ElementCategoryFilter(BuiltInCategory.OST_Windows) });
+            var filterRDW = new ElementMulticategoryFilter(new BuiltInCategory[]{
+            BuiltInCategory.OST_Rooms, BuiltInCategory.OST_Doors, BuiltInCategory.OST_Windows });
+            var filterDW = new ElementMulticategoryFilter(new BuiltInCategory[]{
+            BuiltInCategory.OST_Doors, BuiltInCategory.OST_Windows });
             Updaters.Add(new RoomUpdater(                
                 filterRDW,
                 ChangeTypeAdditionAndModication));
             Updaters.Last().AddTriggerPair(filterDW, Element.GetChangeTypeElementDeletion());
+        }
 
+        private void AddUpdaterSharedParameters(Document doc)
+        /// СУПЕР ВАЖНО
+        /// Общая идея: добавлять общие параметры перед активацией апдейтеров
+        /// мне лень реализовывать механизм добавления общих параметров для всех классов апдейтеров прямо сейчас
+        /// поэтому несмотря на то, что это все подразумевает обработку всех классов
+        /// сейчас обрабатывается только один, на котором вскрылся баг
+        /// Однако, сделать это скорее надо, чем нет, потому что добавление общих параметров через апдейтер
+        /// это заноза в заднице, которую невозможно дебажить
+        {
+            using (Transaction tr = new Transaction(doc, "Добавление общих параметров ТеррНИИ BIM"))
+            {
+                tr.Start();
+                foreach (TerrUpdater upd in Updaters)
+                {
+                    foreach (SharedParameterSettings s in upd.SharedParameterSettings)
+                    {
+                        SharedParameterUtils.AddSharedParameter(doc, s);
+                    }
+                }
+                tr.Commit();
+            }
+        }
 
+        private void RegisterUpdaters()
+        {
             foreach (var upd in Updaters)
             {
                 UpdaterRegistry.RegisterUpdater(upd);
@@ -152,6 +181,27 @@ namespace TerrTools
                     UpdaterRegistry.AddTrigger(upd.GetUpdaterId(), trigger.Filter, trigger.ChangeType);
                 }
             }
+        }
+
+        private void RegisterUpdaters(Document doc)
+        {
+            foreach (var upd in Updaters)
+            {
+                UpdaterRegistry.RegisterUpdater(upd, doc);
+                foreach (var trigger in upd.TriggerPairs)
+                {
+                    UpdaterRegistry.AddTrigger(upd.GetUpdaterId(), trigger.Filter, trigger.ChangeType);
+                }
+            }
+        }
+
+        private void UnregisterUpdaters()
+        {
+            foreach (IUpdater upd in Updaters) UpdaterRegistry.UnregisterUpdater(upd.GetUpdaterId());
+        }
+        private void UnregisterUpdaters(Document doc)
+        {
+            foreach (IUpdater upd in Updaters) UpdaterRegistry.UnregisterUpdater(upd.GetUpdaterId(), doc);
         }
 
         private void CreateRibbon()
@@ -290,30 +340,53 @@ namespace TerrTools
             /// Настройки
             ///
             panelInfo.AddItem(MakePushButton("SettingsWindow", "Настройки", iconName: "Settings.png"));
+
+#if DEBUG
+            panelInfo.AddItem(MakePushButton("DebuggingTools", "DEBUG",
+                toolTip: "Если по какой-то причине эта кнопка осталось в релизной версии и вы не знаете, что она делает - НЕ НАЖИМАЙТЕ"
+                    ));
+#endif
         }
 
         public Result OnShutdown(UIControlledApplication application)
-        {   
-            foreach (IUpdater upd in Updaters) UpdaterRegistry.UnregisterUpdater(upd.GetUpdaterId());
+        {
+            UnregisterUpdaters();
             return Result.Succeeded;
         }
         
         public Result OnStartup(UIControlledApplication app)
-        {           
-            
+        {          
             App.Application = app;
-            CheckUpdateDialog();
-            RegisterUpdaters();
+            CheckUpdateDialog();            
             CreateRibbon();
+            InitUpdaters();
             RegisterEvents();            
             return Result.Succeeded;
         }
 
         private void RegisterEvents()
         {
-            Application.Idling += OverrideCommands;
+            // удаление срабатывает через раз, а кроме него ничего не переписано сейчас
+            // так что убираем до лучших времен
+            //Application.Idling += OverrideCommands;
             Application.ControlledApplication.FailuresProcessing += Application_FailureProcessing;
+            Application.ControlledApplication.DocumentOpened += Application_DocumentOpened;
+            Application.ControlledApplication.DocumentCreated += Application_DocumentCreated;
         }
+
+        private void Application_DocumentOpened(object sender, DocumentOpenedEventArgs e)
+        {
+            Document doc = e.Document;
+            AddUpdaterSharedParameters(doc);
+            RegisterUpdaters(doc);
+        }
+        private void Application_DocumentCreated(object sender, DocumentCreatedEventArgs e)
+        {
+            Document doc = e.Document;
+            AddUpdaterSharedParameters(doc);
+            RegisterUpdaters(doc);
+        }
+
 
         /// <summary>
         /// Обрабатывает возникающие ошибки во время транзакции
