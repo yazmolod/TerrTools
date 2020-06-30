@@ -8,7 +8,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
 ОВиК:
- - Исправлен баг апдейтера наименования системы
+ - Изменения в назначении класса воздуховода
+
+Общее:
+ - Реализован принудительный запуск апдейтера для всех элементов (см. настройки плагина)
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -35,4 +38,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.14.1")]
+[assembly: AssemblyFileVersion("0.14.2")]

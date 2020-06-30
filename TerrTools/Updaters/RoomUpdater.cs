@@ -14,7 +14,7 @@ namespace TerrTools.Updaters
     public class RoomUpdater : TerrUpdater
     {
         public override string Name => "RoomUpdater";
-        public override string Info => "";
+        public override string Info => "Помещения: обновляет данные, необходимые для расчета отделки";
         public override string Guid => "a82a5ae5-9c21-4645-b029-d3d0b67312f1";
         public override ChangePriority Priority => ChangePriority.RoomsSpacesZones;
         public RoomUpdater

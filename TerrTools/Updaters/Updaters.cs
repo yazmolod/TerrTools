@@ -27,6 +27,13 @@ namespace TerrTools.Updaters
         public string ParameterName { get; set; }
         public BuiltInParameterGroup ParameterGroup { get; set; }
         public bool IsInstance { get; set; }
+        public SharedParameterSettings(BuiltInCategory c, string p)
+        {
+            Categories = new BuiltInCategory[]{ c };
+            ParameterName = p;
+            ParameterGroup = BuiltInParameterGroup.PG_ADSK_MODEL_PROPERTIES;
+            IsInstance = true;
+        }
         public SharedParameterSettings(BuiltInCategory[] c, string p)
         {
             Categories = c;
@@ -55,8 +62,6 @@ namespace TerrTools.Updaters
             ParameterGroup = g;
             IsInstance = inst;
         }
-
-
     }
 
     public abstract class TerrUpdater : IUpdater
@@ -158,7 +163,7 @@ namespace TerrTools.Updaters
     public class SpaceUpdater : TerrUpdater
     {
         public override string Name => "SpaceUpdater";
-        public override string Info => "";
+        public override string Info => "Сопоставляет номер помещения из связанного проекта с номером пространства в текущем проекте";
         public override string Guid => "b49432e1-c88d-4020-973d-1464f2d7b121";
         public override ChangePriority Priority => ChangePriority.RoomsSpacesZones;
 
@@ -169,33 +174,23 @@ namespace TerrTools.Updaters
         public override void InnerExecute(UpdaterData data)
         {            
             var modified = data.GetModifiedElementIds();
-             var added = data.GetAddedElementIds();
-            foreach (ElementId id in added.Concat(modified))
-            {
-                try
-                {
-                    Element space = doc.GetElement(id);
-                    SpaceNaming.TransferData(space);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                    Debug.WriteLine(ex.StackTrace);
-                    Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
-                }
-            }            
+            var added = data.GetAddedElementIds();
+            var elements = added.Concat(modified).Select(x => doc.GetElement(x));
+            foreach (Element e in elements) SpaceNaming.TransferData(e);         
         }
 
         public override void GlobalExecute(Document doc)
         {
-            throw new NotImplementedException();
+            var filter = new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces);
+            var elements = new FilteredElementCollector(doc).WherePasses(filter).ToElements();
+            foreach (var e in elements) SpaceNaming.TransferData(e);
         }
     }
         
     public class DuctsUpdater : TerrUpdater
     {
         public override string Name => "DuctsUpdater";
-        public override string Info => "";
+        public override string Info => "Назначает воздуховодам в соответствующие параметры толщину стенки, категорию защиты и отметку от нуля";
         public override string Guid => "93dc3d80-0c29-4af5-a509-c36dfd497d66";
         public override ChangePriority Priority => ChangePriority.MEPAccessoriesFittingsSegmentsWires;
 
@@ -205,12 +200,16 @@ namespace TerrTools.Updaters
         private string GetDuctClass(Duct el)
         {
             bool isInsul = el.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0;
+            /* 23.06.2020 Попросили убрать логику с поиском огнезащиты, теперь просто маркируем все с изоляцией
+             * 
             string insulType = el.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_TYPE).AsString();
             Element[] insulTypes = new FilteredElementCollector(doc).OfClass(typeof(DuctInsulationType)).Where(x => x.Name == insulType).ToArray();
             // Параметр "Комментарий к типоразмеру"
             string comment = insulTypes.Length > 0 ? insulTypes[0].get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS).AsString() : "";
             if (insulTypes.Length > 0 && comment?.IndexOf("огнезащит", StringComparison.OrdinalIgnoreCase) >= 0) return "B с огнезащитой";
-            return "А";
+            */
+            if (isInsul) return "B в изоляции";
+            else return "А";
         }
         private double GetDuctThickness(Duct el)
         {
@@ -266,8 +265,7 @@ namespace TerrTools.Updaters
         string classParameter = "ТеррНИИ_Класс герметичности";
         string levelParameter = "ТеррНИИ_Отметка от нуля";
         public override void InnerExecute(UpdaterData data)
-        {
-            
+        {            
             SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             SharedParameterUtils.AddSharedParameter(doc, classParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             SharedParameterUtils.AddSharedParameter(doc, levelParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
@@ -303,7 +301,7 @@ namespace TerrTools.Updaters
     public class DuctsAccessoryUpdater : TerrUpdater
     {
         public override string Name => "DuctsAccessoryUpdater";
-        public override string Info => "";
+        public override string Info => "Арматура воздуховодов: копирует размеры коннектора в марку";
         public override string Guid => "79e309d3-bd2d-4255-84b8-2133c88b695d";
         public override ChangePriority Priority => ChangePriority.MEPAccessoriesFittingsSegmentsWires;
         public DuctsAccessoryUpdater
@@ -312,37 +310,31 @@ namespace TerrTools.Updaters
 
         public override void InnerExecute(UpdaterData data)
         {
-
             var modified = data.GetModifiedElementIds();
             var added = data.GetAddedElementIds();
-            foreach (ElementId id in modified.Concat(added))
-            {
-                try
-                {
-                    Element el = doc.GetElement(id);
-                    string rawSize = el.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString();
-                    string size = rawSize.Split('-')[0].Replace("м", "").Replace(" ", "");
-                    el.LookupParameter("Марка").Set(size);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                    Debug.WriteLine(ex.StackTrace);
-                    Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
-                }
-            }
+            foreach (ElementId id in modified.Concat(added)) UpdateMark(id);            
+        }
+        
+        private void UpdateMark(ElementId id)
+        {
+            Element el = doc.GetElement(id);
+            string rawSize = el.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString();
+            string size = rawSize.Split('-')[0].Replace("м", "").Replace(" ", "");
+            el.LookupParameter("Марка").Set(size);
         }
 
         public override void GlobalExecute(Document doc)
         {
-            throw new NotImplementedException();
+            var filter = new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory), new ElementIsElementTypeFilter(true));
+            var elementids = new FilteredElementCollector(doc).WherePasses(filter).ToElementIds();
+            foreach (var id in elementids) UpdateMark(id);
         }
     }
 
     public class PartUpdater : TerrUpdater
     {
         public override string Name => "PartUpdater";
-        public override string Info => "";
+        public override string Info => "Части стен: добавляет параметр с реальной толщиной";
         public override string Guid => "79ef66cc-2d1a-4bdd-9bae-dae5aa8501f0";
         public override ChangePriority Priority => ChangePriority.FloorsRoofsStructuralWalls;
         public PartUpdater
@@ -420,7 +412,7 @@ namespace TerrTools.Updaters
         }
         public override string Name => "SystemNamingUpdater";
 
-        public override string Info => "";
+        public override string Info => "Позволяет работать с названиями систем";
 
         public override string Guid => "66f6e035-e2d7-4c81-a253-c6b3efe38d9d";
 
@@ -428,7 +420,10 @@ namespace TerrTools.Updaters
 
         public override void GlobalExecute(Document doc)
         {
-            throw new NotImplementedException();
+            var systems = new FilteredElementCollector(doc).WherePasses(sysFilter).ToArray();
+            var items = new FilteredElementCollector(doc).WherePasses(elemFilter).ToArray();
+            foreach (var s in systems) UpdateSystem(s);
+            foreach (var i in items) UpdateItemSystemName(i);
         }
 
         private void UpdateSystem(Element system)
@@ -447,6 +442,25 @@ namespace TerrTools.Updaters
                 }
             }
         }
+
+        private void UpdateItemSystemName(Element item)
+        {
+            Parameter p = item.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
+            string value = p.AsString();
+            HashSet<string> localSystems = new HashSet<string>();
+            if (value != null)
+            {
+                string[] values = value.Split(',');
+                foreach (string v in values) localSystems.Add(v);
+            }
+           
+            Element[] allSystems = new FilteredElementCollector(doc).WherePasses(sysFilter).ToArray();
+            string[] currentAllSystem = allSystems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))
+                      .Select(x => x.LookupParameter(systemNameP).AsString()).ToArray();
+            HashSet<string> globalSystems = new HashSet<string>(currentAllSystem);
+            item.LookupParameter(systemNameP).Set(string.Join(",", globalSystems));
+        }
+
         public override void InnerExecute(UpdaterData data)
         {            
             IEnumerable<ElementId>ids = data.GetModifiedElementIds().Concat(data.GetAddedElementIds());
@@ -456,6 +470,9 @@ namespace TerrTools.Updaters
             Element[] items = elements.Where(x => elemFilter.PassesFilter(x)).ToArray();
             // обновление имени от системы к элементам
             foreach (var el in systems) UpdateSystem(el);
+
+            // забор имени системы
+            foreach (var el in items) UpdateItemSystemName(el);
 
             // обновление от элементов к системам
             // скорее всего там блокирующие вызовы, рекурсии и прочие гадости     
@@ -471,7 +488,7 @@ namespace TerrTools.Updaters
 
             }
             foreach (var el in systems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))) UpdateSystem(el);            
-       */ 
+       */
         }
     }
 }

@@ -86,24 +86,33 @@ namespace TerrTools
         {            
             ChangeType ChangeTypeAdditionAndModication = ChangeType.ConcatenateChangeTypes(Element.GetChangeTypeAny(), Element.GetChangeTypeElementAddition());
             ChangeType allChangeTypes = ChangeType.ConcatenateChangeTypes(ChangeTypeAdditionAndModication, Element.GetChangeTypeElementDeletion());
+            SharedParameterSettings settings;
 
+            // SpaceUpdater
             Updaters.Add(new SpaceUpdater(                 
                 new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces),
                 ChangeTypeAdditionAndModication));
 
-            Updaters.Add(new DuctsUpdater(                
-                new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves), new ElementIsElementTypeFilter(true)),
-                ChangeTypeAdditionAndModication));
+            // DuctUpdater
+            var upd = new DuctsUpdater(new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves), 
+                                                            new ElementIsElementTypeFilter(true)),
+                                       ChangeTypeAdditionAndModication);            
+            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ADSK_Толщина стенки"));
+            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Класс герметичности"));
+            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Отметка от нуля"));
+            Updaters.Add(upd);
 
+            // DuctsAccessoryUpdater
             Updaters.Add(new DuctsAccessoryUpdater(                
                 new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory), new ElementIsElementTypeFilter(true)),
                 ChangeTypeAdditionAndModication));
 
+            // PartUpdater
             Updaters.Add(new PartUpdater(                
                 new ElementCategoryFilter(BuiltInCategory.OST_Parts),
                 Element.GetChangeTypeAny()));
 
-           
+            // SystemNamingUpdater
             BuiltInCategory[] elemCats = new BuiltInCategory[]
             {
                 BuiltInCategory.OST_DuctAccessory,
@@ -131,13 +140,14 @@ namespace TerrTools
             var elemFilter = new LogicalAndFilter(new ElementMulticategoryFilter(elemCats), new ElementIsElementTypeFilter(inverted: true));
             var sysFilter = new LogicalAndFilter(new ElementMulticategoryFilter(sysCats), new ElementIsElementTypeFilter(inverted: true));
             SystemNamingUpdater updater = new SystemNamingUpdater(elemFilter, ChangeTypeAdditionAndModication, elemCats, sysCats);          
-            SharedParameterSettings settings = new SharedParameterSettings(elemCats.Concat(sysCats).ToArray(),
+            settings = new SharedParameterSettings(elemCats.Concat(sysCats).ToArray(),
                                                                             "ТеррНИИ_Наименование системы",
                                                                             BuiltInParameterGroup.PG_TEXT);
             updater.AddSharedSettings(settings);
             updater.AddTriggerPair(sysFilter, ChangeTypeAdditionAndModication);
             Updaters.Add(updater);
 
+            // RoomUpdater
             var filterRDW = new ElementMulticategoryFilter(new BuiltInCategory[]{
             BuiltInCategory.OST_Rooms, BuiltInCategory.OST_Doors, BuiltInCategory.OST_Windows });
             var filterDW = new ElementMulticategoryFilter(new BuiltInCategory[]{
@@ -427,7 +437,6 @@ namespace TerrTools
                 catch
                 {
                 }
-                
             }
         }
 
