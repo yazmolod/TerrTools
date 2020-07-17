@@ -17,10 +17,10 @@ namespace TerrTools
     {
         abstract internal string openingFamilyName { get; }
         abstract internal IEnumerable<HostObject> hosts { get; }
-        protected Document doc;
+        public Document doc;
         protected RevitLinkInstance linkedDocInstance;
         protected FamilySymbol openingFamilySymbol;
-        protected Document linkedDoc { get { return linkedDocInstance.GetLinkDocument(); } }
+        public Document linkedDoc { get { return linkedDocInstance.GetLinkDocument(); } }
 
         protected FamilySymbol FindOpeningFamily()
         {
@@ -37,7 +37,8 @@ namespace TerrTools
             }
             else
             {
-                string path = @"\\serverl\psd\REVIT\Семейства\ТеррНИИ\АР\" + openingFamilyName + ".rfa";
+                //string path = @"\\serverl\psd\REVIT\Семейства\ТеррНИИ\АР\" + openingFamilyName + ".rfa";
+                string path = @"C:\Users\Stepina\Desktop\ТеррНИИ_Компонент_Отверстие.rfa";
                 try
                 {
                     doc.LoadFamilySymbol(path, "Проем", out symbol);
@@ -140,89 +141,54 @@ namespace TerrTools
                 return null;
         }
 
-        internal List<Intersection> GetIntersections(IEnumerable<HostObject> hosts)
+
+
+        public List<Intersection> GetIntersections()
         {
-            var progress = new UI.ProgressBar("Поиск пересечений...", hosts.Count());
-            Transform tr = GeometryUtils.GetCorrectionTransform(linkedDocInstance);
-            List<Intersection> intersectionList = new List<Intersection>();
-            foreach (HostObject host in hosts)
+            linkedDocInstance = GeometryUtils.ChooseLinkedDoc(doc);
+            if (linkedDocInstance==null)
             {
-                List<Face> hostFaces = GeometryUtils.GetFaces(host);
-                if (hostFaces.Count > 0)
+                return new List<Intersection>();
+            }
+            else
+            {
+                var progress = new UI.ProgressBar("Поиск пересечений...", hosts.Count());
+                Transform tr = GeometryUtils.GetCorrectionTransform(linkedDocInstance);
+                List<Intersection> intersectionList = new List<Intersection>();
+                foreach (HostObject host in hosts)
                 {
-                    BoundingBoxXYZ bb = host.get_BoundingBox(null);
-                    Outline outline = new Outline(tr.OfPoint(bb.Min), tr.OfPoint(bb.Max));
-                    BoundingBoxIntersectsFilter filter = new BoundingBoxIntersectsFilter(outline);
-
-                    List<MEPCurve> meps = new FilteredElementCollector(linkedDoc)
-                        .OfClass(typeof(MEPCurve))
-                        .WherePasses(filter)
-                        .Cast<MEPCurve>()
-                        .ToList();
-
-                    foreach (MEPCurve m in meps)
+                    List<Face> hostFaces = GeometryUtils.GetFaces(host);
+                    if (hostFaces.Count > 0)
                     {
-                        Curve mepCurve = GeometryUtils.FindDuctCurve(m);
-                        if (mepCurve != null)
+                        BoundingBoxXYZ bb = host.get_BoundingBox(null);
+                        Outline outline = new Outline(tr.OfPoint(bb.Min), tr.OfPoint(bb.Max));
+                        BoundingBoxIntersectsFilter filter = new BoundingBoxIntersectsFilter(outline);
+
+                        List<MEPCurve> meps = new FilteredElementCollector(linkedDoc)
+                            .OfClass(typeof(MEPCurve))
+                            .WherePasses(filter)
+                            .Cast<MEPCurve>()
+                            .ToList();
+
+                        foreach (MEPCurve m in meps)
                         {
-                            XYZ[] interPts = (from wallFace in hostFaces select FindFaceIntersection(mepCurve, wallFace)).ToArray();
-                            if (interPts.Any(x => x != null))
+                            Curve mepCurve = GeometryUtils.FindDuctCurve(m);
+                            if (mepCurve != null)
                             {
-                                Intersection i = new Intersection();
-                                i.CenterPoint = interPts.First(x => x != null);
-                                i.Host = host;
-                                i.Pipe = m;
-                                i.Level = doc.GetElement(host.LevelId) as Level;
-                                i.MinOffset = 50 / 304.8;
-                                // Определение типа систем
-                                switch (m.MEPSystem.Category.Id.IntegerValue)
+                                XYZ[] interPts = (from wallFace in hostFaces select FindFaceIntersection(mepCurve, wallFace)).ToArray();
+                                if (interPts.Any(x => x != null))
                                 {
-                                    //case (int)BuiltInCategory.OST_PipingSystem:
-                                    //    i.Type = "ВК";
-                                    //    break;
-                                    case (int)BuiltInCategory.OST_DuctSystem:
-                                        i.Type = "ОВ";
-                                        break;
-                                    default:
-                                        break;
+                                    XYZ pt = interPts.First(x => x != null);
+                                    Intersection i = new Intersection(host, m, pt);                                   
+                                    intersectionList.Add(i);
                                 }
-                                //Определение размера трубы
-                                try
-                                {
-                                    i.PipeWidth = m.Diameter;
-                                    i.PipeHeight = m.Diameter;
-                                    i.IsRound = true;
-                                }
-                                catch (Autodesk.Revit.Exceptions.InvalidOperationException)
-                                {
-                                    // из-за того, что воздуховод может быть развернут, мы не можем обращаться к внутренним размерам и смотрим на BBox
-                                    BoundingBoxXYZ bbmep = m.get_BoundingBox(null);
-                                    XYZ res = bbmep.Max - bbmep.Min;
-                                    double x = Math.Abs(res.X);
-                                    double y = Math.Abs(res.Y);
-                                    double z = Math.Abs(res.Z);
-                                    i.PipeWidth = host != null ? m.Width : x;
-                                    i.PipeHeight = host != null ? m.Height : y;
-                                    i.IsRound = false;
-                                }
-                                //Определение, кирпичная ли стена
-                                i.IsBrick = false;                                
-                                if (host != null && host is Wall)
-                                {
-                                    foreach (var layer in (host as Wall).WallType.GetCompoundStructure().GetLayers())
-                                    {
-                                        Element materialElement = doc.GetElement(layer.MaterialId);
-                                        i.IsBrick = materialElement != null ? materialElement.Name.Contains("Кирпич") || i.IsBrick : false;
-                                    }
-                                }
-                                intersectionList.Add(i);
                             }
                         }
                     }
+                    progress.StepUp();
                 }
-                progress.StepUp();
+                return intersectionList;
             }
-            return intersectionList;
         }
 
 
@@ -232,32 +198,21 @@ namespace TerrTools
 
             using (Transaction tr = new Transaction(doc, "Создание отверстий"))
             {
-                tr.Start();
-
-                linkedDocInstance = GeometryUtils.GetLinkedDoc(doc);
-                if (linkedDocInstance == null)
-                    return Result.Cancelled;
-
-                if (linkedDocInstance.GetLinkDocument() == null)
-                {
-                    TaskDialog.Show("Ошибка", "Обновите элемент связи в проекте");
-                    return Result.Failed;
-                }
+                tr.Start();                
 
                 openingFamilySymbol = FindOpeningFamily();
                 if (openingFamilySymbol == null)
                     return Result.Failed;
 
                 DeleteUnusedOpenings();
-                tr.Commit();
-
-                tr.Start();
-                List<Intersection> intersections = GetIntersections(hosts);
-                UI.IntersectionsForm form = new UI.IntersectionsForm(intersections);
+                tr.Commit();               
+                
+                UI.IntersectionsForm form = new UI.IntersectionsForm(this);
 
                 if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
                 {
-                    intersections = form.UpdatedIntersections;
+                    tr.Start();
+                    List<Intersection>intersections = form.Intersections;
                     bool result = PlaceOpeningFamilies(intersections);
                     tr.Commit();
                     if (result)
@@ -275,19 +230,52 @@ namespace TerrTools
         }
     }
 
+
+
+
     public class Intersection
     {
-        public Element Host { get; set; }
-        public Element Pipe { get; set; }
+        public Element Host { get; }
+        public Element Pipe { get; }
         public string Id { get { return string.Format("{0}-{1}", Host.Id.ToString(), Pipe.Id.ToString()); } }
-        public bool IsBrick { get; set; }
-        public bool IsRound { get; set; }
+        public bool IsBrick 
+        { 
+            get 
+            {
+                bool state = false;
+                if (Host != null && Host is Wall)
+                {                    
+                    foreach (var layer in (Host as Wall).WallType.GetCompoundStructure().GetLayers())
+                    {
+                        Element materialElement = Host.Document.GetElement(layer.MaterialId);
+                        state = materialElement != null ? materialElement.Name.Contains("Кирпич") || state : false;
+                    }
+                }
+                return state;
+            }
+        }        
         public XYZ CenterPoint { get; set; }
-        public Level Level { get; set; }
-        public double PipeWidth { get; set; }
-        public double PipeHeight { get; set; }
+        public Level Level { get { return Host.Document.GetElement(Host.LevelId) as Level; } }
+        public double PipeWidth { get; private set; }
+        public double PipeHeight { get; private set; }
+        public bool IsRound { get; private set; }
         public double MinOffset { get; set; }
-        public string Type { get; set; }
+        public string Type {
+            get
+            {
+                MEPCurve m = Pipe as MEPCurve;
+                switch (m.MEPSystem.Category.Id.IntegerValue)
+                {
+                    //case (int)BuiltInCategory.OST_PipingSystem:
+                    //    i.Type = "ВК";
+                    //    break;
+                    case (int)BuiltInCategory.OST_DuctSystem:
+                        return "ОВ";
+                    default:
+                        return "";
+                }
+            }
+        }
 
         public double HoleWidth
         {
@@ -350,6 +338,52 @@ namespace TerrTools
         public double GroundOffset
         {
             get { return LevelOffset + Level.Elevation; }
+        }
+
+        private void SetPipeSize()
+        {
+            //Определение размера трубы
+            MEPCurve m = Pipe as MEPCurve;
+            try
+            {
+                PipeWidth = m.Diameter;
+                PipeHeight = m.Diameter;
+                IsRound = true;
+            }
+            catch (Autodesk.Revit.Exceptions.InvalidOperationException)
+            {
+                // из-за того, что воздуховод может быть развернут, мы не можем обращаться к внутренним размерам и смотрим на BBox
+                BoundingBoxXYZ bbmep = m.get_BoundingBox(null);
+                XYZ res = bbmep.Max - bbmep.Min;
+                double x = Math.Abs(res.X);
+                double y = Math.Abs(res.Y);
+                double z = Math.Abs(res.Z);
+                PipeWidth = Host != null ? m.Width : x;
+                PipeHeight = Host != null ? m.Height : y;
+                IsRound = false;
+            }
+        }
+
+        private void InitDefaultValues()
+        {
+            MinOffset = 50 / 304.8;
+            SetPipeSize();
+        }
+
+        public Intersection(Element host, Element pipe, XYZ pt)
+        {
+            Host = host;
+            Pipe = pipe;
+            CenterPoint = pt;
+            InitDefaultValues();
+        }
+
+        public Intersection(Document hostDoc, int hostId, Document pipeDoc, int pipeId, XYZ pt)
+        {
+            Host = hostDoc.GetElement(new ElementId(hostId));
+            Pipe = pipeDoc.GetElement(new ElementId(pipeId));
+            CenterPoint = pt;
+            InitDefaultValues();
         }
     }
 

@@ -471,7 +471,7 @@ namespace TerrTools
                 tr.Commit();
             }
         }
-
+        
         private void ViewDeletingProcess(Document doc, ElementId id)
         {
             View view = doc.GetElement(id) as View;

@@ -21,7 +21,7 @@ namespace TerrTools
         public abstract BuiltInParameter finishingOffsetParameter { get; }
         public abstract List<ElementType> finishingTypes { get; }
         protected abstract Element CreateHostGeometry(HorizontalFinishingResult res);
-
+         
         protected List<HorizontalFinishingResult> FormResult { get; set; }
         protected List<Room> rooms
         {

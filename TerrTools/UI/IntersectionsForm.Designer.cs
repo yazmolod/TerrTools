@@ -43,6 +43,8 @@
             this.minSizeTextBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
+            this.loadBtn = new System.Windows.Forms.Button();
+            this.analyzeBtn = new System.Windows.Forms.Button();
             this.Level = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.IntersectionPoint = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.HostName = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -83,9 +85,9 @@
             this.GroundOffset,
             this.HoleId,
             this.AddToProject});
-            this.dataGridView1.Location = new System.Drawing.Point(12, 12);
+            this.dataGridView1.Location = new System.Drawing.Point(93, 12);
             this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.Size = new System.Drawing.Size(1022, 444);
+            this.dataGridView1.Size = new System.Drawing.Size(941, 444);
             this.dataGridView1.TabIndex = 0;
             this.dataGridView1.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellValueChanged);
             // 
@@ -141,6 +143,26 @@
             this.label2.TabIndex = 7;
             this.label2.Text = "Добавить в проект отверстия в местах \r\nпересечения с сетями размером не менее:";
             // 
+            // loadBtn
+            // 
+            this.loadBtn.Location = new System.Drawing.Point(12, 12);
+            this.loadBtn.Name = "loadBtn";
+            this.loadBtn.Size = new System.Drawing.Size(75, 23);
+            this.loadBtn.TabIndex = 8;
+            this.loadBtn.Text = "Загрузить отчет коллизий";
+            this.loadBtn.UseVisualStyleBackColor = true;
+            this.loadBtn.Click += new System.EventHandler(this.loadBtn_Click);
+            // 
+            // analyzeBtn
+            // 
+            this.analyzeBtn.Location = new System.Drawing.Point(12, 41);
+            this.analyzeBtn.Name = "analyzeBtn";
+            this.analyzeBtn.Size = new System.Drawing.Size(75, 23);
+            this.analyzeBtn.TabIndex = 9;
+            this.analyzeBtn.Text = "Анализ";
+            this.analyzeBtn.UseVisualStyleBackColor = true;
+            this.analyzeBtn.Click += new System.EventHandler(this.analyzeBtn_Click);
+            // 
             // Level
             // 
             dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
@@ -161,7 +183,7 @@
             // 
             dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
             this.HostName.DefaultCellStyle = dataGridViewCellStyle3;
-            this.HostName.HeaderText = "Стена";
+            this.HostName.HeaderText = "Конструкция";
             this.HostName.Name = "HostName";
             this.HostName.ReadOnly = true;
             // 
@@ -208,6 +230,7 @@
             // 
             this.IsBrick.HeaderText = "Размеры кирпича";
             this.IsBrick.Name = "IsBrick";
+            this.IsBrick.ReadOnly = true;
             this.IsBrick.Width = 60;
             // 
             // HoleSize
@@ -258,6 +281,8 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1042, 530);
+            this.Controls.Add(this.analyzeBtn);
+            this.Controls.Add(this.loadBtn);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.minSizeTextBox);
@@ -269,7 +294,7 @@
             this.Name = "IntersectionsForm";
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Пересечения сетей со стенами";
+            this.Text = "Пересечения сетей с конструкциями";
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -284,6 +309,8 @@
         private System.Windows.Forms.TextBox minSizeTextBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Button loadBtn;
+        private System.Windows.Forms.Button analyzeBtn;
         private System.Windows.Forms.DataGridViewTextBoxColumn Level;
         private System.Windows.Forms.DataGridViewTextBoxColumn IntersectionPoint;
         private System.Windows.Forms.DataGridViewTextBoxColumn HostName;

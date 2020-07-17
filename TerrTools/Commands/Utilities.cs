@@ -498,7 +498,7 @@ namespace TerrTools
         {
             RevitLinkInstance[] linkedDocs = new FilteredElementCollector(doc).OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().ToArray();
             var form = new UI.OneComboboxForm("Выберите связанный файл", (from d in linkedDocs select d.Name).ToArray());
-            if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
+            if (form.DialogResult == System.Windows.Forms.DialogResult.OK && form.SelectedItem!="")
             {
                 RevitLinkInstance linkInstance = (from d in linkedDocs where d.Name == form.SelectedItem select d).First();
                 return linkInstance;
@@ -508,6 +508,24 @@ namespace TerrTools
                 return null;
             }
         }
+
+        static public RevitLinkInstance ChooseLinkedDoc(Document currentDoc)
+        {
+            RevitLinkInstance linkedDocInstance = GetLinkedDoc(currentDoc);
+            if (linkedDocInstance == null)
+                return null;
+
+            else if (linkedDocInstance.GetLinkDocument() == null)
+            {
+                TaskDialog.Show("Ошибка", "Обновите элемент связи в проекте");
+                return null;
+            }
+            else
+            {
+                return linkedDocInstance;
+            }
+        }
+
         static public Transform GetCorrectionTransform(RevitLinkInstance linkedDocInstance)
         {
             Transform transform = linkedDocInstance.GetTransform();
