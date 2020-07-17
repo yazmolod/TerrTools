@@ -438,7 +438,14 @@ namespace TerrTools.Updaters
                 string itemLocal = itemLocalP != null ? itemLocalP.AsString() : null;
                 if (itemLocal != null && itemLocal.Split(',').Contains(localSystem))
                 {
-                    item.LookupParameter(systemNameP).Set(globalSystem);
+                    try
+                    {
+                        item.LookupParameter(systemNameP).Set(globalSystem);
+                    }
+                    catch (Autodesk.Revit.Exceptions.InvalidOperationException)
+                    {
+                        //catch readonly family parameter 
+                    }
                 }
             }
         }
@@ -458,7 +465,14 @@ namespace TerrTools.Updaters
             string[] currentAllSystem = allSystems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))
                       .Select(x => x.LookupParameter(systemNameP).AsString()).ToArray();
             HashSet<string> globalSystems = new HashSet<string>(currentAllSystem);
-            item.LookupParameter(systemNameP).Set(string.Join(",", globalSystems));
+            try
+            {
+                item.LookupParameter(systemNameP).Set(string.Join(",", globalSystems));
+            }
+            catch(Autodesk.Revit.Exceptions.InvalidOperationException)
+            { 
+                //catch readonly family parameter 
+            }
         }
 
         public override void InnerExecute(UpdaterData data)
