@@ -10,6 +10,7 @@ using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Structure;
 using System.Text.RegularExpressions;
+using System.IO;
 
 namespace TerrTools
 {
@@ -37,11 +38,9 @@ namespace TerrTools
             }
             else
             {
-                //string path = @"\\serverl\psd\REVIT\Семейства\ТеррНИИ\АР\" + openingFamilyName + ".rfa";
-                string path = @"C:\Users\Stepina\Desktop\ТеррНИИ_Компонент_Отверстие.rfa";
                 try
                 {
-                    doc.LoadFamilySymbol(path, "Проем", out symbol);
+                    doc.LoadFamilySymbol(Path.Combine(TerrSettings.OpeningsFolder, openingFamilyName + ".rfa"), "Проем", out symbol);
                     symbol.Activate();
                     return symbol;
                 }
@@ -230,9 +229,6 @@ namespace TerrTools
         }
     }
 
-
-
-
     public class Intersection
     {
         public Element Host { get; }
@@ -378,10 +374,10 @@ namespace TerrTools
             InitDefaultValues();
         }
 
-        public Intersection(Document hostDoc, int hostId, Document pipeDoc, int pipeId, XYZ pt)
+        public Intersection(Document hostDoc, ElementId hostId, Document pipeDoc, ElementId pipeId, XYZ pt)
         {
-            Host = hostDoc.GetElement(new ElementId(hostId));
-            Pipe = pipeDoc.GetElement(new ElementId(pipeId));
+            Host = hostDoc.GetElement(hostId);
+            Pipe = pipeDoc.GetElement(pipeId);
             CenterPoint = pt;
             InitDefaultValues();
         }
@@ -390,7 +386,7 @@ namespace TerrTools
     [Transaction(TransactionMode.Manual)]
     class WallOpeningHandler : BaseIntersectionHandler, IExternalCommand
     {
-        internal override string openingFamilyName { get { return "ТеррНИИ_ОтверстиеПрямоугольное_Стена"; } }
+        internal override string openingFamilyName { get { return TerrSettings.WallOpeningFamilyName; } }
 
         internal override IEnumerable<HostObject> hosts
         {
@@ -408,7 +404,7 @@ namespace TerrTools
     [Transaction(TransactionMode.Manual)]
     class FloorOpeningHandler : BaseIntersectionHandler, IExternalCommand
     {
-        internal override string openingFamilyName { get { return "ТеррНИИ_ОтверстиеПрямоугольное_Перекрытие"; } }
+        internal override string openingFamilyName { get { return TerrSettings.FloorOpeningFamilyName; } }
 
         internal override IEnumerable<HostObject> hosts
         {
