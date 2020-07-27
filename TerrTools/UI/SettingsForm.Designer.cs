@@ -57,6 +57,13 @@
             this.typeListBox = new System.Windows.Forms.ListBox();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
+            this.FamiliesPage = new System.Windows.Forms.TabPage();
+            this.button3 = new System.Windows.Forms.Button();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
+            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.button4 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.UpdatersPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
@@ -65,6 +72,7 @@
             this.panel3.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel1.SuspendLayout();
+            this.FamiliesPage.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -75,6 +83,7 @@
             this.tabControl1.Controls.Add(this.UpdatersPage);
             this.tabControl1.Controls.Add(this.VersionPage);
             this.tabControl1.Controls.Add(this.RadiatorSettingsPage);
+            this.tabControl1.Controls.Add(this.FamiliesPage);
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
@@ -394,6 +403,73 @@
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
+            // FamiliesPage
+            // 
+            this.FamiliesPage.Controls.Add(this.label5);
+            this.FamiliesPage.Controls.Add(this.textBox2);
+            this.FamiliesPage.Controls.Add(this.button4);
+            this.FamiliesPage.Controls.Add(this.label4);
+            this.FamiliesPage.Controls.Add(this.textBox1);
+            this.FamiliesPage.Controls.Add(this.button3);
+            this.FamiliesPage.Location = new System.Drawing.Point(4, 22);
+            this.FamiliesPage.Name = "FamiliesPage";
+            this.FamiliesPage.Size = new System.Drawing.Size(681, 349);
+            this.FamiliesPage.TabIndex = 3;
+            this.FamiliesPage.Text = "Семейства";
+            this.FamiliesPage.UseVisualStyleBackColor = true;
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(648, 63);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(25, 20);
+            this.button3.TabIndex = 0;
+            this.button3.Text = "...";
+            this.button3.UseVisualStyleBackColor = true;
+            // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(8, 63);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(634, 20);
+            this.textBox1.TabIndex = 1;
+            this.textBox1.Tag = "";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(8, 47);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(164, 13);
+            this.label4.TabIndex = 2;
+            this.label4.Text = "Семейство отверстий в стенах";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(8, 99);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(196, 13);
+            this.label5.TabIndex = 5;
+            this.label5.Text = "Семейство отверстий в перекрытиях";
+            // 
+            // textBox2
+            // 
+            this.textBox2.Location = new System.Drawing.Point(8, 115);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(634, 20);
+            this.textBox2.TabIndex = 4;
+            this.textBox2.Tag = "";
+            // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(648, 115);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(25, 20);
+            this.button4.TabIndex = 3;
+            this.button4.Text = "...";
+            this.button4.UseVisualStyleBackColor = true;
+            // 
             // SettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -417,6 +493,8 @@
             this.panel2.PerformLayout();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
+            this.FamiliesPage.ResumeLayout(false);
+            this.FamiliesPage.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -452,5 +530,12 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ListBox heightListBox;
         private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.TabPage FamiliesPage;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Button button3;
     }
 }

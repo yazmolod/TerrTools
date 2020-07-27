@@ -41,9 +41,9 @@ namespace TerrTools.UI
         {
             dataGridView1.Rows[nRow].Cells["IntersectionPoint"].Value = String.Format(
                 "X: {0}, Y: {1}, Z: {2}",
-                Math.Round(i.CenterPoint.X , 3),
-                Math.Round(i.CenterPoint.Y, 3),
-                Math.Round(i.CenterPoint.Z, 3)
+                Math.Round(i.Point.X , 3),
+                Math.Round(i.Point.Y, 3),
+                Math.Round(i.Point.Z, 3)
                 );
             dataGridView1.Rows[nRow].Cells["Level"].Value = i.Level.Name;
             dataGridView1.Rows[nRow].Cells["HostName"].Value = i.Host.Name;
@@ -152,6 +152,7 @@ namespace TerrTools.UI
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 Intersections =  CollisionUtilities.HTMLReportParse(Handler.doc, dialog.FileName);
+                Intersections = Intersections.Where(x => x.Valid).ToList();
                 UpdateTableValues();
             }
         }

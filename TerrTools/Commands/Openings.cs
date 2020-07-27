@@ -11,6 +11,7 @@ using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Structure;
 using System.Text.RegularExpressions;
 using System.IO;
+using System.Linq.Expressions;
 
 namespace TerrTools
 {
@@ -96,21 +97,39 @@ namespace TerrTools
                 List<Intersection> failedIntersections = new List<Intersection>();
                 foreach (Intersection i in intersections)
                 {
-                    ElementId wallDesignOption = i.Host.DesignOption != null ? i.Host.DesignOption.Id : ElementId.InvalidElementId;
-                    if (wallDesignOption == DesignOption.GetActiveDesignOptionId(doc))
+                    if (i.Valid)
                     {
-                        Element holeElement = doc.Create.NewFamilyInstance(new XYZ(i.CenterPoint.X, i.CenterPoint.Y, i.Level.Elevation), openingFamilySymbol, i.Host, i.Level, StructuralType.NonStructural);
-                        holeElement.LookupParameter("ADSK_Отверстие_Ширина").Set(i.HoleWidth);
-                        holeElement.LookupParameter("ADSK_Отверстие_Высота").Set(i.HoleHeight);
-                        holeElement.LookupParameter("ADSK_Отверстие_Функция").Set(i.Type);
-                        holeElement.LookupParameter("ADSK_Отверстие_Отметка от этажа").Set(i.LevelOffset);
-                        if (i.Level.Elevation == 0) holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(0);
-                        else holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(i.Level.Elevation);
-                        holeElement.LookupParameter("Идентификатор пересечения").Set(i.Id.ToString());
-                    }
-                    else
-                    {
-                        failedIntersections.Add(i);
+                        ElementId wallDesignOption = i.Host.DesignOption != null ? i.Host.DesignOption.Id : ElementId.InvalidElementId;
+                        if (wallDesignOption == DesignOption.GetActiveDesignOptionId(doc))
+                        {
+                            Element holeElement = doc.Create.NewFamilyInstance(
+                                new XYZ(
+                                    i.ProjectedPoint.X, 
+                                    i.ProjectedPoint.Y,
+                                    i.Level.Elevation),
+                                openingFamilySymbol,
+                                i.Host,
+                                i.Level,
+                                StructuralType.NonStructural);
+                            Line axe = Line.CreateUnbound(i.ProjectedPoint, XYZ.BasisZ);
+                            ElementTransformUtils.RotateElement(doc, holeElement.Id, axe, i.Angle);
+
+                            holeElement.LookupParameter("ADSK_Отверстие_Ширина").Set(i.HoleWidth);
+                            holeElement.LookupParameter("ADSK_Отверстие_Высота").Set(i.HoleHeight);
+                            holeElement.LookupParameter("ADSK_Отверстие_Функция").Set(i.Type);
+                            holeElement.LookupParameter("ADSK_Отверстие_Отметка от этажа").Set(i.LevelOffset);
+                            if (i.Level.Elevation == 0) holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(0);
+                            else holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(i.Level.Elevation);
+                            holeElement.LookupParameter("Идентификатор пересечения").Set(i.Id.ToString());
+                            InstanceVoidCutUtils.AddInstanceVoidCut(doc, i.Host, holeElement);
+                            try { holeElement.LookupParameter("ADSK_Толщина стены").Set(i.HoleDepth); }
+                            catch { }
+                            
+                        }
+                        else
+                        {
+                            failedIntersections.Add(i);
+                        }
                     }
                 }                
                 return true;
@@ -178,7 +197,7 @@ namespace TerrTools
                                 if (interPts.Any(x => x != null))
                                 {
                                     XYZ pt = interPts.First(x => x != null);
-                                    Intersection i = new Intersection(host, m, pt);                                   
+                                    Intersection i = new Intersection(host, m, pt, linkedDocInstance);                                   
                                     intersectionList.Add(i);
                                 }
                             }
@@ -204,10 +223,8 @@ namespace TerrTools
                     return Result.Failed;
 
                 DeleteUnusedOpenings();
-                tr.Commit();               
-                
+                tr.Commit();
                 UI.IntersectionsForm form = new UI.IntersectionsForm(this);
-
                 if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
                 {
                     tr.Start();
@@ -216,7 +233,7 @@ namespace TerrTools
                     tr.Commit();
                     if (result)
                     {
-                        TaskDialog.Show("Успешно", "Отверстия расставлены, но не забудьте их проверить");
+                        //TaskDialog.Show("Успешно", "Отверстия расставлены, но не забудьте их проверить");
                     }
                     else
                     {
@@ -231,6 +248,8 @@ namespace TerrTools
 
     public class Intersection
     {
+        public RevitLinkInstance LinkInstance { get; set; }
+        public bool Valid { get; private set; }
         public Element Host { get; }
         public Element Pipe { get; }
         public string Id { get { return string.Format("{0}-{1}", Host.Id.ToString(), Pipe.Id.ToString()); } }
@@ -238,24 +257,74 @@ namespace TerrTools
         { 
             get 
             {
+                return false;
                 bool state = false;
                 if (Host != null && Host is Wall)
                 {                    
                     foreach (var layer in (Host as Wall).WallType.GetCompoundStructure().GetLayers())
                     {
                         Element materialElement = Host.Document.GetElement(layer.MaterialId);
-                        state = materialElement != null ? materialElement.Name.Contains("Кирпич") || state : false;
+                        state = materialElement != null ? materialElement.Name.ToLower().Contains("кирпич") || state : false;
                     }
                 }
                 return state;
             }
-        }        
-        public XYZ CenterPoint { get; set; }
+        }       
+        /// <summary>
+        /// Изначальная точка пересечения, взятая из отчета или анализа
+        /// </summary>
+        public XYZ Point { get; set; }
+
+        /// <summary>
+        /// Точка пересечения, спроецированная на линию MEP и центральную линию стены
+        /// </summary>
+        public XYZ ProjectedPoint { 
+            get
+            {
+                XYZ pt;
+                Wall w = Host as Wall;
+                LocationCurve wloc = w.Location as LocationCurve;
+                Curve wall_curve = wloc.Curve;
+                pt = wall_curve.Project(Point).XYZPoint;
+                MEPCurve m = Pipe as MEPCurve;
+                Curve pipe_curve = GeometryUtils.FindDuctCurve(m);
+                if (pipe_curve == null)
+                {
+                    Valid = false;
+                    return new XYZ(pt.X, pt.Y, Point.Z);
+                }
+                Transform tr = GeometryUtils.GetCorrectionTransform(LinkInstance);
+                pipe_curve = pipe_curve.CreateTransformed(tr.Inverse);
+                pt = pipe_curve.Project(pt).XYZPoint;
+                return pt;
+            } 
+        }
+
         public Level Level { get { return Host.Document.GetElement(Host.LevelId) as Level; } }
         public double PipeWidth { get; private set; }
         public double PipeHeight { get; private set; }
         public bool IsRound { get; private set; }
         public double MinOffset { get; set; }
+        public Outline Outline
+        {
+            get
+            {
+                XYZ minPt = new XYZ(ProjectedPoint.X-HoleWidth/2, ProjectedPoint.Y-HoleDepth/2, ProjectedPoint.Z-HoleHeight/2);
+                XYZ maxPt = new XYZ(ProjectedPoint.X + HoleWidth / 2, ProjectedPoint.Y + HoleDepth / 2, ProjectedPoint.Z + HoleHeight / 2);
+                var outline = new Outline(minPt, maxPt);
+                return outline;
+            }
+        }
+        public double Angle
+        {
+            get
+            {
+                MEPCurve m = Pipe as MEPCurve;
+                Curve c = GeometryUtils.FindDuctCurve(m);
+                XYZ vec = c.GetEndPoint(1) - c.GetEndPoint(0);
+                return vec.AngleTo(XYZ.BasisY);
+            }
+        }
         public string Type {
             get
             {
@@ -311,12 +380,28 @@ namespace TerrTools
                 else return Math.Ceiling(nominalHeight * 304.8 / 100) * 100 / 304.8;
             }
         }
-        public XYZ InsertPoint { get { return new XYZ(CenterPoint.X, CenterPoint.Y, LevelOffset); } }
+
+        public double HoleDepth
+        {
+            get
+            {
+                if (Host is Wall)
+                {
+                    Wall h = Host as Wall;
+                    return h.Width;
+                }
+                else
+                {
+                    return 1;
+                }
+            }
+        }
+
         public double LevelOffset
         {
             get
             {
-                double nominalLevelOffset = CenterPoint.Z - Level.Elevation - HoleHeight / 2;
+                double nominalLevelOffset = ProjectedPoint.Z - Level.Elevation - HoleHeight / 2;
                 if (IsBrick)
                 {
                     int bricks = 0;
@@ -331,6 +416,7 @@ namespace TerrTools
                 else return Math.Round(nominalLevelOffset * 304.8 / 50) * 50 / 304.8;
             }
         }
+
         public double GroundOffset
         {
             get { return LevelOffset + Level.Elevation; }
@@ -366,22 +452,75 @@ namespace TerrTools
             SetPipeSize();
         }
 
-        public Intersection(Element host, Element pipe, XYZ pt)
+        public bool IsIntersectedWithAnother(Intersection other, double tolerance)
+        {
+            if (this.Id == other.Id) return false;
+            return this.Outline.Intersects(other.Outline, tolerance);
+        }
+
+        public Intersection(Element host, Element pipe, XYZ pt, RevitLinkInstance instance)
         {
             Host = host;
             Pipe = pipe;
-            CenterPoint = pt;
-            InitDefaultValues();
+            LinkInstance = instance;
+            if (Host != null && Pipe != null)
+            {
+                Point = pt;
+                InitDefaultValues();
+                Valid = true;
+            }
+            else Valid = false;
         }
 
-        public Intersection(Document hostDoc, ElementId hostId, Document pipeDoc, ElementId pipeId, XYZ pt)
+        public Intersection(Document hostDoc, ElementId hostId, Document pipeDoc, ElementId pipeId, XYZ pt, RevitLinkInstance instance)
         {
             Host = hostDoc.GetElement(hostId);
             Pipe = pipeDoc.GetElement(pipeId);
-            CenterPoint = pt;
-            InitDefaultValues();
+            LinkInstance = instance;
+            if (Host != null && Pipe != null)
+            {
+                Point = pt;
+                InitDefaultValues();
+                Valid = true;
+            }
+            else Valid = false;
         }
     }
+
+
+    public class IntersectionSet
+    {
+        List<Intersection> Intersections { get; }
+
+        static private List<IntersectionSet> MergePairs(List<(Intersection, Intersection)> pairs)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public static void FindSets(List<Intersection> intersections, double tolerance)
+        {
+            List<(Intersection, Intersection)> collidePairs = new List<(Intersection, Intersection)>();
+            for (int i = 0; i < intersections.Count-1; i++)
+            {
+                for (int j = i+1; j < intersections.Count; j++)
+                {
+                    var left = intersections[i];
+                    var right = intersections[j];
+                    if(left.IsIntersectedWithAnother(right, tolerance))
+                    {
+                        collidePairs.Add((left, right));
+                    }
+                }
+            }
+            var merged = MergePairs(collidePairs);
+        }
+
+        public IntersectionSet(List<Intersection> intersections)
+        {
+            Intersections = intersections;
+        }
+    }
+
 
     [Transaction(TransactionMode.Manual)]
     class WallOpeningHandler : BaseIntersectionHandler, IExternalCommand

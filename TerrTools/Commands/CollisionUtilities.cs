@@ -293,8 +293,7 @@ namespace TerrTools
                 return result;
             }
             else
-            {
-                Transform tr = GeometryUtils.GetCorrectionTransform(linkdocInstance).Inverse;
+            {               
                 CollisionReportTable table = new CollisionReportTable(path);
                 Document linkdoc = linkdocInstance.GetLinkDocument();
                 ElementId hostid, linkid;
@@ -325,8 +324,10 @@ namespace TerrTools
                         default:
                             Autodesk.Revit.UI.TaskDialog.Show("Ошибка", "Не удалось определить файлы из отчета");
                             return result;
-                    }                    
-                    result.Add(new Intersection(hostdoc, hostid, linkdoc, linkid, tr.OfPoint(row.Point)));
+                    }
+                    ProjectLocation pl = hostdoc.ActiveProjectLocation;
+                    XYZ corrPt = pl.GetTransform().OfPoint(row.Point);
+                    result.Add(new Intersection(hostdoc, hostid, linkdoc, linkid, corrPt, linkdocInstance));
                 }
                 return result;
             }
