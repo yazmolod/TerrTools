@@ -455,20 +455,25 @@ namespace TerrTools
             return null;
         }
 
-        static public Curve FindDuctCurve(MEPCurve mepCurve)
+        static public List<Connector> GetConnectors(ConnectorManager conMngr)
         {
-            //The wind pipe curve
-            if (mepCurve == null) return null;
-            IList<XYZ> list = new List<XYZ>();
+            List<Connector> list = new List<Connector>();
+            ConnectorSetIterator csi = conMngr.Connectors.ForwardIterator();
+            while (csi.MoveNext())
+            {
+                Connector conn = csi.Current as Connector;
+                list.Add(conn);
+            }
+            return list;
+        }
+
+        static public Curve FindDuctCurve(ConnectorManager conMngr)
+        {
             try
             {
-                ConnectorSetIterator csi = mepCurve.ConnectorManager.Connectors.ForwardIterator();
-                while (csi.MoveNext())
-                {
-                    Connector conn = csi.Current as Connector;
-                    list.Add(conn.Origin);
-                }
-                Curve curve = Line.CreateBound(list.ElementAt(0), list.ElementAt(1)) as Curve;
+                var connectors = GetConnectors(conMngr);
+                var connectorsPts = connectors.Select(x => x.Origin);
+                Curve curve = Line.CreateBound(connectorsPts.First(), connectorsPts.Last());
                 return curve;
             }
             catch (Autodesk.Revit.Exceptions.InvalidOperationException)
