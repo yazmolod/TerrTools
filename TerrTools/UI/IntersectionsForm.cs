@@ -16,12 +16,13 @@ namespace TerrTools.UI
     {
         private BaseIntersectionHandler Handler;
         public List<IntersectionMepCurve> Intersections { get; private set; } = new List<IntersectionMepCurve>();
-        double minPipeSizeValue {get;set;}
+        double minPipeSizeValue { get; set; } = 150;
+        public bool DoMerge { get => mergeCheckBox.Checked; }
+        public double MergeTolerance { get => double.Parse(toleranceTextBox.Text.Replace('.',',')) / 304.8; }
         public IntersectionsForm(BaseIntersectionHandler handler)
         {
             Handler = handler;
             InitializeComponent();
-            minPipeSizeValue = 150;
             UpdateTableValues();
             ShowDialog();
         }
@@ -34,7 +35,7 @@ namespace TerrTools.UI
                 int nRow = dataGridView1.Rows.Add();
                 FillRow(i, nRow, true);
             }
-            countLabel.Text = "Количество пересечений: " + Intersections.Count.ToString();
+            countLabel.Text = "Пересечений: " + Intersections.Count.ToString();
         }
 
         private void FillRow(IntersectionMepCurve i, int nRow, bool firstFill = false)
@@ -136,7 +137,8 @@ namespace TerrTools.UI
 
         private void analyzeBtn_Click(object sender, EventArgs e)
         {
-            Intersections = Handler.GetIntersections();
+            var i = Handler.GetIntersections();
+            Intersections.AddRange(i);
             UpdateTableValues();
         }              
 
@@ -148,9 +150,21 @@ namespace TerrTools.UI
             dialog.Multiselect = false;
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                Intersections =  CollisionUtilities.HTMLReportParse(Handler.doc, dialog.FileName);
+                var i = CollisionUtilities.HTMLReportParse(Handler.doc, dialog.FileName);
+                Intersections.AddRange(i);
                 UpdateTableValues();
             }
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            toleranceTextBox.Enabled = (sender as CheckBox).Checked;
+        }
+
+        private void clearButton_Click(object sender, EventArgs e)
+        {
+            Intersections.Clear();
+            UpdateTableValues();
         }
     }
 }

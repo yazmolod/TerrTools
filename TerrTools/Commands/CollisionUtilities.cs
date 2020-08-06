@@ -95,7 +95,7 @@ namespace TerrTools
             else
             {
                 res = Regex.Split(v, "&gt;")[2];
-                return Regex.Match(res, @"[a-zA-Zа-яА-Я0-9_][a-zA-Zа-яА-Я0-9_ ]+").Value;
+                return Regex.Match(res, @"[a-zA-Zа-яА-Я0-9_][a-zA-Zа-яА-Я0-9_ ]+(\.ifc)?").Value;
             }
         }
 
