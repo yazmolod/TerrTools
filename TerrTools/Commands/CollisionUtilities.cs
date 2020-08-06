@@ -9,6 +9,9 @@ using System.Globalization;
 using Microsoft.Scripting.Utils;
 using HtmlAgilityPack;
 using System.IO;
+using TerrTools.UI;
+using Autodesk.Revit.UI;
+using TerrTools.UI;
 
 namespace TerrTools
 {
@@ -211,6 +214,7 @@ namespace TerrTools
             {
                 HtmlNode cell = cells[i];
                 string value = cell.InnerText;
+                value = Regex.Replace(value, @"\r\n\s*", "");
                 switch (Table.Header.Cells[i].Item2)
                 {
                     case "Изображение":
@@ -285,49 +289,67 @@ namespace TerrTools
     class CollisionUtilities
     {
         public static List<IntersectionMepCurve> HTMLReportParse(Document hostdoc, string path)
-        {            
+        {
             List<IntersectionMepCurve> result = new List<IntersectionMepCurve>();
-            RevitLinkInstance linkdocInstance = GeometryUtils.ChooseLinkedDoc(hostdoc);
-            if (linkdocInstance == null)
+            CollisionReportTable table = new CollisionReportTable(path);
+            var dialog = new UI.TwoDoc(hostdoc, table);
+            if (System.Windows.Forms.DialogResult.OK == dialog.ShowDialog())
             {
-                return result;
-            }
-            else
-            {               
-                CollisionReportTable table = new CollisionReportTable(path);
-                Document linkdoc = linkdocInstance.GetLinkDocument();
-                ElementId hostid, linkid;
-                string hostdocTitle = Regex.Match(hostdoc.Title, @"(.+)_").Groups[1].Value; // отделяем имя пользователя от имени файла в локальной копии
                 foreach (CollisionReportRow row in table.Rows)
                 {
-                    int x1 = hostdocTitle == row.E1_DocumentName ? 1 : 0;
-                    int x2 = hostdocTitle == row.E2_DocumentName ? 2 : 0;
-                    int x3 = linkdoc.Title == row.E1_DocumentName ? 4 : 0;
-                    int x4 = linkdoc.Title == row.E2_DocumentName ? 8 : 0;
+                    ElementId hostid = null;
+                    ElementId linkid = null;
+                    RevitLinkInstance linkdocInstance = null;
+                    switch (dialog.LinkElementNumber)
+                    {
+                        case 0:
+                            //ни один не линк
+                            break;
+                        case 1:
+                            //линк первый элемент
+                            linkdocInstance = dialog.LinkInstance1;
+                            linkid = row.E1_Id;
+                            break;
+                        case 2:
+                            //линк второй элемент
+                            linkdocInstance = dialog.LinkInstance2;
+                            linkid = row.E2_Id;
+                            break;
+                        case 3:
+                            //оба линки
+                            break;
+                        default:
+                            break;
+                    }
 
-                    if (linkdoc.Title == row.E1_DocumentName)
+                    switch (dialog.HostElementNumber)
                     {
-                        hostid = row.E2_Id;
-                        linkid = row.E1_Id;
-                    }
-                    else if (linkdoc.Title == row.E2_DocumentName)
-                    {
-                        hostid = row.E1_Id;
-                        linkid = row.E2_Id;
-                    }
-                    else
-                    {
-                        Autodesk.Revit.UI.TaskDialog.Show("Ошибка", "Не удалось определить файлы из отчета");
-                        return result;
+                        case 0:
+                            //ни один не линк
+                            break;
+                        case 1:
+                            //линк первый элемент
+                            hostid = row.E1_Id;
+                            break;
+                        case 2:
+                            //линк второй элемент
+                            hostid = row.E2_Id;
+                            break;
+                        case 3:
+                            //оба линки
+                            break;
+                        default:
+                            break;
                     }
 
+                    Document linkdoc = linkdocInstance.GetLinkDocument();
                     // точка из отчета дана относительно площадки - корректируем на проект
                     ProjectLocation pl = hostdoc.ActiveProjectLocation;
                     XYZ corrPt = pl.GetTransform().OfPoint(row.Point);
                     result.Add(new IntersectionMepCurve(hostdoc.GetElement(hostid), linkdoc.GetElement(linkid), corrPt, linkdocInstance));
                 }
-                return result;
             }
-        }     
+            return result;
+        }   
     }
 }

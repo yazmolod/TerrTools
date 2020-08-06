@@ -140,6 +140,12 @@
     <Compile Include="UI\ExportSchedulesForm.Designer.cs">
       <DependentUpon>ExportSchedulesForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\TwoDoc.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\TwoDoc.Designer.cs">
+      <DependentUpon>TwoDoc.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\OneComboboxForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -215,6 +221,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\SettingsForm.resx">
       <DependentUpon>SettingsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\TwoDoc.resx">
+      <DependentUpon>TwoDoc.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
