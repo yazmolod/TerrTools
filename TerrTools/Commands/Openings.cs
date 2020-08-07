@@ -60,21 +60,21 @@ namespace TerrTools
 
         protected bool IsExisted(Intersection i)
         {
-            return ExistingOpenings.Where(x => x.LookupParameter("Идентификатор пересечения").AsString() == i.Id).Count() > 0;
+            return ExistingOpenings.Where(x => x.LookupParameter("ТеррНИИ_Идентификатор").AsString() == i.Id).Count() > 0;
         }
 
         protected void PlaceOpeningFamilies(IEnumerable<Intersection> intersections)
         {
-            var log_general = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров");
+            var log_param = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров");
+            var log_id = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров");
+            var log_level = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров");
             var log_cut = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка вырезания");
             foreach (Intersection i in intersections)
             {
-                try
-                {
                     Element holeElement;
                     if (IsExisted(i))
                     {
-                        holeElement = ExistingOpenings.Where(x => x.LookupParameter("Идентификатор пересечения").AsString() == i.Id).First();
+                        holeElement = ExistingOpenings.Where(x => x.LookupParameter("ТеррНИИ_Идентификатор").AsString() == i.Id).First();
                         LocationPoint loc = holeElement.Location as LocationPoint;
                         XYZ vec = new XYZ(i.InsertionPoint.X,
                                           i.InsertionPoint.Y,
@@ -108,24 +108,33 @@ namespace TerrTools
                             log_cut.AddError(i.Id);
                         }                        
                     }
+                try
+                {
+                    //идентификация
+                    holeElement.LookupParameter("ТеррНИИ_Идентификатор")?.Set(i.Id.ToString());
+                    holeElement.LookupParameter("Связанный файл")?.Set(i.Name);
+                }
+                catch { log_id.AddError(i.Id); }
 
+                try
+                {
                     // задаем параметры
                     holeElement.LookupParameter("ADSK_Отверстие_Ширина").Set(i.HoleWidth);
                     holeElement.LookupParameter("ADSK_Отверстие_Высота").Set(i.HoleHeight);
                     holeElement.LookupParameter("ADSK_Толщина стены").Set(i.HoleDepth);
+                }
+                catch { log_param.AddError(i.Id); }
 
+                try
+                {
                     // назначаем отметки
                     holeElement.LookupParameter("ADSK_Отверстие_Отметка от этажа").Set(i.LevelOffset);
                     if (i.Level.Elevation == 0) holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(0);
                     else holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(i.Level.Elevation);
                     // обнуляем смещение
                     holeElement.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).Set(0);
-
-                    //идентификация
-                    holeElement.LookupParameter("Идентификатор пересечения")?.Set(i.Id.ToString());
-                    holeElement.LookupParameter("Связанный файл")?.Set(i.Name);                    
                 }
-                catch { log_general.AddError(i.Id); }
+                catch { log_level.AddError(i.Id); }
             }            
         }
 
@@ -358,82 +367,7 @@ namespace TerrTools
                         return "";
                 }
             }
-        }
-
-        // отложим подбор под кирпич до лучших времен
-        /*
-        public double HoleWidth
-        {
-            get
-            {
-                double nominalWidth = PipeWidth + MinOffset * 2;
-                if (IsBrick)
-                {
-                    int bricks = 1;
-                    double bricksWidth = (bricks * 120 + (bricks - 1) * 10 + 20) / 304.8;
-                    while (bricksWidth < nominalWidth)
-                    {
-                        bricks++;
-                        bricksWidth = (bricks * 120 + (bricks - 1) * 10 + 20) / 304.8;
-                    }
-                    return bricksWidth;
-                }
-                else return Math.Ceiling(nominalWidth);
-            }
-        }
-        public double HoleHeight
-        {
-            get
-            {
-                double nominalHeight = PipeHeight + MinOffset * 2;
-                if (IsBrick)
-                {
-                    int bricks = 1;
-                    double bricksHeight = (bricks * 65 + (bricks - 1) * 10 + 20) / 304.8;
-                    while (bricksHeight < nominalHeight)
-                    {
-                        bricks++;
-                        bricksHeight = (bricks * 65 + (bricks - 1) * 10 + 20) / 304.8;
-                    }
-                    return bricksHeight;
-                }
-                else return Math.Ceiling(nominalHeight);
-            }
-        }
-
-        public double HoleDepth
-        {
-            get
-            {
-                if (Host is Wall)
-                {
-                    Wall h = Host as Wall;
-                    return h.Width;
-                }
-                else
-                {
-                    return 1;
-                }
-            }
-        }
-
-        private double calc_LevelOffset()
-        {
-            double nominalLevelOffset = InsertionPoint.Z - Level.Elevation - HoleHeight / 2;
-            if (IsBrick)
-            {
-                int bricks = 0;
-                double bricksHeight = (bricks * 65 + (bricks - 1) * 10) / 304.8;
-                while (bricksHeight < nominalLevelOffset)
-                {
-                    bricks++;
-                    bricksHeight = (bricks * 65 + (bricks - 1) * 10) / 304.8;
-                }
-                return bricksHeight;
-            }
-            else return Math.Round(nominalLevelOffset * 304.8 / 50) * 50 / 304.8;
-        }
-        */
+        }        
        
         double calc_Angle()
         {

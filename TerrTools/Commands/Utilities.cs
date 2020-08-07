@@ -442,7 +442,28 @@ namespace TerrTools
     }
 
     static class GeometryUtils
-    {       
+    {
+        static public Level GetLevelByPoint(Document doc, XYZ pt)
+        {
+            Level[] levels = new FilteredElementCollector(doc)
+                                .OfCategory(BuiltInCategory.OST_Levels)
+                                .WhereElementIsNotElementType()
+                                .Cast<Level>()
+                                .OrderBy(x=>x.ProjectElevation)
+                                .ToArray();
+            double z = pt.Z;
+            for (int i = levels.Length - 1; i > 0; i--)
+            {
+                var l = levels[i];
+                if (l.ProjectElevation < z)
+                {
+                    return l;
+                }
+            }
+            return levels[0];
+        }
+
+
         static public Solid GetSolid(Element e)
         {
             Options opt = new Options();
