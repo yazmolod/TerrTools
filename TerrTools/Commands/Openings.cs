@@ -61,7 +61,7 @@ namespace TerrTools
         protected bool IsExisted(Intersection i)
         {
             return ExistingOpenings.Where(x => x.LookupParameter("ТеррНИИ_Идентификатор").AsString() == i.Id).Count() > 0;
-        }
+        }                
 
         protected void PlaceOpeningFamilies(IEnumerable<Intersection> intersections)
         {
@@ -78,7 +78,7 @@ namespace TerrTools
                         LocationPoint loc = holeElement.Location as LocationPoint;
                         XYZ vec = new XYZ(i.InsertionPoint.X,
                                           i.InsertionPoint.Y,
-                                          i.Level.Elevation) - loc.Point;
+                                          i.Level.ProjectElevation) - loc.Point;
                         ElementTransformUtils.MoveElement(doc, holeElement.Id, vec);
                     }
                     else
@@ -98,10 +98,10 @@ namespace TerrTools
                         //делаем вырез в хосте
                         try
                         {
-                            List<Element> hosts = new List<Element>();
-                            if (i is IntersectionSet) hosts = (i as IntersectionSet).Intersections.Cast<IntersectionMepCurve>().Select(x => x.Host).ToList();
-                            else hosts.Add((i as IntersectionMepCurve).Host);
-                            foreach (var host in hosts) InstanceVoidCutUtils.AddInstanceVoidCut(doc, host, holeElement);
+                        if (i.HasHosts)
+                        {
+                            foreach (var host in i.Hosts) InstanceVoidCutUtils.AddInstanceVoidCut(doc, host, holeElement);
+                        }
                         }
                         catch
                         {
@@ -110,11 +110,13 @@ namespace TerrTools
                     }
                 try
                 {
+
                     //идентификация
                     holeElement.LookupParameter("ТеррНИИ_Идентификатор")?.Set(i.Id.ToString());
                     holeElement.LookupParameter("Связанный файл")?.Set(i.Name);
                 }
                 catch { log_id.AddError(i.Id); }
+
 
                 try
                 {
@@ -237,8 +239,11 @@ namespace TerrTools
                 if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
                 {
                     tr.Start();
-                    IEnumerable<Intersection>intersections = form.Intersections.Cast<Intersection>().ToList();
-                    if (form.DoMerge) intersections = IntersectionSet.Merge(intersections, form.MergeTolerance).Cast<Intersection>();
+                    var intersections = form.Intersections.Cast<Intersection>().ToList();
+                    if (form.DoMerge)
+                    {
+                        intersections = Intersection.AutoMerging(intersections, form.MergeTolerance);
+                    }
                     PlaceOpeningFamilies(intersections);                    
                     tr.Commit();
                     LoggingMachine.Show();
@@ -249,21 +254,27 @@ namespace TerrTools
         }
     }
 
-    public abstract class Intersection
+    public class Intersection
     {
-        abstract public string Name { get; }
-        abstract public Level Level { get; }
-        abstract public Outline Outline { get; protected set; }
-        abstract public double Angle { get; protected set; }
-        abstract public XYZ InsertionPoint { get; protected set; }
-        abstract public string Id { get; }
+        Document Doc { get; }
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public double Angle { get; protected set; } = 0;             
+        public Outline Outline { get; protected set; }
+
+        private List<Element> _hosts = new List<Element>();
+        public Element Host { get => _hosts.FirstOrDefault(); set => _hosts = new List<Element>() { value }; }
+        public List<Element> Hosts { get => _hosts; set => _hosts = value; }
+        public bool HasHosts { get => _hosts.Count() > 0; }
+
+        public Level Level { get; private set; }
+        public XYZ InsertionPoint { get; private set; }
+
         public double HoleHeight { get => Outline.MaximumPoint.Z - Outline.MinimumPoint.Z; }
         public double HoleWidth { get => Outline.MaximumPoint.X - Outline.MinimumPoint.X; }
         public double HoleDepth { get => Outline.MaximumPoint.Y - Outline.MinimumPoint.Y; }
-        public double LevelOffset { get => InsertionPoint.Z - Level.Elevation - HoleHeight / 2; }
-        public double GroundOffset { get => LevelOffset + Level.Elevation; }
-
-        abstract public void Init();
+        public double LevelOffset { get => InsertionPoint.Z - Level.ProjectElevation; }
+        public double GroundOffset { get => LevelOffset + Level.ProjectElevation; }
 
         /// <summary>
         /// Проверка на пересечение с другим отверстием
@@ -276,45 +287,152 @@ namespace TerrTools
             if (this.Id == other.Id) return false;
             return this.Outline.Intersects(other.Outline, tolerance);
         }
-    }
 
-    public class SimpleIntersection : Intersection
-    {
-        public override string Name { get; }
-        public override Level Level { get; }
-        public override Outline Outline { get ; protected set ; }
-        public override double Angle { get ; protected set ; }
-        public override XYZ InsertionPoint { get ; protected set; }
-        public override string Id { get; }
-        public Element Host { get; }
-
-        public override void Init()
+        public static Outline CreateOutline(XYZ center, double width, double height, double depth)
         {
-            throw new NotImplementedException();
+            XYZ min = new XYZ(center.X - width / 2, center.Y - depth / 2, center.Z - height / 2);
+            XYZ max = new XYZ(center.X + width / 2, center.Y + depth / 2, center.Z + height / 2);
+            Outline outline = new Outline(min, max);
+            return outline;
         }
-        public SimpleIntersection(XYZ pt, Outline outline, double angle, Element host, string name, string id)
+
+        #region Initializations
+
+        protected void DefaultInit()
+            {
+                InsertionPoint = new XYZ(
+                (Outline.MinimumPoint.X + Outline.MaximumPoint.X) / 2,
+                (Outline.MinimumPoint.Y + Outline.MaximumPoint.Y) / 2,
+                Outline.MinimumPoint.Z
+                );
+                Level = GeometryUtils.GetLevelByPoint(Doc, InsertionPoint);
+            }
+
+        public Intersection()
+        {
+
+        }
+        public Intersection(Document doc, Outline outline)
         {
             Outline = outline;
-            InsertionPoint = pt;
+            DefaultInit();
+        }
+
+        public Intersection(Document doc, Outline outline, double angle, List<Element> hosts)
+        {
+            Outline = outline;
+            Angle = angle;
+            Hosts = hosts;
+            DefaultInit();
+        }
+
+        public Intersection(Document doc, Outline outline, double angle, Element host)
+        {
+            Outline = outline;
             Angle = angle;
             Host = host;
-            Level = host.Document.GetElement(Host.LevelId) as Level;
-            Name = name;
-            Id = id;
+            DefaultInit();
         }
+        #endregion
+
+        #region Merging
+        public static List<Intersection> AutoMerging(List<Intersection> intrs, double tolerance)
+        {
+            var pairs = SplitOnIntersectedPairs(intrs, tolerance);
+            var groups = GroupIntersectedPairs(pairs);
+            var intersections = groups.Select(x => Merge(x)).ToList();
+            return intersections;
+
+        }
+
+        public static Intersection Merge(IEnumerable<Intersection> intrs)
+        {
+            Outline outline = intrs.First().Outline;
+            for (int i = 1; i < intrs.Count(); i++)
+            {
+                Outline other = intrs.ElementAt(i).Outline;
+                outline.AddPoint(other.MinimumPoint);
+                outline.AddPoint(other.MaximumPoint);
+            }            
+
+            double angle = intrs.Select(x => x.Angle).FirstOrDefault();
+            List<Element> hosts = intrs.Select(x=>x.Host).OfType<Element>().ToList();
+            Document doc = hosts[0].Document;
+
+            string name = string.Join("|", intrs.Select(x => x.Name).OfType<string>().Distinct());
+            string id = string.Join("|", intrs.Select(x => x.Id).OfType<string>().Distinct());
+
+            var intr = new Intersection(doc, outline, angle, hosts);
+            intr.Name = name;
+            intr.Id = id;
+            return intr;
+        }
+    
+
+        /// <summary>
+        /// Объединяет списки по пересечению
+        /// </summary>
+        public static List<HashSet<Intersection>> GroupIntersectedPairs(List<HashSet<Intersection>> groups)
+        {
+            bool flag = true;
+            int i = 0;
+            while (flag)
+            {
+                bool changedFlag = false;
+                for (int j = groups.Count() - 1; j > i; j--)
+                {
+                    var left = new HashSet<Intersection>(groups.ElementAt(i));
+                    var right = new HashSet<Intersection>(groups.ElementAt(j));
+                    left.IntersectWith(right);
+                    if (left.Count() > 0)
+                    {
+                        groups.ElementAt(i).UnionWith(right);
+                        groups.RemoveAt(j);
+                        changedFlag = true;
+                    }
+                }
+                flag = i < groups.Count() - 1;
+                if (!changedFlag) i++;
+            }
+            return groups;
+        }
+
+        /// <summary>
+        /// Разбивает массив с пересечениями на пересекающиеся пары (или одиночные непересекаюзиеся)
+        /// </summary>
+        private static List<HashSet<Intersection>> SplitOnIntersectedPairs(List<Intersection> intersections, double tolerance)
+        {
+            List<HashSet<Intersection>> groups = new List<HashSet<Intersection>>();
+            for (int i = 0; i < intersections.Count() - 1; i++)
+            {
+                bool collided = false;
+                for (int j = i + 1; j < intersections.Count(); j++)
+                {
+                    var left = intersections.ElementAt(i);
+                    var right = intersections.ElementAt(j);
+                    if (left.IsIntersectedWithAnother(right, tolerance))
+                    {
+                        HashSet<Intersection> x = new HashSet<Intersection>() { left, right };
+                        collided = true;
+                        groups.Add(x);
+                    }
+                }
+                if (!collided)
+                {
+                    groups.Add(new HashSet<Intersection> { intersections.ElementAt(i) });
+                }
+            }
+            return groups;
+        }
+        #endregion
+
+
     }
 
 
     public class IntersectionMepCurve : Intersection
-    {
-        public override string Id { get => string.Format("{0}-{1}", Host.Id.ToString(), Pipe.Id.ToString()); }
-        public override string Name { get => LinkInstance.Name; }
-        public override Level Level { get { return Host.Document.GetElement(Host.LevelId) as Level; } }
-        public override double Angle { get; protected set; } 
-        public override XYZ InsertionPoint { get; protected set; } 
-        public override Outline Outline { get; protected set; } 
+    {        
         public RevitLinkInstance LinkInstance { get; set; }
-        public Element Host { get; }
         public Element Pipe { get; }
         private ConnectorManager PipeConnectorManager
         {
@@ -346,7 +464,7 @@ namespace TerrTools
         /// <summary>
         /// Изначальная точка пересечения, взятая из отчета или анализа
         /// </summary>
-        public XYZ CollisionPoint { get; set; }     
+        public XYZ CollisionPoint { get; }     
         public double PipeWidth { get => HoleWidth - Offset * 2; }
         public double PipeHeight { get => HoleHeight - Offset * 2; }
         public double Offset { get; set; } = 50.0 / 304.8;
@@ -369,7 +487,7 @@ namespace TerrTools
             }
         }        
        
-        double calc_Angle()
+        double CalculateAngle()
         {
             Curve c = GeometryUtils.FindDuctCurve(PipeConnectorManager);
             if (c == null)
@@ -380,7 +498,7 @@ namespace TerrTools
             return vec.AngleTo(XYZ.BasisY);
         }
 
-    private XYZ calc_InsertionPoint()
+    private XYZ calculateProjectedPoint()
         {
             Curve pipe_curve = GeometryUtils.FindDuctCurve(PipeConnectorManager);
             if (pipe_curve == null) return new XYZ(CollisionPoint.X, CollisionPoint.Y, CollisionPoint.Z);
@@ -395,7 +513,7 @@ namespace TerrTools
             return pt;
         }
 
-        private Outline calc_Outline()
+        private Outline CalculatePipeOutline()
         {
             var connectors = GeometryUtils.GetConnectors(PipeConnectorManager);
             var roundCons = connectors.Where(x => x.Shape == ConnectorProfileType.Round);
@@ -407,130 +525,27 @@ namespace TerrTools
 
             double width = maxR > maxW ? maxR : maxW;
             double height = maxR > maxH ? maxR : maxH;
-            double depth = (Host as Wall).Width;   
+            double depth = (Host as Wall).Width;
 
-            XYZ minPt = new XYZ(InsertionPoint.X - width / 2 - Offset, InsertionPoint.Y - depth / 2, InsertionPoint.Z - height / 2 - Offset);
-            XYZ maxPt = new XYZ(InsertionPoint.X + width / 2 + Offset, InsertionPoint.Y + depth / 2, InsertionPoint.Z + height / 2 + Offset);
-            var outline = new Outline(minPt, maxPt);
+            width += Offset * 2;
+            height += Offset * 2;
+
+            XYZ pt = calculateProjectedPoint();
+            var outline = Intersection.CreateOutline(pt, width, height, depth);            
             return outline;
-        }
-
-        public override void Init()
-        {
-            InsertionPoint = calc_InsertionPoint();
-            Angle = calc_Angle();
-            Outline = calc_Outline();
         }
 
         public IntersectionMepCurve(Element host, Element pipe, XYZ pt, RevitLinkInstance instance)
         {
             Host = host;
             Pipe = pipe;
-            if (Host == null || Pipe == null) throw new ArgumentNullException("host, pipe", "Элемент не может быть null");
             LinkInstance = instance;
             CollisionPoint = pt;
-            Init();
-        }
-    }
-
-
-    public class IntersectionSet :Intersection
-    {
-        public HashSet<Intersection> Intersections { get; }
-
-        public override string Id { get; }
-        public override string Name { get; }
-        public override Level Level { get; }
-        public override Outline Outline { get; protected set; }
-        public override double Angle { get; protected set; }
-        public override XYZ InsertionPoint { get; protected set; }
-
-        public static IEnumerable<IntersectionSet> Merge(IEnumerable<Intersection> intrs, double tolerance)
-        {
-            var groups = FindSets(intrs, tolerance);
-
-            bool flag = true;
-            int i = 0;
-            while (flag)
-            {
-                bool changedFlag = false;
-                for (int j = groups.Count() - 1; j > i; j--)
-                {
-                    var left = new HashSet<Intersection>(groups.ElementAt(i));
-                    var right = new HashSet<Intersection>(groups.ElementAt(j));
-                    left.IntersectWith(right);
-                    if (left.Count() > 0)
-                    {
-                        groups.ElementAt(i).UnionWith(right);
-                        groups.RemoveAt(j);
-                        changedFlag = true;
-                    }
-                }
-                flag = i < groups.Count() - 1;
-                if (!changedFlag) i++;
-            }
-            return groups.Select(x => new IntersectionSet(x));
-        }
-        
-        /// <summary>
-        /// Разбивает массив с пересечениями на пересекающиеся пары (или одиночные непересекаюзиеся)
-        /// </summary>
-        /// <param name="intersections"></param>
-        /// <param name="tolerance"></param>
-        /// <returns>List of HashSet<Intersection></Intersection></returns>
-        public static List<HashSet<Intersection>> FindSets(IEnumerable<Intersection> intersections, double tolerance)
-        {
-            List<HashSet<Intersection>> groups = new List<HashSet<Intersection>>();
-            for (int i = 0; i < intersections.Count()-1; i++)
-            {
-                bool collided = false;                
-                for (int j = i+1; j < intersections.Count(); j++)
-                {
-                    var left = intersections.ElementAt(i);
-                    var right = intersections.ElementAt(j);
-                    if(left.IsIntersectedWithAnother(right, tolerance))
-                    {
-                        HashSet<Intersection> x = new HashSet<Intersection>() { left, right };
-                        collided = true;
-                        groups.Add(x);
-                    }
-                }
-                if (!collided)
-                {
-                    groups.Add(new HashSet<Intersection> { intersections.ElementAt(i) });
-                }
-            }
-            return groups;
-        }
-
-        public override void Init()
-        {
-            Outline outline = Intersections.First().Outline;
-            for (int i = 1; i < Intersections.Count(); i++)
-            {
-                Outline other = Intersections.ElementAt(i).Outline;
-                outline.AddPoint(other.MinimumPoint);
-                outline.AddPoint(other.MaximumPoint);
-            }
-            Outline = outline;
-
-            InsertionPoint = new XYZ(
-                outline.MinimumPoint.X + (outline.MaximumPoint.X - outline.MinimumPoint.X) / 2,
-                outline.MinimumPoint.Y + (outline.MaximumPoint.Y - outline.MinimumPoint.Y) / 2,
-                outline.MinimumPoint.Z + (outline.MaximumPoint.Z - outline.MinimumPoint.Z) / 2
-                );
-
-            Angle = Intersections.Select(x => x.Angle).First();
-        }       
-
-        public IntersectionSet(HashSet<Intersection> intersections)
-        {
-            Intersections = intersections;
-            Id = string.Join("|", intersections.Select(x => x.Id));
-            Name = string.Join("|", intersections.Select(x=>x.Name));
-            double mL = intersections.Min(x => x.Level.Elevation);
-            Level = intersections.Where(x => x.Level.Elevation == mL).First().Level;
-            Init();
+            if (Host == null) throw new ArgumentNullException("Host", "Элемент не может быть null");
+            if (Pipe == null) throw new ArgumentNullException("Pipe", "Элемент не может быть null");
+            Outline = CalculatePipeOutline();
+            Angle = CalculateAngle();
+            DefaultInit();
         }
     }
 
