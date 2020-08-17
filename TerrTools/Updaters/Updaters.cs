@@ -8,6 +8,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Architecture;
 using System.Diagnostics;
+using System.Security.Policy;
 
 namespace TerrTools.Updaters
 {
@@ -396,7 +397,8 @@ namespace TerrTools.Updaters
 
     public class SystemNamingUpdater : TerrUpdater
     {
-        string systemNameP = "ТеррНИИ_Наименование системы"; 
+        string systemNameP = "ТеррНИИ_Наименование системы";
+        private Element[] LastUpdatedElements = new Element[0];
 
         // Порядок был объявлен при инициализации апдейтера в Application.cs
         ElementFilter elemFilter { get => this.TriggerPairs[0].Filter; }         
@@ -475,11 +477,35 @@ namespace TerrTools.Updaters
             }
         }
 
-        public override void InnerExecute(UpdaterData data)
-        {            
-            IEnumerable<ElementId>ids = data.GetModifiedElementIds().Concat(data.GetAddedElementIds());
+        private bool NewArrayIsTheSame(Element[] elements)
+        {
+            HashSet<int> lastIds = new HashSet<int>(LastUpdatedElements.Select(x => x.Id.IntegerValue));
+            HashSet<int> newIds = new HashSet<int>(elements.Select(x => x.Id.IntegerValue));
+            lastIds.SymmetricExceptWith(newIds);
+            return lastIds.Count == 0;
+        }
 
+        public override void InnerExecute(UpdaterData data)
+        {
+            IEnumerable<ElementId> ids = data.GetModifiedElementIds().Concat(data.GetAddedElementIds());
             Element[] elements = (from id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()) select doc.GetElement(id)).ToArray();
+            if (NewArrayIsTheSame(elements))
+            {
+                var td = new TaskDialog("Возможна рекурсия");
+                td.MainInstruction = "Есть подозрение, что апдейтер систем вошел в рекурсивное обновление.";
+                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Да, похоже на то. Сохранить изменения и остановить обновление");
+                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Нет, я хочу внести изменения в тот же самый набор");
+                td.AllowCancellation = false;
+                var result = td.Show();
+                if (result == TaskDialogResult.CommandLink1)
+                {
+                    return;
+                }
+                else
+                {
+
+                }
+            }
             Element[] systems = elements.Where(x => sysFilter.PassesFilter(x)).ToArray();
             Element[] items = elements.Where(x => elemFilter.PassesFilter(x)).ToArray();
             // обновление имени от системы к элементам
@@ -503,6 +529,8 @@ namespace TerrTools.Updaters
             }
             foreach (var el in systems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))) UpdateSystem(el);            
        */
+
+            LastUpdatedElements = elements;
         }
     }
 }
