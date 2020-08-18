@@ -262,22 +262,48 @@ namespace TerrTools.Updaters
             return zs.Min();
         }
 
+        private int IsHorizontal(Duct el)
+        {            
+            var top = el.get_Parameter(BuiltInParameter.RBS_DUCT_TOP_ELEVATION).AsDouble();
+            var bottom = el.get_Parameter(BuiltInParameter.RBS_DUCT_BOTTOM_ELEVATION).AsDouble();
+            var height_p1 = el.get_Parameter(BuiltInParameter.RBS_CURVE_HEIGHT_PARAM);
+            var height_p2 = el.get_Parameter(BuiltInParameter.RBS_CURVE_DIAMETER_PARAM);
+            var height = height_p1 != null ? height_p1.AsDouble() : height_p2.AsDouble();
+            var diff = Math.Abs(top - bottom - height);
+            var state = diff * 304.8 < 0.1;
+            return Convert.ToInt32(state);
+        }
+
+        private int IsVertical(Duct el)
+        {
+            XYZ[] pts = (from Connector con in el.ConnectorManager.Connectors select con.Origin).ToArray();
+            XYZ vec = pts.Where(x => x.Z == pts.Max(y => y.Z)).First() - pts.Where(x => x.Z == pts.Min(y => y.Z)).First();
+            bool state = vec.Normalize().IsAlmostEqualTo(XYZ.BasisZ);
+            return Convert.ToInt32(state);
+        }
+
+        private void Main(Duct el)
+        {
+            el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
+            el.LookupParameter(classParameter).Set(GetDuctClass(el));
+            el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
+            el.LookupParameter(horizontalParameter).Set(IsHorizontal(el));
+            el.LookupParameter(verticalParameter).Set(IsVertical(el));
+        }
+
         string thickParameter = "ADSK_Толщина стенки";
         string classParameter = "ТеррНИИ_Класс герметичности";
         string levelParameter = "ТеррНИИ_Отметка от нуля";
+        string horizontalParameter = "ТеррНИИ_Горизонтальный воздуховод";
+        string verticalParameter = "ТеррНИИ_Вертикальный воздуховод";
         public override void InnerExecute(UpdaterData data)
         {            
-            SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
-            SharedParameterUtils.AddSharedParameter(doc, classParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
-            SharedParameterUtils.AddSharedParameter(doc, levelParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))
             {
                 try
                 {
                     Duct el = (Duct)doc.GetElement(id);
-                    el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
-                    el.LookupParameter(classParameter).Set(GetDuctClass(el));
-                    el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
+                    Main(el);
                 }
                 catch (Exception ex)
                 {
@@ -292,9 +318,7 @@ namespace TerrTools.Updaters
         {
             foreach (Duct el in new FilteredElementCollector(doc).WherePasses(TriggerPairs[0].Filter).ToElements())
             {
-                el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
-                el.LookupParameter(classParameter).Set(GetDuctClass(el));
-                el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
+                Main(el);
             }
         }
     }

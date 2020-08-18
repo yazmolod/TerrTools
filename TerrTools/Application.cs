@@ -100,6 +100,8 @@ namespace TerrTools
             upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ADSK_Толщина стенки"));
             upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Класс герметичности"));
             upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Отметка от нуля"));
+            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Горизонтальный воздуховод"));
+            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Вертикальный воздуховод"));
             Updaters.Add(upd);
 
             // DuctsAccessoryUpdater
