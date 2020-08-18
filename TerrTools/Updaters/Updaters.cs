@@ -397,8 +397,12 @@ namespace TerrTools.Updaters
 
     public class SystemNamingUpdater : TerrUpdater
     {
+        /// Переменная для предотвращения рекурсии. 
+        /// Обновляется на false внутри апдейтера, на true при DocumentChangedEvent (см. Application.cs)
+        static public bool FirstExecutionInTransaction = true;
         string systemNameP = "ТеррНИИ_Наименование системы";
         private Element[] LastUpdatedElements = new Element[0];
+        private int repeatCounter = 0;
 
         // Порядок был объявлен при инициализации апдейтера в Application.cs
         ElementFilter elemFilter { get => this.TriggerPairs[0].Filter; }         
@@ -479,58 +483,57 @@ namespace TerrTools.Updaters
 
         private bool NewArrayIsTheSame(Element[] elements)
         {
-            HashSet<int> lastIds = new HashSet<int>(LastUpdatedElements.Select(x => x.Id.IntegerValue));
-            HashSet<int> newIds = new HashSet<int>(elements.Select(x => x.Id.IntegerValue));
-            lastIds.SymmetricExceptWith(newIds);
-            return lastIds.Count == 0;
+            try
+            {
+                HashSet<int> lastIds = new HashSet<int>(LastUpdatedElements.Select(x => x.Id.IntegerValue));
+                HashSet<int> newIds = new HashSet<int>(elements.Select(x => x.Id.IntegerValue));
+                lastIds.SymmetricExceptWith(newIds);
+                return lastIds.Count == 0;
+            }
+            catch (Autodesk.Revit.Exceptions.InvalidObjectException)
+            {
+                return false;
+            }
         }
 
         public override void InnerExecute(UpdaterData data)
         {
-            IEnumerable<ElementId> ids = data.GetModifiedElementIds().Concat(data.GetAddedElementIds());
-            Element[] elements = (from id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()) select doc.GetElement(id)).ToArray();
-            if (NewArrayIsTheSame(elements))
+            if (FirstExecutionInTransaction)
             {
-                var td = new TaskDialog("Возможна рекурсия");
-                td.MainInstruction = "Есть подозрение, что апдейтер систем вошел в рекурсивное обновление.";
-                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Да, похоже на то. Сохранить изменения и остановить обновление");
-                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Нет, я хочу внести изменения в тот же самый набор");
-                td.AllowCancellation = false;
-                var result = td.Show();
-                if (result == TaskDialogResult.CommandLink1)
+                ElementId[] addedIds = data.GetAddedElementIds().ToArray();
+                Element[] addedElements = addedIds.Select(x => doc.GetElement(x)).ToArray();
+                Element[] addedSystems = addedElements.Where(x => sysFilter.PassesFilter(x)).ToArray();
+                Element[] addedItems = addedElements.Where(x => elemFilter.PassesFilter(x)).ToArray();
+
+                ElementId[] modifiedIds = data.GetModifiedElementIds().ToArray();
+                Element[] modifiedElements = modifiedIds.Select(x => doc.GetElement(x)).ToArray();
+                Element[] modifiedSystems = modifiedElements.Where(x => sysFilter.PassesFilter(x)).ToArray();
+                Element[] modifiedItems = modifiedElements.Where(x => elemFilter.PassesFilter(x)).ToArray();
+
+                // обновление элемента в MEP влечет за собой каскадное обновление элементов в системе
+                // поэтому в целях оптимизации разбиваем на конкретные ситуации
+                if (addedItems.Length > 0)
                 {
-                    return;
+                    foreach (var el in addedItems) UpdateItemSystemName(el);
+                    LastUpdatedElements = addedItems;
                 }
-                else
+                else if (addedSystems.Length > 0)
                 {
-
+                    foreach (var el in addedSystems) UpdateSystem(el);
+                    LastUpdatedElements = addedSystems;
                 }
+                else if (modifiedItems.Length > 0)
+                {
+                    foreach (var el in modifiedItems) UpdateItemSystemName(el);
+                    LastUpdatedElements = modifiedItems;
+                }
+                else if (modifiedSystems.Length > 0)
+                {
+                    foreach (var el in modifiedSystems) UpdateSystem(el);
+                    LastUpdatedElements = modifiedSystems;
+                }
+                FirstExecutionInTransaction = false;
             }
-            Element[] systems = elements.Where(x => sysFilter.PassesFilter(x)).ToArray();
-            Element[] items = elements.Where(x => elemFilter.PassesFilter(x)).ToArray();
-            // обновление имени от системы к элементам
-            foreach (var el in systems) UpdateSystem(el);
-
-            // забор имени системы
-            foreach (var el in items) UpdateItemSystemName(el);
-
-            // обновление от элементов к системам
-            // скорее всего там блокирующие вызовы, рекурсии и прочие гадости     
-            /*
-            HashSet<string> localSystems = new HashSet<string>();
-            foreach (var item in items)
-            {
-                Parameter p = item.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
-                string value = p.AsString();
-                if (value == null) continue;
-                string[] values = value.Split(',');
-                foreach (string v in values) localSystems.Add(v);
-
-            }
-            foreach (var el in systems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))) UpdateSystem(el);            
-       */
-
-            LastUpdatedElements = elements;
         }
     }
 }

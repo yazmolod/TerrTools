@@ -382,6 +382,12 @@ namespace TerrTools
             Application.ControlledApplication.FailuresProcessing += Application_FailureProcessing;
             Application.ControlledApplication.DocumentOpened += Application_DocumentOpened;
             Application.ControlledApplication.DocumentCreated += Application_DocumentCreated;
+            Application.ControlledApplication.DocumentChanged += Application_DocumentChanged;
+        }
+
+        private void Application_DocumentChanged(object sender, DocumentChangedEventArgs e)
+        {
+            SystemNamingUpdater.FirstExecutionInTransaction = true;
         }
 
         private void Application_DocumentOpened(object sender, DocumentOpenedEventArgs e)
