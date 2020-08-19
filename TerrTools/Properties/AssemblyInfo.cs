@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
 ОВиК:
- - Оптимизация и исправление багов в апдейтере систем
+ - В апдейтер воздуховодов добавлено определение вертикальности и горизонтальности оного (для проверок в Navisworks)
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -35,4 +35,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.14.4.1")]
+[assembly: AssemblyFileVersion("0.14.5")]

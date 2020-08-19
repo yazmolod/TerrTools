@@ -153,8 +153,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
+    <None Include="manifests\TerrTools_19.addin" />
+    <None Include="manifests\TerrTools_20.addin" />
     <None Include="packages.config" />
-    <None Include="TerrTools.addin" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
