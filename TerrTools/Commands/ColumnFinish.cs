@@ -13,7 +13,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using TerrTools.UI;
 
-namespace TerrTools.Commands
+namespace TerrTools
 {
     [Transaction(TransactionMode.Manual)]
     class ColumnFinish : IExternalCommand
@@ -66,11 +66,10 @@ namespace TerrTools.Commands
                                 }
                             }
                         }
-
                         // Обьявляем переменную со значением половины толщины стены,
                         // это нужно для того, чтобы штукатурка примыкала именно к 
                         // колонне, а не входила внутрь
-                        Double width = wall_type.LookupParameter("Ширина").AsDouble() / 2;
+                        double width = wall_type.LookupParameter("Ширина").AsDouble() / 2;
 
 
                         Transaction trans = new Transaction(doc);
@@ -91,8 +90,8 @@ namespace TerrTools.Commands
                             // Получаем колонну, которой принадлежит BoundarySegment
                             Element col = doc.GetElement(bs_column.ElementId);
                             // Получаем текущие значения смещений колонны сверху и снизу
-                            Double top_offset = col.LookupParameter("Смещение сверху").AsDouble();
-                            Double bot_offset = col.LookupParameter("Смещение снизу").AsDouble();
+                            double top_offset = col.LookupParameter("Смещение сверху").AsDouble();
+                            double bot_offset = col.LookupParameter("Смещение снизу").AsDouble();
                             // xyz(направление смещения) для работы метода CreateOffset
                             XYZ xyz = new XYZ(0, 0, -1);
                             // Создаем кривую, смещенную от линии BoundarySegment колонны 
