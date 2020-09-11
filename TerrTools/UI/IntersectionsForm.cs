@@ -40,12 +40,6 @@ namespace TerrTools.UI
 
         private void FillRow(IntersectionMepCurve i, int nRow, bool firstFill = false)
         {
-            dataGridView1.Rows[nRow].Cells["IntersectionPoint"].Value = String.Format(
-                "X: {0}, Y: {1}, Z: {2}",
-                Math.Round(i.CollisionPoint.X , 3),
-                Math.Round(i.CollisionPoint.Y, 3),
-                Math.Round(i.CollisionPoint.Z, 3)
-                );
             dataGridView1.Rows[nRow].Cells["Level"].Value = i.Level.Name;
             dataGridView1.Rows[nRow].Cells["HostName"].Value = i.Host.Name;
             dataGridView1.Rows[nRow].Cells["HostId"].Value = i.Host.Id.IntegerValue;
