@@ -42,7 +42,9 @@ namespace TerrTools
                         walls.Remove(wall);
                     }
                 }
-                
+                Transaction trans = new Transaction(doc);
+                trans.Start("Создание отделки колонн");
+
                 // Нужно для работы метода GetBoundarySegments
 
                 // Работа с windows forms
@@ -85,8 +87,7 @@ namespace TerrTools
                         double width = wall_type.LookupParameter("Ширина").AsDouble() / 2;
 
 
-                        Transaction trans = new Transaction(doc);
-                        trans.Start("Создание отделки колонн");
+                        
 
                         foreach (var bs_column in bs_columns)
                         {
@@ -121,12 +122,13 @@ namespace TerrTools
                             created_wall.LookupParameter("Смещение снизу").Set(bot_offset);
 
                         }
-                        trans.Commit();
+                        
                     }
                 }
                 else
                 {
                 }
+                trans.Commit();
 
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException)
