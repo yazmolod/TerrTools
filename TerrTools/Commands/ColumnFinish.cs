@@ -30,6 +30,19 @@ namespace TerrTools
                 IList<Element> rooms = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements();
                 // Получаем стены из документа(для выбора типа стены)
                 IList<Element> walls = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls).WhereElementIsElementType().ToElements();
+                // Исключаем из собранных стен с документа все витражи
+                // и составные стены(оставляем только базовые).
+                // В цикле создаем вспомогателньый список для того, 
+                // чтобы не словить исключение о том, что коллекция была
+                // изменена.
+                foreach (WallType wall in walls.ToList())
+                {
+                    if (wall.Kind != WallKind.Basic)
+                    {
+                        walls.Remove(wall);
+                    }
+                }
+                
                 // Нужно для работы метода GetBoundarySegments
 
                 // Работа с windows forms
@@ -96,7 +109,7 @@ namespace TerrTools
                             XYZ xyz = new XYZ(0, 0, -1);
                             // Создаем кривую, смещенную от линии BoundarySegment колонны 
                             // На половину толщины стены(чтобы стена-штукатурка не заходила внутрь колонны)
-                            Curve line_2 = line.CreateOffset(width / 2, xyz);
+                            Curve line_2 = line.CreateOffset(width, xyz);
 
                             // Создаем стену(ненесущую)
                             Wall created_wall = Wall.Create(doc, line_2, wall_type.Id, level_id, 3000 / 304.8, 0, false, false);
