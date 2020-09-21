@@ -306,6 +306,13 @@ namespace TerrTools
                     iconName: "Column.png",
                     toolTip: "Автоматически генерирует штукатурку для всех колонн, находящихся в помещениях"
                     ));
+            pbDict.Add("GridAxes",
+                MakePushButton(
+                    "GridAxes",
+                    "Создание координационных осей",
+                    iconName: "",
+                    toolTip: "Создает сетку осей с заданным шагом"
+                    ));
 
             ///
             /// Pulldown buttons
@@ -328,6 +335,7 @@ namespace TerrTools
             ///
             panelArch.AddItem(pbDict["GenerateFloor"]);
             panelArch.AddItem(pbDict["ColumnFinish"]);
+            panelArch.AddItem(pbDict["GridAxes"]);
 
             ///
             /// Конструкторская панель
