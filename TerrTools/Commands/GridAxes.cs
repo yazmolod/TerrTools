@@ -124,7 +124,6 @@ namespace TerrTools
             {
                 vertGridYend += Convert.ToInt32(item);
             }
-            // /304.8 vce
             XYZ firstVertGridEndPoint = new XYZ(x / 304.8, vertGridYend / 304.8, z);
             Line FirstVertGridLine = Line.CreateBound(firstVertGridStartPoint, firstVertGridEndPoint);
             // Первая вертикальная ось.

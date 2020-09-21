@@ -32,9 +32,11 @@ namespace TerrTools.UI
         internal double Z { get; set; }
         internal bool userChoice { get; set; }
         // Учитываем отсутствие некоторых букв в нормах оформления.
-        private List<char> symbols = new List<char> {'А','Б','В','Г','Д','Е','Ж','И','К','Л','М','Н','П','Р',
-        'С','Т','У','Ф','Ш','Э','Ю','Я' };
+        private List<string> symbols = new List<string> {"А","Б","В","Г","Д","Е","Ж","И","К","Л","М","Н","П","Р",
+        "С","Т","У","Ф","Ш","Э","Ю","Я" };
         private static int firstValue = 1;
+        private static int stringValueIndex = 0;
+        private static int NamesCounter = 0;
         public GridAxesForm()
         {
             InitializeComponent();
@@ -70,27 +72,37 @@ namespace TerrTools.UI
         // Кнопка "Добавить" в вертикальных осях.
         private void button1_Click(object sender, EventArgs e)
         {
-            int ind = 0;
-            if (dataGridView2.Rows.Count == 0)
+            if (symbols[stringValueIndex] == "Я" || symbols[stringValueIndex] == $"Я/{NamesCounter}")
             {
-                dataGridView2.Rows.Add(symbols[ind], null, 0);
+                dataGridView2.Rows.Add(symbols[stringValueIndex], null, null);
+                NamesCounter += 1;
+                string nc = NamesCounter.ToString();
+                symbols = new List<string> {$"А/{nc}",$"Б/{nc}",$"В/{nc}",$"Г/{nc}", $"Д/{nc}", $"Е/{nc}", $"Ж/{nc}", $"И/{nc}",
+                    $"К/{nc}", $"Л/{nc}", $"М/{nc}", $"Н/{nc}", $"П/{nc}", $"Р/{nc}",
+                     $"С/{nc}", $"Т/{nc}", $"У/{nc}", $"Ф/{nc}", $"Ш/{nc}", $"Э/{nc}", $"Ю/{nc}", $"Я/{nc}" };
+                stringValueIndex = 0;
+
             }
             else
             {
-                dataGridView2.Rows.Add(symbols[ind], null, null);
+                if (dataGridView2.Rows.Count == 0)
+                {
+                    dataGridView2.Rows.Add(symbols[stringValueIndex], null, 0);
+                    stringValueIndex += 1;
+                }
+                else
+                {
+                    dataGridView2.Rows.Add(symbols[stringValueIndex], null, null);
+                    stringValueIndex += 1;
+                }
             }
             
-            if (symbols[ind] != 'Я')
+
+            /*if (symbols[ind] != "Я" || symbols[ind] != $"Я{NamesCounter}")
             {
                 symbols.Remove(symbols[ind]);
-            }
-            else
-            {
-                //List<string> symbols2 = new List<string> {"A/1","Б/1","В/1","Г/1","Д/1","Е/1","Ж/1","И/1","К/1","Л/1","М/1","Н/1","П/1","Р/1",
-                //"С/1","Т/1","У/1","Ф/1","Ш/1","Э/1","Ю/1","Я/1" };
-                symbols = new List<char> {'А','Б','В','Г','Д','Е','Ж','И','К','Л','М','Н','П','Р',
-                 'С','Т','У','Ф','Ш','Э','Ю','Я' };
-            }
+            }*/
+            
         }
 
         // // Кнопка "Удалить" в вертикальных осях.
