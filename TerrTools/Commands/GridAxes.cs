@@ -13,6 +13,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using TerrTools.UI;
 
+
 namespace TerrTools
 {
     [Transaction(TransactionMode.Manual)]
@@ -26,79 +27,88 @@ namespace TerrTools
             Document doc = uiapp.ActiveUIDocument.Document;
             // Получаем uidoc
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
-
             GridAxesForm form = new GridAxesForm();
             System.Windows.Forms.DialogResult r = form.ShowDialog();
-            // В этом списке хранятся горизонтальные
-            // значения отступов осей с формы
-            List<object> HorisontalIndentValues = form.HorisontalIndentsResult;
-            // В этом списке хранятся вертикальные
-            // значения отступов осей с формы
-            List<object> VerticalIndentValues = form.VerticalIndentsResult;
-
-            // В этом списке хранятся горизонтальные
-            // значения шагов осей с формы
-            List<object> HorisontalStepValues = form.HorisontalStepsResult;
-            // В этом списке хранятся вертикальные
-            // значения шагов осей с формы
-            List<object> VerticalStepValues = form.VerticalStepsResult;
-            // В этом списке хранятся горизонтальные
-            // значения имен осей
-            List<object> HorsontalNameValues = form.HorisontalNamesResult;
-            // В этом списке хранятся вертикальные
-            // значения имен осей
-            List<object> VerticalNameValues = form.VerticalNamesResult;
-
-
-            // Объект GridsCreator
-            GridsCreator gc = new GridsCreator();
-
-            // Координаты вставки сетки осей,
-            // приходящие из формы. userChoice - 
-            // зависит от выбора пользователя в форме
-            // (по каким координатам создавать сетку)
-            double x;
-            double y;
-            double z;
-            bool userChoice = form.userChoice;
-            if (userChoice == true)
+            if (r == System.Windows.Forms.DialogResult.Cancel)
             {
-                x = form.X;
-                y = form.Y;
-                z = form.Z;
+                form.Refresh();
+                return Result.Succeeded;
             }
             else
             {
-                XYZ userXYZ = gc.GettingXYZFromUser(uidoc);
-                x = userXYZ.X * 304.8;
-                y = userXYZ.Y * 304.8;
-                z = userXYZ.Z;
+                // В этом списке хранятся горизонтальные
+                // значения отступов осей с формы
+                List<object> HorisontalIndentValues = form.HorisontalIndentsResult;
+                // В этом списке хранятся вертикальные
+                // значения отступов осей с формы
+                List<object> VerticalIndentValues = form.VerticalIndentsResult;
+                // В этом списке хранятся горизонтальные
+                // значения шагов осей с формы
+                List<object> HorisontalStepValues = form.HorisontalStepsResult;
+                // В этом списке хранятся вертикальные
+                // значения шагов осей с формы
+                List<object> VerticalStepValues = form.VerticalStepsResult;
+                // В этом списке хранятся горизонтальные
+                // значения имен осей
+                List<object> HorsontalNameValues = form.HorisontalNamesResult;
+                // В этом списке хранятся вертикальные
+                // значения имен осей
+                List<object> VerticalNameValues = form.VerticalNamesResult;
+
+
+                // Объект GridsCreator
+                GridsCreator gc = new GridsCreator();
+
+                // Координаты вставки сетки осей,
+                // приходящие из формы. userChoice - 
+                // зависит от выбора пользователя в форме
+                // (по каким координатам создавать сетку)
+                double x;
+                double y;
+                double z;
+                bool userChoice = form.userChoice;
+                if (userChoice == true)
+                {
+                    x = form.X;
+                    y = form.Y;
+                    z = form.Z;
+                }
+                else
+                {
+                    XYZ userXYZ = gc.GettingXYZFromUser(uidoc);
+                    x = userXYZ.X * 304.8;
+                    y = userXYZ.Y * 304.8;
+                    z = userXYZ.Z;
+                }
+
+                Transaction trans = new Transaction(doc);
+                trans.Start("Creating a first horisontal and vertical grids");
+
+                ElementId FirstVertGridId;
+                ElementId FirstHorGridId;
+                // Создание первых двух осей.
+                gc.CreateAGrids(HorisontalIndentValues, VerticalIndentValues,
+                    HorisontalStepValues, VerticalStepValues, doc, uiapp, out FirstVertGridId,
+                    out FirstHorGridId, HorsontalNameValues, VerticalNameValues, x, y, z);
+                trans.Commit();
+
+                // Получаем новый uiapp с осями
+                UIApplication uiapp2 = commandData.Application;
+                // Получаем новый документ с осями
+                Document doc2 = uiapp.ActiveUIDocument.Document;
+
+                Transaction trans2 = new Transaction(doc);
+                trans2.Start("Copying a grids");
+
+                // Копирование двух созданных осей.
+                gc.CopyAGrids(HorisontalIndentValues, VerticalIndentValues, doc2, uiapp2,
+                    FirstVertGridId, FirstHorGridId, HorsontalNameValues, VerticalNameValues);
+                trans2.Commit();
+                return Result.Succeeded;
             }
-
-            Transaction trans = new Transaction(doc);
-            trans.Start("Creating a first horisontal and vertical grids");
-
-            ElementId FirstVertGridId;
-            ElementId FirstHorGridId;
-            // Создание первых двух осей.
-            gc.CreateAGrids(HorisontalIndentValues, VerticalIndentValues,
-                HorisontalStepValues, VerticalStepValues, doc, uiapp, out FirstVertGridId,
-                out FirstHorGridId, HorsontalNameValues, VerticalNameValues, x, y, z);
-            trans.Commit();
-
-            // Получаем новый uiapp с осями
-            UIApplication uiapp2 = commandData.Application;
-            // Получаем новый документ с осями
-            Document doc2 = uiapp.ActiveUIDocument.Document;
-
-            Transaction trans2 = new Transaction(doc);
-            trans2.Start("Copying a grids");
-
-            // Копирование двух созданных осей.
-            gc.CopyAGrids(HorisontalIndentValues, VerticalIndentValues, doc2, uiapp2,
-                FirstVertGridId, FirstHorGridId, HorsontalNameValues, VerticalNameValues);
-            trans2.Commit();
-            return Result.Succeeded;
+            
+            
+            
         }
     }
     class GridsCreator
@@ -153,11 +163,6 @@ namespace TerrTools
             FirstHorGrid.Name = n2.ToString();
             // out айди для первой горизонтальной оси
             FirstHorGridId = FirstHorGrid.Id;
-
-
-
-
-
         }
         // Метод для копирования первых двух созданных осей.
         public void CopyAGrids(List<object> horVal, List<object> vertVal,
@@ -234,6 +239,18 @@ namespace TerrTools
             Selection sel = uidoc.Selection;
             XYZ coords = sel.PickPoint();
             return coords;
+        }
+    }
+    class DimensionsCreator
+    {
+        // Есть идея образмеривать созданные оси,
+        // если пользователь нажмет нужный чекер на
+        // форме, но Document не понимает куда ссылаться
+        // на Creation или же DB.
+        // Надо бы подумать как лучше с точки зрения 
+        // организации кода
+        internal void CreateADimensions()
+        { 
         }
     }
 }

@@ -37,6 +37,8 @@ namespace TerrTools.UI
         private static int firstValue = 1;
         private static int stringValueIndex = 0;
         private static int NamesCounter = 0;
+        // На тот случай, если форма закроется
+        internal bool closedForm { get; set; } = false;
         public GridAxesForm()
         {
             InitializeComponent();
@@ -45,6 +47,11 @@ namespace TerrTools.UI
         // Кнопка "Добавить" в горизонтальных осях.
         private void button2_Click(object sender, EventArgs e)
         {
+            // Для автоскролла таблицы при добавлении большого кол-ва строк.
+            int firstDisplayed = dataGridView1.FirstDisplayedScrollingRowIndex;
+            int displayed = dataGridView1.DisplayedRowCount(true);
+            int lastVisible = (firstDisplayed + displayed) - 1;
+            int lastIndex = dataGridView1.RowCount - 1;
             if (dataGridView1.Rows.Count==0)
             {
                 dataGridView1.Rows.Add(firstValue, null, 0);
@@ -53,7 +60,12 @@ namespace TerrTools.UI
             {
                 dataGridView1.Rows.Add(firstValue, null, null);
             }
-            
+            // Для автоскролла таблицы при добавлении большого кол-ва строк.
+            if (lastVisible == lastIndex)
+            {
+                dataGridView1.FirstDisplayedScrollingRowIndex = firstDisplayed + 1;
+            }
+
             firstValue += 1;
         }
 
@@ -72,6 +84,12 @@ namespace TerrTools.UI
         // Кнопка "Добавить" в вертикальных осях.
         private void button1_Click(object sender, EventArgs e)
         {
+            // Для автоскролла таблицы при добавлении большого кол-ва строк.
+            int firstDisplayed = dataGridView2.FirstDisplayedScrollingRowIndex;
+            int displayed = dataGridView2.DisplayedRowCount(true);
+            int lastVisible = (firstDisplayed + displayed) - 1;
+            int lastIndex = dataGridView2.RowCount - 1;
+
             if (symbols[stringValueIndex] == "Я" || symbols[stringValueIndex] == $"Я/{NamesCounter}")
             {
                 dataGridView2.Rows.Add(symbols[stringValueIndex], null, null);
@@ -96,13 +114,16 @@ namespace TerrTools.UI
                     stringValueIndex += 1;
                 }
             }
-            
+            if (lastVisible == lastIndex)
+            {
+                dataGridView2.FirstDisplayedScrollingRowIndex = firstDisplayed + 1;
+            }
 
             /*if (symbols[ind] != "Я" || symbols[ind] != $"Я{NamesCounter}")
             {
                 symbols.Remove(symbols[ind]);
             }*/
-            
+
         }
 
         // // Кнопка "Удалить" в вертикальных осях.
@@ -140,8 +161,6 @@ namespace TerrTools.UI
             List<object> HorisontalNames = new List<object>();
             // В VerticalNames хранятся данные из столбца Column1
             List<object> VerticalNames = new List<object>();
-
-
             // Горизонтальные оси
             // Имена осей
             for (int i = 0; i < dataGridView1.Rows.Count; i++)
@@ -199,33 +218,60 @@ namespace TerrTools.UI
             {
                 userChoice = false;
             }
-            
+
+            // Обрабатываем исключения при заполнении формы.
             try
             {
-                foreach (var item in horisontalIndents)
-                {
-                    TaskDialog.Show("Title", item.ToString());
-                }
-                foreach (var item in verticalIndents)
-                {
-                    TaskDialog.Show("Title", item.ToString());
-                }
-                if (Convert.ToInt32(horisontalIndents[0]) != 0 
+                // Неверный отступ для первых двух осей.
+                if (Convert.ToInt32(horisontalIndents[0]) != 0
                     || Convert.ToInt32(verticalIndents[0]) != 0)
                 {
-                    throw new Exception("Шаг первых осей должен быть равен 0.") ;
+                    throw new Exception("Шаг/отступ для первых осей должен быть равен 0.");
                 }
 
-                // Вспомогательная переменная для упрощения кода.
-                var count = dataGridView1.Rows.Count;
+                // Указан пустой шаг осей.
+                bool nullVertCounter = false;
+                bool nullHorCounter = false;
+                foreach (var item in verticalSteps)
+                {
+                    if (item == null)
+                    {
+                        nullVertCounter = true;
+                    }
+                }
+                foreach (var item in horisontalSteps)
+                {
+                    if (item == null)
+                    {
+                        nullHorCounter = true;
+                    }
+                }
+                if (nullVertCounter == true && nullHorCounter == true)
+                {
+                    throw new Exception("Для создаваемых осей не указан шаг.");
+                }
+
+
+
+
+
+                // Исключение, когда конечный отступ не совпал с суммой шагов.
+                // Вспомогательные переменные для циклов.
+                var count1 = dataGridView1.Rows.Count;
+                var count2 = dataGridView2.Rows.Count;
                 int i = 0;
+                int l = 0;
                 for (int j = 0; j < dataGridView1.Rows.Count; j++)
                     i += Convert.ToInt32(dataGridView1[2, j].Value);
-                
-                if (Convert.ToInt32(dataGridView1.Rows[count-1].Cells[1].Value) != i)
+                for (int j = 0; j < dataGridView2.Rows.Count; j++)
+                    l += Convert.ToInt32(dataGridView2[2, j].Value);
+
+                if (Convert.ToInt32(dataGridView1.Rows[count1 - 1].Cells[1].Value) != i ||
+                    Convert.ToInt32(dataGridView2.Rows[count2 - 1].Cells[1].Value) != l)
                 {
                     throw new Exception("Введенные значения оступов и/или шагов некорректны.\n Перепроверьте значения.");
                 }
+                this.DialogResult = WF.DialogResult.OK;
                 this.Close();
             }
             // Случай, когда пользователь по какой-то причине
@@ -235,14 +281,15 @@ namespace TerrTools.UI
                 TaskDialog.Show("Title2", "В заполненных данных обнаружены ошибки,\n" +
                     "перепроверьте введенные данные.");
             }
-            catch (Exception exc)
+            catch (ArgumentOutOfRangeException)
             {
-                TaskDialog.Show("ErrorMessage", $"Ошибка. {exc.Message}");
+                TaskDialog.Show("Ошибка!", "Добавьте минимальное количество осей!");
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("Ошибка!", $"{ex.Message}");
             }
         }
-
-        
-
         // Обработка события, когда пользователь
         // изменяет значение ячейки в dataGridView1
         private void dataGridView1_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -262,6 +309,7 @@ namespace TerrTools.UI
                 int previousVal = Convert.ToInt32(dataGridView1.Rows[rowIndex - 1].Cells[columnIndex - 1].Value);
                 dataGridView1.Rows[rowIndex].Cells[columnIndex - 1].Value = celValue + previousVal;
             }
+
         }
 
 
@@ -309,6 +357,21 @@ namespace TerrTools.UI
             {
                 checkBox2.Checked = true;
             }
+        }
+      
+
+        // Кнопка "Обновить нумерацию".
+        private void button6_Click(object sender, EventArgs e)
+        {
+            symbols = new List<string> {"А","Б","В","Г","Д","Е","Ж","И","К","Л","М","Н","П","Р",
+            "С","Т","У","Ф","Ш","Э","Ю","Я" };
+            firstValue = 1;
+            stringValueIndex = 0;
+        }
+
+        private void GridAxesForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.Refresh();
         }
     }
 }

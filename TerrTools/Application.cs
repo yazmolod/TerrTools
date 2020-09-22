@@ -309,7 +309,7 @@ namespace TerrTools
             pbDict.Add("GridAxes",
                 MakePushButton(
                     "GridAxes",
-                    "Создание координационных осей",
+                    "Создать сетку\nкоординационных осей",
                     iconName: "",
                     toolTip: "Создает сетку осей с заданным шагом"
                     ));
@@ -335,7 +335,6 @@ namespace TerrTools
             ///
             panelArch.AddItem(pbDict["GenerateFloor"]);
             panelArch.AddItem(pbDict["ColumnFinish"]);
-            panelArch.AddItem(pbDict["GridAxes"]);
 
             ///
             /// Конструкторская панель
@@ -361,7 +360,9 @@ namespace TerrTools
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
             panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
+            panelGeneral.AddItem(pbDict["GridAxes"]);
             panelGeneral.AddItem(pbDict["PythonExecuter"]);
+            
 
             ///
             /// Настройки
