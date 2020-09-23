@@ -206,22 +206,25 @@ namespace TerrTools.UI
             VerticalIndentsResult = verticalIndents;
             // Вертикальные шаги.
             VerticalStepsResult = verticalSteps;
-            // Если стоит галка по координатам
-            if (checkBox1.Checked == true)
-            {
-                userChoice = true;
-                X = Convert.ToInt32(textBox1.Text);
-                Y = Convert.ToInt32(textBox2.Text);
-                Z = Convert.ToInt32(textBox3.Text);
-            }
-            else
-            {
-                userChoice = false;
-            }
+            
 
             // Обрабатываем исключения при заполнении формы.
             try
             {
+                // Если стоит галка по координатам, то
+                // для вставки берутся координаты, указанные 
+                // в форме.
+                if (checkBox1.Checked == true)
+                {
+                    userChoice = true;
+                    X = Convert.ToInt32(textBox1.Text);
+                    Y = Convert.ToInt32(textBox2.Text);
+                    Z = Convert.ToInt32(textBox3.Text);
+                }
+                else
+                {
+                    userChoice = false;
+                }
                 // Неверный отступ для первых двух осей.
                 if (Convert.ToInt32(horisontalIndents[0]) != 0
                     || Convert.ToInt32(verticalIndents[0]) != 0)
@@ -285,6 +288,12 @@ namespace TerrTools.UI
             {
                 TaskDialog.Show("Ошибка!", "Добавьте минимальное количество осей!");
             }
+            // Обработка исключения, когда
+            // пользователь пытается ввести строку вместо числа.
+            catch (System.FormatException)
+            {
+                TaskDialog.Show("Ошибка!", "Некорректно заданы координаты вставки сетки осей.");
+            }
             catch (Exception ex)
             {
                 TaskDialog.Show("Ошибка!", $"{ex.Message}");
@@ -294,22 +303,31 @@ namespace TerrTools.UI
         // изменяет значение ячейки в dataGridView1
         private void dataGridView1_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            // Номер строки для ячейки
-            var item = dataGridView1.Rows[e.RowIndex].Cells[0].Value;
-            // Значение ячейки
-            int celValue = Convert.ToInt32(dataGridView1.CurrentCell.Value);
-            int columnIndex = dataGridView1.CurrentCell.ColumnIndex;
-            int rowIndex = dataGridView1.CurrentRow.Index;
-            if (columnIndex == 2 && rowIndex > 0)
+            try
             {
-                if (dataGridView1.Rows[rowIndex - 1].Cells[columnIndex - 1].Value == null)
+                // Номер строки для ячейки
+                var item = dataGridView1.Rows[e.RowIndex].Cells[0].Value;
+                // Значение ячейки
+                int celValue = Convert.ToInt32(dataGridView1.CurrentCell.Value);
+                int columnIndex = dataGridView1.CurrentCell.ColumnIndex;
+                int rowIndex = dataGridView1.CurrentRow.Index;
+                if (columnIndex == 2 && rowIndex > 0)
                 {
-                    dataGridView1.Rows[rowIndex - 1].Cells[columnIndex - 1].Value = 0;
+                    if (dataGridView1.Rows[rowIndex - 1].Cells[columnIndex - 1].Value == null)
+                    {
+                        dataGridView1.Rows[rowIndex - 1].Cells[columnIndex - 1].Value = 0;
+                    }
+                    int previousVal = Convert.ToInt32(dataGridView1.Rows[rowIndex - 1].Cells[columnIndex - 1].Value);
+                    dataGridView1.Rows[rowIndex].Cells[columnIndex - 1].Value = celValue + previousVal;
                 }
-                int previousVal = Convert.ToInt32(dataGridView1.Rows[rowIndex - 1].Cells[columnIndex - 1].Value);
-                dataGridView1.Rows[rowIndex].Cells[columnIndex - 1].Value = celValue + previousVal;
-            }
 
+            }
+            // Обработка исключения, когда
+            // пользователь пытается ввести строку вместо числа.
+            catch (System.FormatException)
+            {
+            }
+            
         }
 
 
@@ -317,20 +335,28 @@ namespace TerrTools.UI
         // изменяет значение ячейки в dataGridView2
         private void dataGridView2_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            // Номер строки для ячейки
-            var item = dataGridView2.Rows[e.RowIndex].Cells[0].Value;
-            // Значение ячейки
-            int celValue = Convert.ToInt32(dataGridView2.CurrentCell.Value);
-            int columnIndex = dataGridView2.CurrentCell.ColumnIndex;
-            int rowIndex = dataGridView2.CurrentRow.Index;
-            if (columnIndex == 2 && rowIndex > 0)
+            try
             {
-                if (dataGridView2.Rows[rowIndex - 1].Cells[columnIndex - 1].Value == null)
+                // Номер строки для ячейки
+                var item = dataGridView2.Rows[e.RowIndex].Cells[0].Value;
+                // Значение ячейки
+                int celValue = Convert.ToInt32(dataGridView2.CurrentCell.Value);
+                int columnIndex = dataGridView2.CurrentCell.ColumnIndex;
+                int rowIndex = dataGridView2.CurrentRow.Index;
+                if (columnIndex == 2 && rowIndex > 0)
                 {
-                    dataGridView2.Rows[rowIndex - 1].Cells[columnIndex - 1].Value = 0;
+                    if (dataGridView2.Rows[rowIndex - 1].Cells[columnIndex - 1].Value == null)
+                    {
+                        dataGridView2.Rows[rowIndex - 1].Cells[columnIndex - 1].Value = 0;
+                    }
+                    int previousVal = Convert.ToInt32(dataGridView2.Rows[rowIndex - 1].Cells[columnIndex - 1].Value);
+                    dataGridView2.Rows[rowIndex].Cells[columnIndex - 1].Value = celValue + previousVal;
                 }
-                int previousVal = Convert.ToInt32(dataGridView2.Rows[rowIndex - 1].Cells[columnIndex - 1].Value);
-                dataGridView2.Rows[rowIndex].Cells[columnIndex - 1].Value = celValue + previousVal;
+            }
+            // Обработка исключения, когда
+            // пользователь пытается ввести строку вместо числа.
+            catch (System.FormatException)
+            {
             }
         }
 

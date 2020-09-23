@@ -104,11 +104,9 @@ namespace TerrTools
                 gc.CopyAGrids(HorisontalIndentValues, VerticalIndentValues, doc2, uiapp2,
                     FirstVertGridId, FirstHorGridId, HorsontalNameValues, VerticalNameValues);
                 trans2.Commit();
+
                 return Result.Succeeded;
             }
-            
-            
-            
         }
     }
     class GridsCreator
@@ -160,6 +158,7 @@ namespace TerrTools
             Grid FirstHorGrid = Grid.Create(doc, FirstHorGridLine);
             // Имя оси(первое из списка)
             var n2 = HorisontalNameValues[0];
+            //Autodesk.Revit.Exceptions.ArgumentException
             FirstHorGrid.Name = n2.ToString();
             // out айди для первой горизонтальной оси
             FirstHorGridId = FirstHorGrid.Id;
