@@ -88,6 +88,7 @@
     <Compile Include="Application.cs" />
     <Compile Include="Commands\ColumnFinish.cs" />
     <Compile Include="Commands\DebuggingTools.cs" />
+    <Compile Include="Commands\GridAxes.cs" />
     <Compile Include="Commands\PythonExecuter.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="Commands\CopyRoomShape.cs" />
@@ -118,6 +119,12 @@
     </Compile>
     <Compile Include="UI\ExportSchedulesForm.Designer.cs">
       <DependentUpon>ExportSchedulesForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\GridAxesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\GridAxesForm.Designer.cs">
+      <DependentUpon>GridAxesForm.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\OneComboboxForm.cs">
       <SubType>Form</SubType>
@@ -177,6 +184,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\ExportSchedulesForm.resx">
       <DependentUpon>ExportSchedulesForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\GridAxesForm.resx">
+      <DependentUpon>GridAxesForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\HorizontalFinishingForm.resx">
       <DependentUpon>HorizontalFinishingForm.cs</DependentUpon>

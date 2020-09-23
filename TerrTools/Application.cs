@@ -306,6 +306,13 @@ namespace TerrTools
                     iconName: "Column.png",
                     toolTip: "Автоматически генерирует штукатурку для всех колонн, находящихся в помещениях"
                     ));
+            pbDict.Add("GridAxes",
+                MakePushButton(
+                    "GridAxes",
+                    "Создать сетку\nкоординационных осей",
+                    iconName: "",
+                    toolTip: "Создает сетку осей с заданным шагом"
+                    ));
 
             ///
             /// Pulldown buttons
@@ -353,7 +360,9 @@ namespace TerrTools
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
             panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
+            panelGeneral.AddItem(pbDict["GridAxes"]);
             panelGeneral.AddItem(pbDict["PythonExecuter"]);
+            
 
             ///
             /// Настройки
