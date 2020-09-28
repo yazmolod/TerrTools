@@ -13,7 +13,6 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using TerrTools.UI;
 
-
 namespace TerrTools
 {
     [Transaction(TransactionMode.Manual)]
@@ -83,7 +82,7 @@ namespace TerrTools
 
                 Transaction trans = new Transaction(doc);
                 trans.Start("Creating a first horisontal and vertical grids");
-
+                
                 ElementId FirstVertGridId;
                 ElementId FirstHorGridId;
                 // Создание первых двух осей.
@@ -91,7 +90,6 @@ namespace TerrTools
                     HorisontalStepValues, VerticalStepValues, doc, uiapp, out FirstVertGridId,
                     out FirstHorGridId, HorsontalNameValues, VerticalNameValues, x, y, z);
                 trans.Commit();
-
                 // Получаем новый uiapp с осями
                 UIApplication uiapp2 = commandData.Application;
                 // Получаем новый документ с осями
@@ -104,6 +102,7 @@ namespace TerrTools
                 gc.CopyAGrids(HorisontalIndentValues, VerticalIndentValues, doc2, uiapp2,
                     FirstVertGridId, FirstHorGridId, HorsontalNameValues, VerticalNameValues);
                 trans2.Commit();
+
 
                 return Result.Succeeded;
             }
@@ -138,12 +137,15 @@ namespace TerrTools
             Grid FirstVertGrid = Grid.Create(doc, FirstVertGridLine);
             // Имя оси(первое из списка)
             var n1 = VerticalNameValues[0];
-            FirstVertGrid.Name = n1.ToString();
+            try
+            {
+                FirstVertGrid.Name = n1.ToString();
+            }
+            catch (Autodesk.Revit.Exceptions.ArgumentException)
+            {
+            }
             // out айди для первой вертикальной оси
             FirstVertGridId = FirstVertGrid.Id;
-
-            
-
             // Для горизонтальной оси.
             double horGridXstart = x - defaultLowIndent;
             XYZ firstHorGridStartPoint = new XYZ(horGridXstart / 304.8, y / 304.8, z);
@@ -158,8 +160,15 @@ namespace TerrTools
             Grid FirstHorGrid = Grid.Create(doc, FirstHorGridLine);
             // Имя оси(первое из списка)
             var n2 = HorisontalNameValues[0];
-            //Autodesk.Revit.Exceptions.ArgumentException
-            FirstHorGrid.Name = n2.ToString();
+            try
+            {
+                //Autodesk.Revit.Exceptions.ArgumentException
+                FirstHorGrid.Name = n2.ToString();
+            }
+            catch (Autodesk.Revit.Exceptions.ArgumentException)
+            {
+            }
+            
             // out айди для первой горизонтальной оси
             FirstHorGridId = FirstHorGrid.Id;
         }
@@ -168,8 +177,7 @@ namespace TerrTools
             Document doc, UIApplication uiapp, ElementId FirstVertGridId,
             ElementId FirstHorGridId, List<object> HorisontalNameValues,
             List<object> VerticalNameValues)
-        {
-
+        {   
             object horToDel = HorisontalNameValues[0];
             object vertToDel = VerticalNameValues[0];
             HorisontalNameValues.Remove(horToDel);
@@ -197,7 +205,7 @@ namespace TerrTools
                     {
                         gr.Name = vertUsableName;
                     }
-                    catch (Exception e)
+                    catch (Autodesk.Revit.Exceptions.ArgumentException)
                     {
                     }
                     
@@ -225,7 +233,7 @@ namespace TerrTools
                     {
                         gr.Name = horUsableName;
                     }
-                    catch (Exception e)
+                    catch (Autodesk.Revit.Exceptions.ArgumentException)
                     {
                     }
                     

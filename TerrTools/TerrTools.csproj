@@ -293,6 +293,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\Column.png" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\Grids.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)manifests\TerrTools_19.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"

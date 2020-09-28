@@ -335,9 +335,10 @@
             this.Controls.Add(this.button5);
             this.Controls.Add(this.tabControl1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
             this.Name = "GridAxesForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "GridAxes";
+            this.Text = "Создание сетки координационных осей";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.GridAxesForm_FormClosing);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);

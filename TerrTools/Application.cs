@@ -310,7 +310,7 @@ namespace TerrTools
                 MakePushButton(
                     "GridAxes",
                     "Создать сетку\nкоординационных осей",
-                    iconName: "",
+                    iconName: "Grids.png",
                     toolTip: "Создает сетку осей с заданным шагом"
                     ));
 
