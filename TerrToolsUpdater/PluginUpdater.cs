@@ -14,13 +14,27 @@ namespace TerrToolsUpdater
         static string folderFrom = @"\\serverL\PSD\REVIT\Плагины\TerrTools\";
         static string[] foldersTo =
             {
+            @"C:\ProgramData\Autodesk\Revit\Addins\2017\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2018\",
             @"C:\ProgramData\Autodesk\Revit\Addins\2019\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2017\"
+            @"C:\ProgramData\Autodesk\Revit\Addins\2020\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2021\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2022\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2023\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2024\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2025\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2026\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2027\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2028\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2029\",
+            @"C:\ProgramData\Autodesk\Revit\Addins\2030\",
+
         };
         static string[] fileNames =
             {
             "TerrTools.addin",
-            "TerrTools.dll"
+            "TerrTools.dll",
+             "HtmlAgilityPack.dll",
         };
 
         [DllImport("kernel32.dll")]
@@ -32,6 +46,10 @@ namespace TerrToolsUpdater
 
         public static bool IsFileReady(string filename)
         {
+            if (!File.Exists(filename))
+            {
+                return true;
+            }
             try
             {
                 using (FileStream inputStream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.None))
@@ -44,7 +62,16 @@ namespace TerrToolsUpdater
         }
         public static void WaitForFile(string filename)
         {
-            while (!IsFileReady(filename)) { }
+            var start = DateTime.Now;
+
+            while (!IsFileReady(filename))
+            {
+                var diff = DateTime.Now - start;
+                if (diff.TotalSeconds > 10)
+                {
+                    throw new Exception("Файл " + filename + " занят другим процессом");
+                }
+            }
         }
 
         static void CopyFiles()
@@ -56,7 +83,10 @@ namespace TerrToolsUpdater
                     string src = Path.Combine(folderFrom, fileName);
                     string dst = Path.Combine(folderTo, fileName);
                     if (!File.Exists(src)) Console.WriteLine(string.Format("Не найдем файл {0}", src));
-                    else if (!Directory.Exists(folderTo)) Console.WriteLine(string.Format("Не удалось скопировать в путь {0}", folderTo));
+                    else if (!Directory.Exists(folderTo))
+                    {
+                        //Console.WriteLine(string.Format("Не удалось скопировать в путь {0}", folderTo));
+                    }
                     else
                     {
                         WaitForFile(dst);
@@ -69,44 +99,19 @@ namespace TerrToolsUpdater
         
         static void Main(string[] args)
         {
-            bool isRestart = (args.Length > 1 && args[1] == "-restart");
-            bool isFromRevit = (args.Length > 0 && args[0] == "-fromRevit");
             try
             {
-                // запуск из ревита
-                if (isFromRevit)
-                {
-                    ShowWindow(GetConsoleWindow(), SW_HIDE);
-                    Process[] processes = Process.GetProcessesByName("Revit");
-                    if (processes.Length > 0)
-                    {
-                        Process revitProcess = processes.First();
-                        string processPath = revitProcess.MainModule.FileName;
-                        if (isRestart) revitProcess.Kill();
-                        revitProcess.WaitForExit();
-                        CopyFiles();
-                        if (isRestart) Process.Start(processPath);
-                    }
-                    else
-                    {
-                        throw new Exception("Не найден процесс Revit");
-                    }
-                }
-                // запуск с диска
-                else
-                {
-                    CopyFiles();
-                    Thread.Sleep(1000);
-                }
+                Console.WriteLine(">> Начинаю обновление");
+                CopyFiles();
+                Console.WriteLine(">> Обновление завершено");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("***ПРОИЗОШЛА ОШИБКА, ОБНОВЛЕНИЕ НЕ ПРОИЗВЕДЕНО***");
+                Console.WriteLine("\n>> ПРОИЗОШЛА ОШИБКА, ОБНОВЛЕНИЕ НЕ ПРОИЗВЕДЕНО");
                 Console.WriteLine(ex.ToString());
-                Console.WriteLine("\nНажмите любую клавишу или закройте окно...");                
-                Console.ReadKey();
             }
-            
+            Console.WriteLine("\nНажмите любую клавишу или закройте окно...");
+            Console.ReadKey();
         }
     }
 }

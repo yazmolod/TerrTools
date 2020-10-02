@@ -517,30 +517,31 @@ namespace TerrTools
             }
         }
 
-        static public void CheckUpdateDialog()
+
+        static public void CheckUpdateDialog(bool showIfActual=false)
         {
             if (CheckUpdates(out string lastReleaseVersion, out string patchNote))
             {
                 TaskDialog td = new TaskDialog("Доступно обновление");
-                td.MainInstruction = "На сервере доступна новая версия плагина. Обновить прямо сейчас?";
+                td.MainInstruction = "На сервере доступна новая версия плагина. РЕКОМЕНДУЕТСЯ закрыть программу и обновить плагин прямо сейчас";
                 td.MainContent = string.Format("Текущая версия: {0}\nДоступная версия: {1}\n\nЧто нового: \n{2}", App.Version, lastReleaseVersion, patchNote);
-                td.FooterText = "Да - Revit перезапустится и плагин обновится прямо сейчас. Нет - плагин обновится сразу после того, как вы закроете программу";
-                td.AllowCancellation = false;
-                td.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;                
-
-                TaskDialogResult tdResult = td.Show();
-                switch (tdResult)
+                td.FooterText = "Для установки новой версии, запустите файл " + UpdaterPath;
+                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Закрыть Revit и обновить");
+                if (td.Show() == TaskDialogResult.CommandLink1)
                 {
-                    case TaskDialogResult.Yes:
-                        StartUpdaterService("-fromRevit -restart");
-                        break;
-
-                    case TaskDialogResult.No:
-                        StartUpdaterService("-fromRevit");
-                        break;
+                    var revitProcess = System.Diagnostics.Process.GetCurrentProcess();
+                    Process.Start(UpdaterPath);
+                    revitProcess.Kill();
                 }
             }
+            else if (showIfActual)
+            {
+                TaskDialog td = new TaskDialog("ТеррНИИ BIM");
+                td.MainInstruction = "У вас установлена актуальная версия плагина";
+                td.Show();
+            }
         }
+
 
         public static void StartUpdaterService(string argLine)
         {

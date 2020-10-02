@@ -62,7 +62,7 @@ namespace TerrTools.UI
 
         private void updateButton_Click(object sender, EventArgs e)
         {
-            App.CheckUpdateDialog();
+            App.CheckUpdateDialog(true);
         }
 
         private void runCurrentButton_Click(object sender, EventArgs e)
