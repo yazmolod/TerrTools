@@ -7,11 +7,7 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-ОВиК:
- - Изменения в назначении класса воздуховода
-
-Общее:
- - Реализован принудительный запуск апдейтера для всех элементов (см. настройки плагина)
+ИДЕТ ТЕСТИРОВАНИЕ, НЕ ОБРАЩАЙТЕ ВНИМАНИЕ НА ЭТО ОБНОВЛЕНИЕ
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -38,4 +34,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.14.3")]
+[assembly: AssemblyFileVersion("0.0.0")]

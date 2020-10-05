@@ -7,8 +7,8 @@
     <ProjectGuid>{6F25FD16-9138-4B24-B0CF-B635DC13913F}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>TerrToolsUpdater</RootNamespace>
-    <AssemblyName>TerrToolsUpdater</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <AssemblyName>NewTerrToolsUpdater</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>

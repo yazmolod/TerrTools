@@ -8,6 +8,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Architecture;
 using System.Diagnostics;
+using System.Security.Policy;
 
 namespace TerrTools.Updaters
 {
@@ -261,22 +262,48 @@ namespace TerrTools.Updaters
             return zs.Min();
         }
 
+        private int IsHorizontal(Duct el)
+        {            
+            var top = el.get_Parameter(BuiltInParameter.RBS_DUCT_TOP_ELEVATION).AsDouble();
+            var bottom = el.get_Parameter(BuiltInParameter.RBS_DUCT_BOTTOM_ELEVATION).AsDouble();
+            var height_p1 = el.get_Parameter(BuiltInParameter.RBS_CURVE_HEIGHT_PARAM);
+            var height_p2 = el.get_Parameter(BuiltInParameter.RBS_CURVE_DIAMETER_PARAM);
+            var height = height_p1 != null ? height_p1.AsDouble() : height_p2.AsDouble();
+            var diff = Math.Abs(top - bottom - height);
+            var state = diff * 304.8 < 0.1;
+            return Convert.ToInt32(state);
+        }
+
+        private int IsVertical(Duct el)
+        {
+            XYZ[] pts = (from Connector con in el.ConnectorManager.Connectors select con.Origin).ToArray();
+            XYZ vec = pts.Where(x => x.Z == pts.Max(y => y.Z)).First() - pts.Where(x => x.Z == pts.Min(y => y.Z)).First();
+            bool state = vec.Normalize().IsAlmostEqualTo(XYZ.BasisZ);
+            return Convert.ToInt32(state);
+        }
+
+        private void Main(Duct el)
+        {
+            el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
+            el.LookupParameter(classParameter).Set(GetDuctClass(el));
+            el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
+            el.LookupParameter(horizontalParameter).Set(IsHorizontal(el));
+            el.LookupParameter(verticalParameter).Set(IsVertical(el));
+        }
+
         string thickParameter = "ADSK_Толщина стенки";
         string classParameter = "ТеррНИИ_Класс герметичности";
         string levelParameter = "ТеррНИИ_Отметка от нуля";
+        string horizontalParameter = "ТеррНИИ_Горизонтальный воздуховод";
+        string verticalParameter = "ТеррНИИ_Вертикальный воздуховод";
         public override void InnerExecute(UpdaterData data)
         {            
-            SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
-            SharedParameterUtils.AddSharedParameter(doc, classParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
-            SharedParameterUtils.AddSharedParameter(doc, levelParameter, new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves });
             foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))
             {
                 try
                 {
                     Duct el = (Duct)doc.GetElement(id);
-                    el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
-                    el.LookupParameter(classParameter).Set(GetDuctClass(el));
-                    el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
+                    Main(el);
                 }
                 catch (Exception ex)
                 {
@@ -291,9 +318,7 @@ namespace TerrTools.Updaters
         {
             foreach (Duct el in new FilteredElementCollector(doc).WherePasses(TriggerPairs[0].Filter).ToElements())
             {
-                el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
-                el.LookupParameter(classParameter).Set(GetDuctClass(el));
-                el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
+                Main(el);
             }
         }
     }
@@ -396,7 +421,12 @@ namespace TerrTools.Updaters
 
     public class SystemNamingUpdater : TerrUpdater
     {
-        string systemNameP = "ТеррНИИ_Наименование системы"; 
+        /// Переменная для предотвращения рекурсии. 
+        /// Обновляется на false внутри апдейтера, на true при DocumentChangedEvent (см. Application.cs)
+        static public bool FirstExecutionInTransaction = true;
+        string systemNameP = "ТеррНИИ_Наименование системы";
+        private Element[] LastUpdatedElements = new Element[0];
+        private int repeatCounter = 0;
 
         // Порядок был объявлен при инициализации апдейтера в Application.cs
         ElementFilter elemFilter { get => this.TriggerPairs[0].Filter; }         
@@ -438,7 +468,14 @@ namespace TerrTools.Updaters
                 string itemLocal = itemLocalP != null ? itemLocalP.AsString() : null;
                 if (itemLocal != null && itemLocal.Split(',').Contains(localSystem))
                 {
-                    item.LookupParameter(systemNameP).Set(globalSystem);
+                    try
+                    {
+                        item.LookupParameter(systemNameP).Set(globalSystem);
+                    }
+                    catch (Autodesk.Revit.Exceptions.InvalidOperationException)
+                    {
+                        //catch readonly family parameter 
+                    }
                 }
             }
         }
@@ -458,37 +495,69 @@ namespace TerrTools.Updaters
             string[] currentAllSystem = allSystems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))
                       .Select(x => x.LookupParameter(systemNameP).AsString()).ToArray();
             HashSet<string> globalSystems = new HashSet<string>(currentAllSystem);
-            item.LookupParameter(systemNameP).Set(string.Join(",", globalSystems));
+            try
+            {
+                item.LookupParameter(systemNameP).Set(string.Join(",", globalSystems));
+            }
+            catch(Autodesk.Revit.Exceptions.InvalidOperationException)
+            { 
+                //catch readonly family parameter 
+            }
+        }
+
+        private bool NewArrayIsTheSame(Element[] elements)
+        {
+            try
+            {
+                HashSet<int> lastIds = new HashSet<int>(LastUpdatedElements.Select(x => x.Id.IntegerValue));
+                HashSet<int> newIds = new HashSet<int>(elements.Select(x => x.Id.IntegerValue));
+                lastIds.SymmetricExceptWith(newIds);
+                return lastIds.Count == 0;
+            }
+            catch (Autodesk.Revit.Exceptions.InvalidObjectException)
+            {
+                return false;
+            }
         }
 
         public override void InnerExecute(UpdaterData data)
-        {            
-            IEnumerable<ElementId>ids = data.GetModifiedElementIds().Concat(data.GetAddedElementIds());
-
-            Element[] elements = (from id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()) select doc.GetElement(id)).ToArray();
-            Element[] systems = elements.Where(x => sysFilter.PassesFilter(x)).ToArray();
-            Element[] items = elements.Where(x => elemFilter.PassesFilter(x)).ToArray();
-            // обновление имени от системы к элементам
-            foreach (var el in systems) UpdateSystem(el);
-
-            // забор имени системы
-            foreach (var el in items) UpdateItemSystemName(el);
-
-            // обновление от элементов к системам
-            // скорее всего там блокирующие вызовы, рекурсии и прочие гадости     
-            /*
-            HashSet<string> localSystems = new HashSet<string>();
-            foreach (var item in items)
+        {
+            if (FirstExecutionInTransaction)
             {
-                Parameter p = item.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
-                string value = p.AsString();
-                if (value == null) continue;
-                string[] values = value.Split(',');
-                foreach (string v in values) localSystems.Add(v);
+                ElementId[] addedIds = data.GetAddedElementIds().ToArray();
+                Element[] addedElements = addedIds.Select(x => doc.GetElement(x)).ToArray();
+                Element[] addedSystems = addedElements.Where(x => sysFilter.PassesFilter(x)).ToArray();
+                Element[] addedItems = addedElements.Where(x => elemFilter.PassesFilter(x)).ToArray();
 
+                ElementId[] modifiedIds = data.GetModifiedElementIds().ToArray();
+                Element[] modifiedElements = modifiedIds.Select(x => doc.GetElement(x)).ToArray();
+                Element[] modifiedSystems = modifiedElements.Where(x => sysFilter.PassesFilter(x)).ToArray();
+                Element[] modifiedItems = modifiedElements.Where(x => elemFilter.PassesFilter(x)).ToArray();
+
+                // обновление элемента в MEP влечет за собой каскадное обновление элементов в системе
+                // поэтому в целях оптимизации разбиваем на конкретные ситуации
+                if (addedItems.Length > 0)
+                {
+                    foreach (var el in addedItems) UpdateItemSystemName(el);
+                    LastUpdatedElements = addedItems;
+                }
+                else if (addedSystems.Length > 0)
+                {
+                    foreach (var el in addedSystems) UpdateSystem(el);
+                    LastUpdatedElements = addedSystems;
+                }
+                else if (modifiedItems.Length > 0)
+                {
+                    foreach (var el in modifiedItems) UpdateItemSystemName(el);
+                    LastUpdatedElements = modifiedItems;
+                }
+                else if (modifiedSystems.Length > 0)
+                {
+                    foreach (var el in modifiedSystems) UpdateSystem(el);
+                    LastUpdatedElements = modifiedSystems;
+                }
+                FirstExecutionInTransaction = false;
             }
-            foreach (var el in systems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))) UpdateSystem(el);            
-       */
         }
     }
 }
