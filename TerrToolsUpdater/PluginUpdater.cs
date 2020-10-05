@@ -12,29 +12,11 @@ namespace TerrToolsUpdater
     class PluginUpdater
     {
         static string folderFrom = @"\\serverL\PSD\REVIT\Плагины\TerrTools\";
-        static string[] foldersTo =
-            {
-            @"C:\ProgramData\Autodesk\Revit\Addins\2017\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2018\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2019\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2020\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2021\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2022\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2023\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2024\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2025\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2026\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2027\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2028\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2029\",
-            @"C:\ProgramData\Autodesk\Revit\Addins\2030\",
-
-        };
+        static string dirTo = @"C:\ProgramData\Autodesk\Revit\Addins\";
         static string[] fileNames =
             {
             "TerrTools.addin",
-            "TerrTools.dll",
-             "HtmlAgilityPack.dll",
+            "TerrToolsDLL",
         };
 
         [DllImport("kernel32.dll")]
@@ -74,23 +56,71 @@ namespace TerrToolsUpdater
             }
         }
 
+        static void FileCopy(string src, string dst)
+        {
+            if (!File.Exists(src)) Console.WriteLine(string.Format("Не найдем файл {0}", src));
+            else
+            {
+                WaitForFile(dst);
+                File.Copy(src, dst, true);                
+            }
+        }
+
+        static void DirectoryCopy(string src, string dst, bool copySubDirs)
+        {
+            if (!Directory.Exists(src)) Console.WriteLine(string.Format("Не найдена папка {0}", src));
+            else
+            {
+                if (!Directory.Exists(dst))
+                {
+                    Directory.CreateDirectory(dst);
+                }
+                DirectoryInfo srcDir = new DirectoryInfo(src);
+                FileInfo[] files = srcDir.GetFiles();
+                foreach (FileInfo file in files)
+                {
+                    string destPath = Path.Combine(dst, file.Name);
+                    FileCopy(file.FullName, destPath);
+                }
+
+                // копируем подпапки
+                if (copySubDirs)
+                {
+                    DirectoryInfo[] subSrcDirs = srcDir.GetDirectories();
+                    foreach (DirectoryInfo subdir in subSrcDirs)
+                    {
+                        // Create the subdirectory.
+                        string temppath = Path.Combine(dst, subdir.Name);
+
+                        // Copy the subdirectories.
+                        DirectoryCopy(subdir.FullName, temppath, copySubDirs);
+                    }
+                }
+            }
+        }
+
         static void CopyFiles()
         {
+            string[] foldersTo = Directory.GetDirectories(dirTo);
             foreach (string folderTo in foldersTo)
             {
                 foreach (string fileName in fileNames)
                 {
                     string src = Path.Combine(folderFrom, fileName);
                     string dst = Path.Combine(folderTo, fileName);
-                    if (!File.Exists(src)) Console.WriteLine(string.Format("Не найдем файл {0}", src));
-                    else if (!Directory.Exists(folderTo))
+                    FileAttributes attr = File.GetAttributes(src);
+
+                    // копируем папку и ее содержимое
+                    if (attr.HasFlag(FileAttributes.Directory))
                     {
-                        //Console.WriteLine(string.Format("Не удалось скопировать в путь {0}", folderTo));
+                        DirectoryCopy(src, dst, true);
+                        Console.WriteLine(string.Format("Папка {0} успешно скопирована в папку {1}", fileName, folderTo));
                     }
+
+                    // копируем файлы
                     else
                     {
-                        WaitForFile(dst);
-                        File.Copy(src, dst, true);
+                        FileCopy(src, dst);
                         Console.WriteLine(string.Format("Файл {0} успешно скопирован в папку {1}", fileName, folderTo));
                     }
                 }
