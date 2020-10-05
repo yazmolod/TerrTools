@@ -39,26 +39,39 @@ namespace TerrTools.UI
         private static int NamesCounter = 0;
         // На тот случай, если форма закроется
         internal bool closedForm { get; set; } = false;
-        public GridAxesForm()
+        public GridAxesForm(List<string> usedNames)
         {
             InitializeComponent();
+            textBox3.Text = "6000";
         }
         
         // Кнопка "Добавить" в горизонтальных осях.
         private void button2_Click(object sender, EventArgs e)
         {
+            int indentSum = 0;
+            // для отступа
+            for (int i = 0; i < dataGridView1.RowCount; i++)
+            {
+                if (i == 0)
+                {
+                    indentSum += Convert.ToInt32(textBox3.Text);
+                }
+                indentSum += Convert.ToInt32(dataGridView1[2, i].Value);
+            }
             // Для автоскролла таблицы при добавлении большого кол-ва строк.
             int firstDisplayed = dataGridView1.FirstDisplayedScrollingRowIndex;
             int displayed = dataGridView1.DisplayedRowCount(true);
             int lastVisible = (firstDisplayed + displayed) - 1;
             int lastIndex = dataGridView1.RowCount - 1;
-            if (dataGridView1.Rows.Count==0)
+            if (dataGridView1.Rows.Count == 0)
             {
-                dataGridView1.Rows.Add(firstValue, null, 0);
+                dataGridView1.Rows.Add(firstValue, 0, 0);
+                dataGridView1.Rows[0].Cells[1].ReadOnly = true;
+                dataGridView1.Rows[0].Cells[2].ReadOnly = true;
             }
             else
             {
-                dataGridView1.Rows.Add(firstValue, null, null);
+                dataGridView1.Rows.Add(firstValue, indentSum, textBox3.Text);
             }
             // Для автоскролла таблицы при добавлении большого кол-ва строк.
             if (lastVisible == lastIndex)
@@ -77,6 +90,13 @@ namespace TerrTools.UI
             {
                 var lastRowIndex = currentCell.RowIndex;
                 dataGridView1.Rows.RemoveAt(lastRowIndex);
+                if (dataGridView1.Rows.Count >= 1)
+                {
+                    dataGridView1.Rows[0].Cells[1].Value = 0;
+                    dataGridView1.Rows[0].Cells[2].Value = 0;
+                    dataGridView1.Rows[0].Cells[1].ReadOnly = true;
+                    dataGridView1.Rows[0].Cells[2].ReadOnly = true;
+                }
             }
             
         }
@@ -84,6 +104,18 @@ namespace TerrTools.UI
         // Кнопка "Добавить" в вертикальных осях.
         private void button1_Click(object sender, EventArgs e)
         {
+            int indentSum = 0;
+            // для отступа
+            for (int i = 0; i < dataGridView2.RowCount; i++)
+            {
+                if (i == 0)
+                {
+                    indentSum += Convert.ToInt32(textBox3.Text);
+                    dataGridView2.Rows[0].Cells[1].ReadOnly = true;
+                    dataGridView2.Rows[0].Cells[2].ReadOnly = true;
+                }
+                indentSum += Convert.ToInt32(dataGridView2[2, i].Value);
+            }
             // Для автоскролла таблицы при добавлении большого кол-ва строк.
             int firstDisplayed = dataGridView2.FirstDisplayedScrollingRowIndex;
             int displayed = dataGridView2.DisplayedRowCount(true);
@@ -105,12 +137,14 @@ namespace TerrTools.UI
             {
                 if (dataGridView2.Rows.Count == 0)
                 {
-                    dataGridView2.Rows.Add(symbols[stringValueIndex], null, 0);
+                    dataGridView2.Rows.Add(symbols[stringValueIndex], 0, 0);
                     stringValueIndex += 1;
+                    dataGridView2.Rows[0].Cells[1].ReadOnly = true;
+                    dataGridView2.Rows[0].Cells[2].ReadOnly = true;
                 }
                 else
                 {
-                    dataGridView2.Rows.Add(symbols[stringValueIndex], null, null);
+                    dataGridView2.Rows.Add(symbols[stringValueIndex], indentSum, textBox3.Text);
                     stringValueIndex += 1;
                 }
             }
@@ -135,6 +169,13 @@ namespace TerrTools.UI
             {
                 var lastRowIndex = currentCell2.RowIndex;
                 dataGridView2.Rows.RemoveAt(lastRowIndex);
+                if (dataGridView2.Rows.Count >= 1)
+                {
+                    dataGridView2.Rows[0].Cells[1].Value = 0;
+                    dataGridView2.Rows[0].Cells[2].Value = 0;
+                    dataGridView2.Rows[0].Cells[1].ReadOnly = true;
+                    dataGridView2.Rows[0].Cells[2].ReadOnly = true;
+                }
             }
         }
 
@@ -397,7 +438,10 @@ namespace TerrTools.UI
 
         private void GridAxesForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            this.Refresh();
+            symbols = new List<string> {"А","Б","В","Г","Д","Е","Ж","И","К","Л","М","Н","П","Р",
+            "С","Т","У","Ф","Ш","Э","Ю","Я" };
+            firstValue = 1;
+            stringValueIndex = 0;
         }
     }
 }
