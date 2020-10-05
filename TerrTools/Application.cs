@@ -20,8 +20,8 @@ namespace TerrTools
         public static List<TerrUpdater> Updaters = new List<TerrUpdater>();
         public static AddInId AddInId { get => new AddInId(new Guid("4e6830af-73c4-45fa-aea0-82df352d5157")); }
         public static string AppName { get => "ТеррНИИ BIM"; }
-        public static string DLLPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrTools.dll";  }
-        public static string UpdaterPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrToolsUpdater.exe";  }
+        public static string DLLPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrToolsDLL\TerrTools.dll";  }
+        public static string UpdaterPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\NewTerrToolsUpdater.exe";  }
         public static string Version { get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion; }
         public static string PatchNote { get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).Comments; }
         
@@ -533,30 +533,31 @@ namespace TerrTools
             }
         }
 
-        static public void CheckUpdateDialog()
+
+        static public void CheckUpdateDialog(bool showIfActual=false)
         {
             if (CheckUpdates(out string lastReleaseVersion, out string patchNote))
             {
                 TaskDialog td = new TaskDialog("Доступно обновление");
-                td.MainInstruction = "На сервере доступна новая версия плагина. Обновить прямо сейчас?";
+                td.MainInstruction = "На сервере доступна новая версия плагина. РЕКОМЕНДУЕТСЯ закрыть программу и обновить плагин прямо сейчас";
                 td.MainContent = string.Format("Текущая версия: {0}\nДоступная версия: {1}\n\nЧто нового: \n{2}", App.Version, lastReleaseVersion, patchNote);
-                td.FooterText = "Да - Revit перезапустится и плагин обновится прямо сейчас. Нет - плагин обновится сразу после того, как вы закроете программу";
-                td.AllowCancellation = false;
-                td.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;                
-
-                TaskDialogResult tdResult = td.Show();
-                switch (tdResult)
+                td.FooterText = "Для установки новой версии, запустите файл " + UpdaterPath;
+                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Закрыть Revit и обновить");
+                if (td.Show() == TaskDialogResult.CommandLink1)
                 {
-                    case TaskDialogResult.Yes:
-                        StartUpdaterService("-fromRevit -restart");
-                        break;
-
-                    case TaskDialogResult.No:
-                        StartUpdaterService("-fromRevit");
-                        break;
+                    var revitProcess = System.Diagnostics.Process.GetCurrentProcess();
+                    Process.Start(UpdaterPath);
+                    revitProcess.Kill();
                 }
             }
+            else if (showIfActual)
+            {
+                TaskDialog td = new TaskDialog("ТеррНИИ BIM");
+                td.MainInstruction = "У вас установлена актуальная версия плагина";
+                td.Show();
+            }
         }
+
 
         public static void StartUpdaterService(string argLine)
         {

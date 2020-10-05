@@ -25,7 +25,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>L:\REVIT\Плагины\TerrTools\</OutputPath>
+    <OutputPath>L:\REVIT\Плагины\TerrTools\TerrToolsDLL\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -167,8 +167,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
-    <None Include="manifests\TerrTools_19.addin" />
-    <None Include="manifests\TerrTools_20.addin" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -298,11 +296,11 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(ProjectDir)manifests\TerrTools_19.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
-copy "$(ProjectDir)manifests\TerrTools_20.addin" "C:\ProgramData\Autodesk\Revit\Addins\2020\"
+    <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
+copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2020\"
 
-copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2019\TerrToolsAddin\"
-copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2020\TerrToolsAddin\"</PostBuildEvent>
+copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2019\TerrToolsDLL\"
+copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2020\TerrToolsDLL\"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>
