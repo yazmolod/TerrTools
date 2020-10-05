@@ -7,7 +7,16 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-ИДЕТ ТЕСТИРОВАНИЕ, НЕ ОБРАЩАЙТЕ ВНИМАНИЕ НА ЭТО ОБНОВЛЕНИЕ
+ВНИМАНИЕ: для установки этого обновления требуется закрыть программу и вручную запустить файл
+L:\REVIT\Плагины\TerrTools\NewTerrToolsUpdater.exe
+Не перепутайте файл!
+
+Что нового:
+- Генерация отделки колонн
+- Генерация сетки осей
+- Переписана система обновления плагина
+- Переписан модуль по работе с отверстиями
+- Добавлен просмотрщик коллизий
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -34,4 +43,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0")]

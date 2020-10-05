@@ -30,8 +30,7 @@ namespace TerrTools
             System.Windows.Forms.DialogResult r = form.ShowDialog();
             if (r == System.Windows.Forms.DialogResult.Cancel)
             {
-                form.Refresh();
-                return Result.Succeeded;
+                return Result.Cancelled;
             }
             else
             {
@@ -49,7 +48,7 @@ namespace TerrTools
                 List<object> VerticalStepValues = form.VerticalStepsResult;
                 // В этом списке хранятся горизонтальные
                 // значения имен осей
-                List<object> HorsontalNameValues = form.HorisontalNamesResult;
+                List<object> HorisontalNameValues = form.HorisontalNamesResult;
                 // В этом списке хранятся вертикальные
                 // значения имен осей
                 List<object> VerticalNameValues = form.VerticalNamesResult;
@@ -75,33 +74,31 @@ namespace TerrTools
                 else
                 {
                     XYZ userXYZ = gc.GettingXYZFromUser(uidoc);
-                    x = userXYZ.X * 304.8;
-                    y = userXYZ.Y * 304.8;
+                    x = UnitUtils.ConvertToInternalUnits(userXYZ.X, DisplayUnitType.DUT_MILLIMETERS);
+                    y = UnitUtils.ConvertToInternalUnits(userXYZ.Y, DisplayUnitType.DUT_MILLIMETERS);
                     z = userXYZ.Z;
                 }
 
-                Transaction trans = new Transaction(doc);
-                trans.Start("Creating a first horisontal and vertical grids");
-                
-                ElementId FirstVertGridId;
-                ElementId FirstHorGridId;
-                // Создание первых двух осей.
-                gc.CreateAGrids(HorisontalIndentValues, VerticalIndentValues,
-                    HorisontalStepValues, VerticalStepValues, doc, uiapp, out FirstVertGridId,
-                    out FirstHorGridId, HorsontalNameValues, VerticalNameValues, x, y, z);
-                trans.Commit();
-                // Получаем новый uiapp с осями
-                UIApplication uiapp2 = commandData.Application;
-                // Получаем новый документ с осями
-                Document doc2 = uiapp.ActiveUIDocument.Document;
+                using (Transaction trans = new Transaction(doc))
+                {
+                    trans.Start("Creating a first horisontal and vertical grids");
 
-                Transaction trans2 = new Transaction(doc);
-                trans2.Start("Copying a grids");
+                    ElementId FirstVertGridId;
+                    ElementId FirstHorGridId;
+                    // Создание первых двух осей.
+                    gc.CreateAGrids(HorisontalIndentValues, VerticalIndentValues,
+                        HorisontalStepValues, VerticalStepValues, doc, uiapp, out FirstVertGridId,
+                        out FirstHorGridId, HorisontalNameValues, VerticalNameValues, x, y, z);
+                    trans.Commit();
 
-                // Копирование двух созданных осей.
-                gc.CopyAGrids(HorisontalIndentValues, VerticalIndentValues, doc2, uiapp2,
-                    FirstVertGridId, FirstHorGridId, HorsontalNameValues, VerticalNameValues);
-                trans2.Commit();
+                    Transaction trans2 = new Transaction(doc);
+                    trans2.Start("Copying a grids");
+
+                    // Копирование двух созданных осей.
+                    gc.CopyAGrids(HorisontalIndentValues, VerticalIndentValues, doc, uiapp,
+                        FirstVertGridId, FirstHorGridId, HorisontalNameValues, VerticalNameValues);
+                    trans2.Commit();
+                }
 
 
                 return Result.Succeeded;
