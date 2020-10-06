@@ -27,7 +27,7 @@ namespace TerrTools
             // Получаем uidoc
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
             List<string> usedNames = new List<string>();
-            var grids = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Grids).WhereElementIsElementType().ToElements();
+            var grids = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Grids).ToElements();
             foreach (var grid in grids)
             {
                 usedNames.Add(grid.Name.ToString());

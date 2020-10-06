@@ -37,12 +37,14 @@ namespace TerrTools.UI
         private static int firstValue = 1;
         private static int stringValueIndex = 0;
         private static int NamesCounter = 0;
+        private List<string> usedNames { get; set; }
         // На тот случай, если форма закроется
         internal bool closedForm { get; set; } = false;
         public GridAxesForm(List<string> usedNames)
         {
             InitializeComponent();
             textBox3.Text = "6000";
+            this.usedNames = usedNames;
         }
         
         // Кнопка "Добавить" в горизонтальных осях.
@@ -78,8 +80,16 @@ namespace TerrTools.UI
             {
                 dataGridView1.FirstDisplayedScrollingRowIndex = firstDisplayed + 1;
             }
-
+            if (usedNames.Contains(firstValue.ToString()))
+            {
+                dataGridView1.CurrentCell.ErrorText = "В проекте уже имеется ось с таким названием";
+            }
+            else
+            {
+                dataGridView1.CurrentCell.ErrorText = null;
+            }
             firstValue += 1;
+            
         }
 
         // Кнопка "Удалить" в горизонтальных осях.
@@ -350,6 +360,7 @@ namespace TerrTools.UI
                 var item = dataGridView1.Rows[e.RowIndex].Cells[0].Value;
                 // Значение ячейки
                 int celValue = Convert.ToInt32(dataGridView1.CurrentCell.Value);
+
                 int columnIndex = dataGridView1.CurrentCell.ColumnIndex;
                 int rowIndex = dataGridView1.CurrentRow.Index;
                 if (columnIndex == 2 && rowIndex > 0)
@@ -361,12 +372,13 @@ namespace TerrTools.UI
                     int previousVal = Convert.ToInt32(dataGridView1.Rows[rowIndex - 1].Cells[columnIndex - 1].Value);
                     dataGridView1.Rows[rowIndex].Cells[columnIndex - 1].Value = celValue + previousVal;
                 }
-
+                dataGridView1.CurrentCell.ErrorText = null;
             }
             // Обработка исключения, когда
             // пользователь пытается ввести строку вместо числа.
             catch (System.FormatException)
             {
+                dataGridView1.CurrentCell.ErrorText = "Неверный формат ввода(необходимо целое число)";
             }
             
         }
@@ -393,11 +405,13 @@ namespace TerrTools.UI
                     int previousVal = Convert.ToInt32(dataGridView2.Rows[rowIndex - 1].Cells[columnIndex - 1].Value);
                     dataGridView2.Rows[rowIndex].Cells[columnIndex - 1].Value = celValue + previousVal;
                 }
+                dataGridView2.CurrentCell.ErrorText = null;
             }
             // Обработка исключения, когда
             // пользователь пытается ввести строку вместо числа.
             catch (System.FormatException)
             {
+                dataGridView2.CurrentCell.ErrorText = "Неверный формат ввода(необходимо целое число)";
             }
         }
 
