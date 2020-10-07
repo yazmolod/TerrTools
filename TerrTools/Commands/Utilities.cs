@@ -507,6 +507,14 @@ namespace TerrTools
             }
         }
 
+        static public XYZ GetDuctDirection(ConnectorManager conMngr)
+        {
+            var connectors = GetConnectors(conMngr);
+            var connectorsPts = connectors.Select(x => x.Origin);
+            XYZ vec = connectorsPts.Last() - connectorsPts.ElementAt(0);
+            return vec.Normalize();
+        }
+
         static public List<Face> GetFaces(Element e)
         {
             List<Face> normalFaces = new List<Face>();

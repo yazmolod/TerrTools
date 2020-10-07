@@ -183,6 +183,7 @@ namespace TerrTools
                         break;
 
                     case "Путь":
+                        //value = value.Replace("&gt;", " > ");
                         if (firstElementFlag) E1_Path = value;
                         else E2_Path = value;
                         break;
@@ -270,6 +271,7 @@ namespace TerrTools
                         break;
 
                     case "Путь":
+                        //value = value.Replace("&gt;", " > ");
                         if (Table.Header.Cells[i].Item1 == "item1Header") E1_Path = value;                        
                         else E2_Path = value;                        
                         break;
@@ -288,18 +290,35 @@ namespace TerrTools
 
     class CollisionUtilities
     {
-        public static List<IntersectionMepCurve> HTMLReportParse(Document hostdoc, string path)
-        {
+        public static List<IntersectionMepCurve> HTMLToMEPIntersections(Document hostdoc, string path)
+        {            
             List<IntersectionMepCurve> result = new List<IntersectionMepCurve>();
             CollisionReportTable table = new CollisionReportTable(path);
+
+            // логгирование
+            LoggingMachine.Reset();
+            var log_lostHost = LoggingMachine.NewLog("Чтение строк HTML", 
+                table.Rows.Select(x => x.E1_Id), "Элемент отсутствует в текущем документе");
+            var log_lostLink = LoggingMachine.NewLog("Чтение строк HTML", 
+                table.Rows.Select(x => x.E2_Id), "Элемент отсутствует в связанном документе");
+
             var dialog = new UI.TwoDoc(hostdoc, table);
             if (System.Windows.Forms.DialogResult.OK == dialog.ShowDialog())
             {
                 foreach (CollisionReportRow row in table.Rows)
                 {
-                    ElementId hostid = null;
-                    ElementId linkid = null;
+                    /* спарсенный отчет мы превращаем в массив из объектов кастомного класса 
+                     * IntersectionMepCurve (см. реализацию в файле Openings.cs)
+                     * Ниже прописана логика забора элемента из текущего и связанного документа
+                     * на основе выбора в диалоге. На данный момент сейчас работает ТОЛЬКО
+                     * один вариант - один в текущем, другой в связанном. Для остальных случаев тут 
+                     * надо править логику
+                     */
+                    ElementId hostid = ElementId.InvalidElementId;
+                    ElementId pipeid = ElementId.InvalidElementId;
                     RevitLinkInstance linkdocInstance = null;
+                    Element host = null;
+                    Element pipe = null;
                     switch (dialog.LinkElementNumber)
                     {
                         case 0:
@@ -308,15 +327,35 @@ namespace TerrTools
                         case 1:
                             //линк первый элемент
                             linkdocInstance = dialog.LinkInstance1;
-                            linkid = row.E1_Id;
+                            pipeid = row.E1_Id;
+                            pipe = linkdocInstance.GetLinkDocument().GetElement(pipeid);
                             break;
                         case 2:
                             //линк второй элемент
                             linkdocInstance = dialog.LinkInstance2;
-                            linkid = row.E2_Id;
+                            pipeid = row.E2_Id;
+                            pipe = linkdocInstance.GetLinkDocument().GetElement(pipeid);
                             break;
                         case 3:
-                            //оба линки
+                            // оба линки
+                            linkdocInstance = dialog.LinkInstance1;
+                            Element e1 = linkdocInstance.GetLinkDocument().GetElement(row.E1_Id);
+                            linkdocInstance = dialog.LinkInstance2;
+                            Element e2 = linkdocInstance.GetLinkDocument().GetElement(row.E2_Id);
+                            if (e1 is HostObject)
+                            {
+                                host = e1;
+                                hostid = row.E1_Id;
+                                pipe = e2;
+                                pipeid = row.E2_Id;
+                            }
+                            else
+                            {
+                                host = e2;
+                                hostid = row.E2_Id;
+                                pipe = e1;
+                                pipeid = row.E1_Id;
+                            }
                             break;
                         default:
                             break;
@@ -325,30 +364,60 @@ namespace TerrTools
                     switch (dialog.HostElementNumber)
                     {
                         case 0:
-                            //ни один не линк
+                            //ни один не в текущем документе
                             break;
                         case 1:
                             //линк первый элемент
                             hostid = row.E1_Id;
+                            host = hostdoc.GetElement(hostid);
                             break;
                         case 2:
                             //линк второй элемент
                             hostid = row.E2_Id;
+                            host = hostdoc.GetElement(hostid);
                             break;
                         case 3:
-                            //оба линки
+                            //оба в текущем документе
+                            Element e1 = hostdoc.GetElement(row.E1_Id);
+                            Element e2 = hostdoc.GetElement(row.E2_Id);
+                            if (e1 is HostObject)
+                            {
+                                host = e1;
+                                hostid = row.E1_Id;
+                                pipe = e2;
+                                pipeid = row.E2_Id;
+                            }
+                            else
+                            {
+                                host = e2;
+                                hostid = row.E2_Id;
+                                pipe = e1;
+                                pipeid = row.E1_Id;
+                            }
                             break;
                         default:
                             break;
                     }
 
-                    Document linkdoc = linkdocInstance.GetLinkDocument();
                     // точка из отчета дана относительно площадки - корректируем на проект
                     ProjectLocation pl = hostdoc.ActiveProjectLocation;
                     XYZ corrPt = pl.GetTransform().OfPoint(row.Point);
-                    result.Add(new IntersectionMepCurve(hostdoc.GetElement(hostid), linkdoc.GetElement(linkid), corrPt, linkdocInstance));
+                    if (host == null)
+                    {
+                        log_lostHost.AddError(hostid);
+                    }
+                    else if (pipe == null)
+                    {
+                        log_lostHost.AddError(pipeid);
+                    }
+                    else
+                    {
+                        var intr = new IntersectionMepCurve(host, pipe, corrPt, linkdocInstance);
+                        result.Add(intr);
+                    }
                 }
             }
+            LoggingMachine.Show();
             return result;
         }   
     }

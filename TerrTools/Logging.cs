@@ -17,6 +17,15 @@ namespace TerrTools
             Tip = tip;
             ErrorType = type;
         }
+
+        public ElementProcessingLog(string operation, IEnumerable<int> all, string type = "", string tip = "")
+        {
+            AllElementIds = all.Select(x => x.ToString());
+            Operation = operation;
+            Tip = tip;
+            ErrorType = type;
+        }
+
         public ElementProcessingLog(string operation, IEnumerable<Element> all, string type = "", string tip = "")
         {
             AllElementIds = all.Select(x=>x.Id.ToString());
@@ -36,6 +45,15 @@ namespace TerrTools
         public void AddError(string item)
         {
             FailedElementIds.Push(item);
+        }
+
+        public void AddError(int item)
+        {
+            FailedElementIds.Push(item.ToString());
+        }
+        public void AddError(ElementId item)
+        {
+            FailedElementIds.Push(item.IntegerValue.ToString());
         }
 
         public IEnumerable<string> AllElementIds { get; set; }
@@ -65,6 +83,13 @@ namespace TerrTools
         }
 
         static public ElementProcessingLog NewLog(string operation, IEnumerable<ElementId> all, string type = "", string tip = "")
+        {
+            ElementProcessingLog log = new ElementProcessingLog(operation, all, type, tip);
+            Stack.Push(log);
+            return log;
+        }
+
+        static public ElementProcessingLog NewLog(string operation, IEnumerable<int> all, string type = "", string tip = "")
         {
             ElementProcessingLog log = new ElementProcessingLog(operation, all, type, tip);
             Stack.Push(log);

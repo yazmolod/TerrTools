@@ -161,13 +161,6 @@ namespace TerrTools
         }
 
         private void AddUpdaterSharedParameters(Document doc)
-        /// СУПЕР ВАЖНО
-        /// Общая идея: добавлять общие параметры перед активацией апдейтеров
-        /// мне лень реализовывать механизм добавления общих параметров для всех классов апдейтеров прямо сейчас
-        /// поэтому несмотря на то, что это все подразумевает обработку всех классов
-        /// сейчас обрабатывается только один, на котором вскрылся баг
-        /// Однако, сделать это скорее надо, чем нет, потому что добавление общих параметров через апдейтер
-        /// это заноза в заднице, которую невозможно дебажить
         {
             using (Transaction tr = new Transaction(doc, "Добавление общих параметров ТеррНИИ BIM"))
             {
@@ -249,13 +242,9 @@ namespace TerrTools
             pbDict.Add("WallOpening",
            MakePushButton(
                 "WallOpeningHandler",
-                "В стенах",
-                "Вставляет отверстия в местах пересечений с системами"
-                ));
-            pbDict.Add("FloorOpening",
-            MakePushButton(
-                "FloorOpeningHandler",
-                "В перекрытиях"
+                "Генерация отверстий",
+                "Вставляет отверстия в местах пересечений с системами",
+                "Openings.png"
                 ));
             pbDict.Add("GenerateFloor",
            MakePushButton(
@@ -267,7 +256,7 @@ namespace TerrTools
             pbDict.Add("FocusOnElement",
                 MakePushButton(
                     "FocusOnElement",
-                    "Сфокусироваться\nна элементе",
+                    "Поиск элементов\nна виде",
                     "Выберите из списка необходимый элемент и окно сфокусируется на нем",
                     "Zoom.png"
                     ));
@@ -281,12 +270,17 @@ namespace TerrTools
                     "TypeChangerDeep",
                     "В проекте и семействах"
                     ));
+
+            /*  Толку от этой функции немного
+             *  
             pbDict.Add("CopyRoomShape",
                 MakePushButton(
                     "CopyRoomShape",
                     "Создать контур\nпомещения",
                     iconName:"Shape.png"
                     ));
+            */
+
             pbDict.Add("SystemScheduleExporter",
                 MakePushButton(
                     "ScheduleExporter",
@@ -304,12 +298,6 @@ namespace TerrTools
             ///
             /// Pulldown buttons
             ///
-            plDict.Add("GenerateOpenings",
-                MakePulldownButton(
-                    "Генерация отверстий",
-                    "Быстрая генерация отверстий на пересечении конструктивных элементов с инженерными системами",
-                    "Openings.png"
-                    ));
             plDict.Add("UpdateType",
                 MakePulldownButton(
                     "Обновить шрифт",
@@ -325,10 +313,7 @@ namespace TerrTools
             ///
             /// Конструкторская панель
             ///
-            tempBtn = panelStruct.AddItem(plDict["GenerateOpenings"]) as PulldownButton;
-            tempBtn.AddPushButton(pbDict["WallOpening"]);
-            tempBtn.AddPushButton(pbDict["FloorOpening"]);
-
+            panelStruct.AddItem(pbDict["WallOpening"]);
 
             ///
             /// ОВиК панель

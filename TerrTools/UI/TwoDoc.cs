@@ -34,8 +34,8 @@ namespace TerrTools.UI
             LinkComboBox2.Items.AddRange(linkedDocs);
             LinkComboBox1.SelectedIndex = LinkComboBox2.SelectedIndex = 0;
 
-            elementListBox1.Items.AddRange(table.Rows.Select(x => x.E1_Path).ToArray());
-            elementListBox2.Items.AddRange(table.Rows.Select(x => x.E2_Path).ToArray());
+            textBoxExample1.Text = table.Rows[0].E1_Path;
+            textBoxExample2.Text = table.Rows[0].E2_Path;
             Suggest();
         }
 
@@ -71,21 +71,27 @@ namespace TerrTools.UI
             else Document2 = null;
         }
 
+        /// <summary>
+        /// Функция пытается определить имя файла из пути и назначить нужный выбор за пользователя
+        /// </summary>
         private void Suggest()
         {
             string currentDocTitle = Regex.Match(CurrentDoc.Title, @"(.+)_").Groups[1].Value;
             var docname1 = Table.Rows[0].E1_DocumentName;
             var docname2 = Table.Rows[0].E2_DocumentName;
+            string[] linkNames = LinkComboBox1.Items.Cast<TwoDocComboBoxItem>().Select(x => x.ToString()).ToArray();
 
             if (docname1 == currentDocTitle)
             {  
                 currentDocRadioButton1.Checked = true;
                 linkDocRadioButton1.Checked = false;
             }
-            else if (LinkComboBox1.Items.Contains(docname1))
+            else if (linkNames.Contains(docname1))
             {
+                int i = Array.IndexOf(linkNames, docname1);
                 currentDocRadioButton1.Checked = false;
                 linkDocRadioButton1.Checked = true;
+                LinkComboBox1.SelectedIndex = i;
             }
 
             if (docname2 == currentDocTitle)
@@ -93,10 +99,12 @@ namespace TerrTools.UI
                 currentDocRadioButton2.Checked = true;
                 linkDocRadioButton2.Checked = false;
             }
-            else if (LinkComboBox2.Items.Contains(docname1))
+            else if (linkNames.Contains(docname2))
             {
+                int i = Array.IndexOf(linkNames, docname2);
                 currentDocRadioButton2.Checked = false;
                 linkDocRadioButton2.Checked = true;
+                LinkComboBox2.SelectedIndex = i;
             }
         }
 
@@ -121,7 +129,8 @@ namespace TerrTools.UI
         public Document Document { get; }
         public override string ToString()
         {
-            return RevitLinkInstance.Name;
+            var name =  RevitLinkInstance.Name;
+            return Regex.Match(name, @"(.+)\.rvt").Groups[1].Value;
         }
 
         public TwoDocComboBoxItem(RevitLinkInstance instance)

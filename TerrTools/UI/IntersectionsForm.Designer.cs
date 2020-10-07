@@ -36,18 +36,6 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
-            this.button1 = new System.Windows.Forms.Button();
-            this.offsetTextBox = new System.Windows.Forms.TextBox();
-            this.minSizeTextBox = new System.Windows.Forms.TextBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
-            this.loadBtn = new System.Windows.Forms.Button();
-            this.analyzeBtn = new System.Windows.Forms.Button();
-            this.countLabel = new System.Windows.Forms.Label();
-            this.label3 = new System.Windows.Forms.Label();
-            this.toleranceTextBox = new System.Windows.Forms.TextBox();
-            this.mergeCheckBox = new System.Windows.Forms.CheckBox();
-            this.clearButton = new System.Windows.Forms.Button();
             this.Level = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.HostName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.HostId = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -60,6 +48,18 @@
             this.GroundOffset = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.HoleId = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.AddToProject = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.button1 = new System.Windows.Forms.Button();
+            this.offsetTextBox = new System.Windows.Forms.TextBox();
+            this.minSizeTextBox = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.loadBtn = new System.Windows.Forms.Button();
+            this.analyzeBtn = new System.Windows.Forms.Button();
+            this.countLabel = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.toleranceTextBox = new System.Windows.Forms.TextBox();
+            this.mergeCheckBox = new System.Windows.Forms.CheckBox();
+            this.clearButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -89,135 +89,6 @@
             this.dataGridView1.Size = new System.Drawing.Size(723, 519);
             this.dataGridView1.TabIndex = 0;
             this.dataGridView1.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellValueChanged);
-            // 
-            // button1
-            // 
-            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(711, 554);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(105, 39);
-            this.button1.TabIndex = 1;
-            this.button1.Text = "Создать отверстия";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
-            // 
-            // offsetTextBox
-            // 
-            this.offsetTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.offsetTextBox.Location = new System.Drawing.Point(12, 573);
-            this.offsetTextBox.Name = "offsetTextBox";
-            this.offsetTextBox.Size = new System.Drawing.Size(98, 20);
-            this.offsetTextBox.TabIndex = 2;
-            this.offsetTextBox.Text = "50";
-            this.offsetTextBox.TextChanged += new System.EventHandler(this.offsetTextBox_TextChanged);
-            // 
-            // minSizeTextBox
-            // 
-            this.minSizeTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.minSizeTextBox.Location = new System.Drawing.Point(153, 573);
-            this.minSizeTextBox.Name = "minSizeTextBox";
-            this.minSizeTextBox.Size = new System.Drawing.Size(100, 20);
-            this.minSizeTextBox.TabIndex = 4;
-            this.minSizeTextBox.Text = "150";
-            this.minSizeTextBox.TextChanged += new System.EventHandler(this.minSizeTextBox_TextChanged);
-            // 
-            // label1
-            // 
-            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(9, 539);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(119, 26);
-            this.label1.TabIndex = 6;
-            this.label1.Text = "Задать отступ \r\nдля всех пересечений";
-            // 
-            // label2
-            // 
-            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(150, 539);
-            this.label2.Margin = new System.Windows.Forms.Padding(5);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(229, 26);
-            this.label2.TabIndex = 7;
-            this.label2.Text = "Добавить в проект отверстия в местах \r\nпересечения с сетями размером не менее:";
-            // 
-            // loadBtn
-            // 
-            this.loadBtn.Location = new System.Drawing.Point(12, 12);
-            this.loadBtn.Name = "loadBtn";
-            this.loadBtn.Size = new System.Drawing.Size(75, 61);
-            this.loadBtn.TabIndex = 8;
-            this.loadBtn.Text = "Загрузить отчет коллизий";
-            this.loadBtn.UseVisualStyleBackColor = true;
-            this.loadBtn.Click += new System.EventHandler(this.loadBtn_Click);
-            // 
-            // analyzeBtn
-            // 
-            this.analyzeBtn.Enabled = false;
-            this.analyzeBtn.Location = new System.Drawing.Point(12, 79);
-            this.analyzeBtn.Name = "analyzeBtn";
-            this.analyzeBtn.Size = new System.Drawing.Size(75, 45);
-            this.analyzeBtn.TabIndex = 9;
-            this.analyzeBtn.Text = "Анализ";
-            this.analyzeBtn.UseVisualStyleBackColor = true;
-            this.analyzeBtn.Click += new System.EventHandler(this.analyzeBtn_Click);
-            // 
-            // countLabel
-            // 
-            this.countLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.countLabel.AutoSize = true;
-            this.countLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.countLabel.Location = new System.Drawing.Point(708, 539);
-            this.countLabel.Name = "countLabel";
-            this.countLabel.Size = new System.Drawing.Size(41, 13);
-            this.countLabel.TabIndex = 10;
-            this.countLabel.Text = "label3";
-            // 
-            // label3
-            // 
-            this.label3.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.label3.AutoSize = true;
-            this.label3.Enabled = false;
-            this.label3.Location = new System.Drawing.Point(522, 539);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(122, 26);
-            this.label3.TabIndex = 12;
-            this.label3.Text = "Максимальный зазор \r\nдля объединения";
-            // 
-            // toleranceTextBox
-            // 
-            this.toleranceTextBox.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.toleranceTextBox.Location = new System.Drawing.Point(525, 573);
-            this.toleranceTextBox.Name = "toleranceTextBox";
-            this.toleranceTextBox.Size = new System.Drawing.Size(98, 20);
-            this.toleranceTextBox.TabIndex = 11;
-            this.toleranceTextBox.Text = "150";
-            // 
-            // mergeCheckBox
-            // 
-            this.mergeCheckBox.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.mergeCheckBox.AutoSize = true;
-            this.mergeCheckBox.Checked = true;
-            this.mergeCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.mergeCheckBox.Location = new System.Drawing.Point(425, 539);
-            this.mergeCheckBox.Name = "mergeCheckBox";
-            this.mergeCheckBox.Size = new System.Drawing.Size(91, 30);
-            this.mergeCheckBox.TabIndex = 13;
-            this.mergeCheckBox.Text = "Объединять \r\nотверстия";
-            this.mergeCheckBox.UseVisualStyleBackColor = true;
-            this.mergeCheckBox.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
-            // 
-            // clearButton
-            // 
-            this.clearButton.Location = new System.Drawing.Point(12, 495);
-            this.clearButton.Name = "clearButton";
-            this.clearButton.Size = new System.Drawing.Size(75, 36);
-            this.clearButton.TabIndex = 14;
-            this.clearButton.Text = "Очистить\r\nтаблицу";
-            this.clearButton.UseVisualStyleBackColor = true;
-            this.clearButton.Click += new System.EventHandler(this.clearButton_Click);
             // 
             // Level
             // 
@@ -317,6 +188,134 @@
             this.AddToProject.HeaderText = "Добавить в проект";
             this.AddToProject.Name = "AddToProject";
             this.AddToProject.Width = 60;
+            // 
+            // button1
+            // 
+            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.button1.Location = new System.Drawing.Point(711, 554);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(105, 39);
+            this.button1.TabIndex = 1;
+            this.button1.Text = "Создать отверстия";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // offsetTextBox
+            // 
+            this.offsetTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.offsetTextBox.Location = new System.Drawing.Point(12, 573);
+            this.offsetTextBox.Name = "offsetTextBox";
+            this.offsetTextBox.Size = new System.Drawing.Size(98, 20);
+            this.offsetTextBox.TabIndex = 2;
+            this.offsetTextBox.Text = "50";
+            this.offsetTextBox.TextChanged += new System.EventHandler(this.offsetTextBox_TextChanged);
+            // 
+            // minSizeTextBox
+            // 
+            this.minSizeTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.minSizeTextBox.Location = new System.Drawing.Point(153, 573);
+            this.minSizeTextBox.Name = "minSizeTextBox";
+            this.minSizeTextBox.Size = new System.Drawing.Size(100, 20);
+            this.minSizeTextBox.TabIndex = 4;
+            this.minSizeTextBox.Text = "150";
+            this.minSizeTextBox.TextChanged += new System.EventHandler(this.minSizeTextBox_TextChanged);
+            // 
+            // label1
+            // 
+            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(9, 539);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(119, 26);
+            this.label1.TabIndex = 6;
+            this.label1.Text = "Задать отступ \r\nдля всех пересечений";
+            // 
+            // label2
+            // 
+            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(150, 539);
+            this.label2.Margin = new System.Windows.Forms.Padding(5);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(229, 26);
+            this.label2.TabIndex = 7;
+            this.label2.Text = "Добавить в проект отверстия в местах \r\nпересечения с сетями размером не менее:";
+            // 
+            // loadBtn
+            // 
+            this.loadBtn.Location = new System.Drawing.Point(12, 12);
+            this.loadBtn.Name = "loadBtn";
+            this.loadBtn.Size = new System.Drawing.Size(75, 61);
+            this.loadBtn.TabIndex = 8;
+            this.loadBtn.Text = "Загрузить отчет коллизий";
+            this.loadBtn.UseVisualStyleBackColor = true;
+            this.loadBtn.Click += new System.EventHandler(this.loadBtn_Click);
+            // 
+            // analyzeBtn
+            // 
+            this.analyzeBtn.Location = new System.Drawing.Point(12, 79);
+            this.analyzeBtn.Name = "analyzeBtn";
+            this.analyzeBtn.Size = new System.Drawing.Size(75, 45);
+            this.analyzeBtn.TabIndex = 9;
+            this.analyzeBtn.Text = "Анализ";
+            this.analyzeBtn.UseVisualStyleBackColor = true;
+            this.analyzeBtn.Click += new System.EventHandler(this.analyzeBtn_Click);
+            // 
+            // countLabel
+            // 
+            this.countLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.countLabel.AutoSize = true;
+            this.countLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.countLabel.Location = new System.Drawing.Point(708, 539);
+            this.countLabel.Name = "countLabel";
+            this.countLabel.Size = new System.Drawing.Size(41, 13);
+            this.countLabel.TabIndex = 10;
+            this.countLabel.Text = "label3";
+            // 
+            // label3
+            // 
+            this.label3.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.label3.AutoSize = true;
+            this.label3.Enabled = false;
+            this.label3.Location = new System.Drawing.Point(522, 539);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(122, 26);
+            this.label3.TabIndex = 12;
+            this.label3.Text = "Максимальный зазор \r\nдля объединения";
+            // 
+            // toleranceTextBox
+            // 
+            this.toleranceTextBox.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.toleranceTextBox.Location = new System.Drawing.Point(525, 573);
+            this.toleranceTextBox.Name = "toleranceTextBox";
+            this.toleranceTextBox.Size = new System.Drawing.Size(98, 20);
+            this.toleranceTextBox.TabIndex = 11;
+            this.toleranceTextBox.Text = "150";
+            // 
+            // mergeCheckBox
+            // 
+            this.mergeCheckBox.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.mergeCheckBox.AutoSize = true;
+            this.mergeCheckBox.Checked = true;
+            this.mergeCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.mergeCheckBox.Location = new System.Drawing.Point(425, 539);
+            this.mergeCheckBox.Name = "mergeCheckBox";
+            this.mergeCheckBox.Size = new System.Drawing.Size(91, 30);
+            this.mergeCheckBox.TabIndex = 13;
+            this.mergeCheckBox.Text = "Объединять \r\nотверстия";
+            this.mergeCheckBox.UseVisualStyleBackColor = true;
+            this.mergeCheckBox.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
+            // 
+            // clearButton
+            // 
+            this.clearButton.Location = new System.Drawing.Point(12, 495);
+            this.clearButton.Name = "clearButton";
+            this.clearButton.Size = new System.Drawing.Size(75, 36);
+            this.clearButton.TabIndex = 14;
+            this.clearButton.Text = "Очистить\r\nтаблицу";
+            this.clearButton.UseVisualStyleBackColor = true;
+            this.clearButton.Click += new System.EventHandler(this.clearButton_Click);
             // 
             // IntersectionsForm
             // 
