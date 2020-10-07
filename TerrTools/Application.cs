@@ -12,7 +12,6 @@ using System.Diagnostics;
 using TerrTools.Updaters;
 using Autodesk.Revit.UI.Events;
 using Autodesk.Revit.DB.Events;
-//test
 namespace TerrTools
 {
     public class App : IExternalApplication
@@ -294,6 +293,20 @@ namespace TerrTools
                     iconName: "Python.png",
                     toolTip: "Позволяет запускать файлы скриптов с форматов .py"
                     ));
+            pbDict.Add("ColumnFinish",
+                MakePushButton(
+                    "ColumnFinish",
+                    "Отделка колонн",
+                    iconName: "Column.png",
+                    toolTip: "Автоматически генерирует штукатурку для всех колонн, находящихся в помещениях"
+                    ));
+            pbDict.Add("GridAxes",
+                MakePushButton(
+                    "GridAxes",
+                    "Создать сетку\nкоординационных осей",
+                    iconName: "Grids.png",
+                    toolTip: "Создает сетку осей с заданным шагом"
+                    ));
 
             ///
             /// Pulldown buttons
@@ -309,6 +322,7 @@ namespace TerrTools
             /// Архитектурная панель
             ///
             panelArch.AddItem(pbDict["GenerateFloor"]);
+            panelArch.AddItem(pbDict["ColumnFinish"]);
 
             ///
             /// Конструкторская панель
@@ -331,7 +345,9 @@ namespace TerrTools
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
             panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
+            panelGeneral.AddItem(pbDict["GridAxes"]);
             panelGeneral.AddItem(pbDict["PythonExecuter"]);
+            
 
             ///
             /// Настройки

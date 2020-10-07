@@ -111,7 +111,9 @@
   <ItemGroup>
     <Compile Include="Application.cs" />
     <Compile Include="Commands\CollisionUtilities.cs" />
+    <Compile Include="Commands\ColumnFinish.cs" />
     <Compile Include="Commands\DebuggingTools.cs" />
+    <Compile Include="Commands\GridAxes.cs" />
     <Compile Include="Commands\PythonExecuter.cs" />
     <Compile Include="GlobalSettings.cs" />
     <Compile Include="Logging.cs" />
@@ -130,6 +132,11 @@
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
+    <Compile Include="UI\ColumnFinish.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ColumnFinish.Designer.cs">
+      <DependentUpon>ColumnFinish.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\ElementFilterForm.cs">
       <SubType>Form</SubType>
@@ -148,6 +155,11 @@
     </Compile>
     <Compile Include="UI\TwoDoc.Designer.cs">
       <DependentUpon>TwoDoc.cs</DependentUpon>
+    <Compile Include="UI\GridAxesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\GridAxesForm.Designer.cs">
+      <DependentUpon>GridAxesForm.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\OneComboboxForm.cs">
       <SubType>Form</SubType>
@@ -204,11 +216,17 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="UI\ColumnFinish.resx">
+      <DependentUpon>ColumnFinish.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UI\ElementFilterForm.resx">
       <DependentUpon>ElementFilterForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\ExportSchedulesForm.resx">
       <DependentUpon>ExportSchedulesForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\GridAxesForm.resx">
+      <DependentUpon>GridAxesForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\HorizontalFinishingForm.resx">
       <DependentUpon>HorizontalFinishingForm.cs</DependentUpon>
@@ -295,7 +313,7 @@
       <VersionMajor>5</VersionMajor>
       <VersionMinor>3</VersionMinor>
       <Lcid>0</Lcid>
-      <WrapperTool>primary</WrapperTool>
+      <WrapperTool>tlbimp</WrapperTool>
       <Isolated>False</Isolated>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
@@ -314,6 +332,12 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\Python.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\Column.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\Grids.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
