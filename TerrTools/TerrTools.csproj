@@ -132,6 +132,7 @@
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
     <Compile Include="UI\ColumnFinish.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -155,6 +156,7 @@
     </Compile>
     <Compile Include="UI\TwoDoc.Designer.cs">
       <DependentUpon>TwoDoc.cs</DependentUpon>
+      </Compile>
     <Compile Include="UI\GridAxesForm.cs">
       <SubType>Form</SubType>
     </Compile>
