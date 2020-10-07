@@ -340,7 +340,6 @@ namespace TerrTools
             /// Общая панель
             ///
             panelGeneral.AddItem(pbDict["FocusOnElement"]);
-            panelGeneral.AddItem(pbDict["CopyRoomShape"]);
             tempBtn = panelGeneral.AddItem(plDict["UpdateType"]) as PulldownButton;
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
