@@ -27,7 +27,7 @@ namespace TerrTools
             // Получаем uidoc
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
             List<string> usedNames = new List<string>();
-            var grids = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Grids).ToElements();
+            var grids = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Grids).WhereElementIsNotElementType().ToElements();
             foreach (var grid in grids)
             {
                 usedNames.Add(grid.Name.ToString());
@@ -91,6 +91,7 @@ namespace TerrTools
     class GridsCreator
     {
         // Для ГОСТовского отступа в начале оси.
+
         private double defaultLowIndent { get; } = 4200;
         // Для ГОСТовского отступа в конце оси.
         private double defaultTopIndent { get; } = 500;
