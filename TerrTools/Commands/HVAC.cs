@@ -119,7 +119,7 @@ namespace TerrTools
                 else
                 {
                     p.Set("<Помещение не найдено!>");
-                    log.FailedElementIds.Push(el.Id);
+                    log.FailedElementIds.Push(el.Id.ToString());
                 }
                 pBar.StepUp();
             }
@@ -522,7 +522,7 @@ namespace TerrTools
                 ConnectorManager connMng = plunt.MEPModel.ConnectorManager;
                 if (connMng == null)
                 {
-                    tempLog.FailedElementIds.Push(plunt.Id);
+                    tempLog.FailedElementIds.Push(plunt.Id.ToString());
                     continue;
                 }
                 Connector connTz = connMng.Connectors.Cast<Connector>().Where(x => x.Domain == Domain.DomainPiping && x.PipeSystemType == PipeSystemType.SupplyHydronic && x.MEPSystem != null).FirstOrDefault();                
@@ -537,7 +537,7 @@ namespace TerrTools
                     pluntTz.Set(systemTz);
                     pluntTp.Set(systemTp);
                 }
-                else paramLog.FailedElementIds.Push(plunt.Id);
+                else paramLog.FailedElementIds.Push(plunt.Id.ToString());
             }
         }
 
@@ -573,7 +573,7 @@ namespace TerrTools
                 if (hParam == null || lParam == null || radTypeParam == null || TzParam == null ||
                     TpParam == null || TiParam == null || sizeMng == null || tableNameParam == null)
                 {
-                    lostParameterLog.FailedElementIds.Push(plunt.Id);
+                    lostParameterLog.FailedElementIds.Push(plunt.Id.ToString());
                     continue;
                 }
 
@@ -652,8 +652,8 @@ namespace TerrTools
                         }
                     }
                 }
-                if (!rowFinded) invalidTableLog.FailedElementIds.Push(plunt.Id);
-                else if (!wattFinded) highWattLog.FailedElementIds.Push(plunt.Id);
+                if (!rowFinded) invalidTableLog.FailedElementIds.Push(plunt.Id.ToString());
+                else if (!wattFinded) highWattLog.FailedElementIds.Push(plunt.Id.ToString());
             }
         }
 

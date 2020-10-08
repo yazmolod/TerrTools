@@ -23,13 +23,13 @@ namespace TerrTools
                 try
                 {
                     RunPythonScript(dialog.FileName);
-                    TaskDialog.Show("Python execute", "Скрипт успешно исполнен");
+                    TaskDialog.Show("Python execute", "Скрипт исполнен");
                     return Result.Succeeded;
                 }
                 catch (Exception e)
                 {
                     var td = new TaskDialog("Python execute");
-                    td.MainInstruction = "При исполнении скрипта произошла ошибка";
+                    td.MainInstruction = "При исполнении скрипта произошла необработанная ошибка";
                     td.MainContent = e.ToString();
                     td.Show();
                     return Result.Failed;

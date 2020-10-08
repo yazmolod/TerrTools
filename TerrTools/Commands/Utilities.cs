@@ -442,7 +442,28 @@ namespace TerrTools
     }
 
     static class GeometryUtils
-    {       
+    {
+        static public Level GetLevelByPoint(Document doc, XYZ pt)
+        {
+            Level[] levels = new FilteredElementCollector(doc)
+                                .OfCategory(BuiltInCategory.OST_Levels)
+                                .WhereElementIsNotElementType()
+                                .Cast<Level>()
+                                .OrderBy(x=>x.ProjectElevation)
+                                .ToArray();
+            double z = pt.Z;
+            for (int i = levels.Length - 1; i > 0; i--)
+            {
+                var l = levels[i];
+                if (l.ProjectElevation < z)
+                {
+                    return l;
+                }
+            }
+            return levels[0];
+        }
+
+
         static public Solid GetSolid(Element e)
         {
             Options opt = new Options();
@@ -455,20 +476,25 @@ namespace TerrTools
             return null;
         }
 
-        static public Curve FindDuctCurve(MEPCurve mepCurve)
+        static public List<Connector> GetConnectors(ConnectorManager conMngr)
         {
-            //The wind pipe curve
-            if (mepCurve == null) return null;
-            IList<XYZ> list = new List<XYZ>();
+            List<Connector> list = new List<Connector>();
+            ConnectorSetIterator csi = conMngr.Connectors.ForwardIterator();
+            while (csi.MoveNext())
+            {
+                Connector conn = csi.Current as Connector;
+                list.Add(conn);
+            }
+            return list;
+        }
+
+        static public Curve FindDuctCurve(ConnectorManager conMngr)
+        {
             try
             {
-                ConnectorSetIterator csi = mepCurve.ConnectorManager.Connectors.ForwardIterator();
-                while (csi.MoveNext())
-                {
-                    Connector conn = csi.Current as Connector;
-                    list.Add(conn.Origin);
-                }
-                Curve curve = Line.CreateBound(list.ElementAt(0), list.ElementAt(1)) as Curve;
+                var connectors = GetConnectors(conMngr);
+                var connectorsPts = connectors.Select(x => x.Origin);
+                Curve curve = Line.CreateBound(connectorsPts.First(), connectorsPts.Last());
                 return curve;
             }
             catch (Autodesk.Revit.Exceptions.InvalidOperationException)
@@ -479,6 +505,14 @@ namespace TerrTools
             {
                 return null;
             }
+        }
+
+        static public XYZ GetDuctDirection(ConnectorManager conMngr)
+        {
+            var connectors = GetConnectors(conMngr);
+            var connectorsPts = connectors.Select(x => x.Origin);
+            XYZ vec = connectorsPts.Last() - connectorsPts.ElementAt(0);
+            return vec.Normalize();
         }
 
         static public List<Face> GetFaces(Element e)
@@ -498,7 +532,7 @@ namespace TerrTools
         {
             RevitLinkInstance[] linkedDocs = new FilteredElementCollector(doc).OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().ToArray();
             var form = new UI.OneComboboxForm("Выберите связанный файл", (from d in linkedDocs select d.Name).ToArray());
-            if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
+            if (form.DialogResult == System.Windows.Forms.DialogResult.OK && form.SelectedItem!="")
             {
                 RevitLinkInstance linkInstance = (from d in linkedDocs where d.Name == form.SelectedItem select d).First();
                 return linkInstance;
@@ -508,6 +542,24 @@ namespace TerrTools
                 return null;
             }
         }
+
+        static public RevitLinkInstance ChooseLinkedDoc(Document currentDoc)
+        {
+            RevitLinkInstance linkedDocInstance = GetLinkedDoc(currentDoc);
+            if (linkedDocInstance == null)
+                return null;
+
+            else if (linkedDocInstance.GetLinkDocument() == null)
+            {
+                TaskDialog.Show("Ошибка", "Обновите элемент связи в проекте");
+                return null;
+            }
+            else
+            {
+                return linkedDocInstance;
+            }
+        }
+
         static public Transform GetCorrectionTransform(RevitLinkInstance linkedDocInstance)
         {
             Transform transform = linkedDocInstance.GetTransform();

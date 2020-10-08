@@ -20,8 +20,8 @@ namespace TerrTools
         public static List<TerrUpdater> Updaters = new List<TerrUpdater>();
         public static AddInId AddInId { get => new AddInId(new Guid("4e6830af-73c4-45fa-aea0-82df352d5157")); }
         public static string AppName { get => "ТеррНИИ BIM"; }
-        public static string DLLPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrTools.dll";  }
-        public static string UpdaterPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrToolsUpdater.exe";  }
+        public static string DLLPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrToolsDLL\TerrTools.dll";  }
+        public static string UpdaterPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\NewTerrToolsUpdater.exe";  }
         public static string Version { get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion; }
         public static string PatchNote { get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).Comments; }
         
@@ -160,13 +160,6 @@ namespace TerrTools
         }
 
         private void AddUpdaterSharedParameters(Document doc)
-        /// СУПЕР ВАЖНО
-        /// Общая идея: добавлять общие параметры перед активацией апдейтеров
-        /// мне лень реализовывать механизм добавления общих параметров для всех классов апдейтеров прямо сейчас
-        /// поэтому несмотря на то, что это все подразумевает обработку всех классов
-        /// сейчас обрабатывается только один, на котором вскрылся баг
-        /// Однако, сделать это скорее надо, чем нет, потому что добавление общих параметров через апдейтер
-        /// это заноза в заднице, которую невозможно дебажить
         {
             using (Transaction tr = new Transaction(doc, "Добавление общих параметров ТеррНИИ BIM"))
             {
@@ -248,13 +241,9 @@ namespace TerrTools
             pbDict.Add("WallOpening",
            MakePushButton(
                 "WallOpeningHandler",
-                "В стенах",
-                "Вставляет отверстия в местах пересечений с системами"
-                ));
-            pbDict.Add("FloorOpening",
-            MakePushButton(
-                "FloorOpeningHandler",
-                "В перекрытиях"
+                "Генерация отверстий",
+                "Вставляет отверстия в местах пересечений с системами",
+                "Openings.png"
                 ));
             pbDict.Add("GenerateFloor",
            MakePushButton(
@@ -266,7 +255,7 @@ namespace TerrTools
             pbDict.Add("FocusOnElement",
                 MakePushButton(
                     "FocusOnElement",
-                    "Сфокусироваться\nна элементе",
+                    "Поиск элементов\nна виде",
                     "Выберите из списка необходимый элемент и окно сфокусируется на нем",
                     "Zoom.png"
                     ));
@@ -280,12 +269,17 @@ namespace TerrTools
                     "TypeChangerDeep",
                     "В проекте и семействах"
                     ));
+
+            /*  Толку от этой функции немного
+             *  
             pbDict.Add("CopyRoomShape",
                 MakePushButton(
                     "CopyRoomShape",
                     "Создать контур\nпомещения",
                     iconName:"Shape.png"
                     ));
+            */
+
             pbDict.Add("SystemScheduleExporter",
                 MakePushButton(
                     "ScheduleExporter",
@@ -310,19 +304,13 @@ namespace TerrTools
                 MakePushButton(
                     "GridAxes",
                     "Создать сетку\nкоординационных осей",
-                    iconName: "",
+                    iconName: "Grids.png",
                     toolTip: "Создает сетку осей с заданным шагом"
                     ));
 
             ///
             /// Pulldown buttons
             ///
-            plDict.Add("GenerateOpenings",
-                MakePulldownButton(
-                    "Генерация отверстий",
-                    "Быстрая генерация отверстий на пересечении конструктивных элементов с инженерными системами",
-                    "Openings.png"
-                    ));
             plDict.Add("UpdateType",
                 MakePulldownButton(
                     "Обновить шрифт",
@@ -339,10 +327,7 @@ namespace TerrTools
             ///
             /// Конструкторская панель
             ///
-            tempBtn = panelStruct.AddItem(plDict["GenerateOpenings"]) as PulldownButton;
-            tempBtn.AddPushButton(pbDict["WallOpening"]);
-            tempBtn.AddPushButton(pbDict["FloorOpening"]);
-
+            panelStruct.AddItem(pbDict["WallOpening"]);
 
             ///
             /// ОВиК панель
@@ -355,7 +340,6 @@ namespace TerrTools
             /// Общая панель
             ///
             panelGeneral.AddItem(pbDict["FocusOnElement"]);
-            panelGeneral.AddItem(pbDict["CopyRoomShape"]);
             tempBtn = panelGeneral.AddItem(plDict["UpdateType"]) as PulldownButton;
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
@@ -495,7 +479,7 @@ namespace TerrTools
                 tr.Commit();
             }
         }
-
+        
         private void ViewDeletingProcess(Document doc, ElementId id)
         {
             View view = doc.GetElement(id) as View;
@@ -533,30 +517,31 @@ namespace TerrTools
             }
         }
 
-        static public void CheckUpdateDialog()
+
+        static public void CheckUpdateDialog(bool showIfActual=false)
         {
             if (CheckUpdates(out string lastReleaseVersion, out string patchNote))
             {
                 TaskDialog td = new TaskDialog("Доступно обновление");
-                td.MainInstruction = "На сервере доступна новая версия плагина. Обновить прямо сейчас?";
+                td.MainInstruction = "На сервере доступна новая версия плагина. РЕКОМЕНДУЕТСЯ закрыть программу и обновить плагин прямо сейчас";
                 td.MainContent = string.Format("Текущая версия: {0}\nДоступная версия: {1}\n\nЧто нового: \n{2}", App.Version, lastReleaseVersion, patchNote);
-                td.FooterText = "Да - Revit перезапустится и плагин обновится прямо сейчас. Нет - плагин обновится сразу после того, как вы закроете программу";
-                td.AllowCancellation = false;
-                td.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;                
-
-                TaskDialogResult tdResult = td.Show();
-                switch (tdResult)
+                td.FooterText = "Для установки новой версии, запустите файл " + UpdaterPath;
+                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Закрыть Revit и обновить");
+                if (td.Show() == TaskDialogResult.CommandLink1)
                 {
-                    case TaskDialogResult.Yes:
-                        StartUpdaterService("-fromRevit -restart");
-                        break;
-
-                    case TaskDialogResult.No:
-                        StartUpdaterService("-fromRevit");
-                        break;
+                    var revitProcess = System.Diagnostics.Process.GetCurrentProcess();
+                    Process.Start(UpdaterPath);
+                    revitProcess.Kill();
                 }
             }
+            else if (showIfActual)
+            {
+                TaskDialog td = new TaskDialog("ТеррНИИ BIM");
+                td.MainInstruction = "У вас установлена актуальная версия плагина";
+                td.Show();
+            }
         }
+
 
         public static void StartUpdaterService(string argLine)
         {
@@ -578,14 +563,5 @@ namespace TerrTools
             var form = new UI.SettingsForm(commandData.Application.ActiveUIDocument.Document);
             return Result.Succeeded;
         }
-    }
-
-
-    static public class TerrSettings
-    {
-        // Настройки для поиска радиатора
-        public static List<int> RadiatorLengths { get; set; } = new List<int> { 400,500,600,700,800,900,1000,1100,1200,1400,1600,1800,2000,2300,2600,3000 };
-        public static List<int> RadiatorHeights { get; set; } = new List<int> { 300,400,450,500,550,600,900 };
-        public static List<int> RadiatorTypes { get; set; } = new List<int> { 10, 11, 20, 22, 30, 33 };
-    }
+    }    
 }

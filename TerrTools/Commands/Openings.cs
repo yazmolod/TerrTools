@@ -10,6 +10,11 @@ using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Structure;
 using System.Text.RegularExpressions;
+using System.IO;
+using System.Linq.Expressions;
+using Autodesk.Revit.DB.Electrical;
+using System.Security.Cryptography;
+using System.Security.Policy;
 
 namespace TerrTools
 {
@@ -17,10 +22,12 @@ namespace TerrTools
     {
         abstract internal string openingFamilyName { get; }
         abstract internal IEnumerable<HostObject> hosts { get; }
-        protected Document doc;
+        public Document doc;
         protected RevitLinkInstance linkedDocInstance;
         protected FamilySymbol openingFamilySymbol;
-        protected Document linkedDoc { get { return linkedDocInstance.GetLinkDocument(); } }
+        public Document linkedDoc { get { return linkedDocInstance.GetLinkDocument(); } }
+
+        public FamilyInstance[] ExistingOpenings { get; private set; }
 
         protected FamilySymbol FindOpeningFamily()
         {
@@ -37,10 +44,9 @@ namespace TerrTools
             }
             else
             {
-                string path = @"\\serverl\psd\REVIT\Семейства\ТеррНИИ\АР\" + openingFamilyName + ".rfa";
                 try
                 {
-                    doc.LoadFamilySymbol(path, "Проем", out symbol);
+                    doc.LoadFamilySymbol(Path.Combine(TerrSettings.OpeningsFolder, openingFamilyName + ".rfa"), "Проем", out symbol);
                     symbol.Activate();
                     return symbol;
                 }
@@ -52,73 +58,87 @@ namespace TerrTools
             }
         }
 
-        protected void DeleteUnusedOpenings()
+        protected bool IsExisted(Intersection i)
         {
-            Element[] existingOpenings = new FilteredElementCollector(doc)
-                .OfClass(typeof(FamilyInstance))
-                .Cast<FamilyInstance>()
-                .Where(x => x.Symbol.Id == openingFamilySymbol.Id)
-                .ToArray();
+            string[] ids = ExistingOpenings.Select(x => x.LookupParameter("ТеррНИИ_Идентификатор").AsString()).ToArray();
+            return ids.Contains(i.Id.ToString());
+        }                
 
-            
-            // Весь этот код требует тщательной перепроверки, потому что он выдает неадекватные результаты
-            // Поэтмому пока что просто удалим все что насоздавали
-            
-            foreach (Element op in existingOpenings)
-            {
-                Parameter p = op.LookupParameter("Идентификатор пересечения");
-                ElementId opDesignOption = op.DesignOption != null ? op.DesignOption.Id : ElementId.InvalidElementId;
-                if (p != null && p.AsString().Contains('-') )
-                //{
-                //    string opId = p.AsString();
-                //    ElementId hostId = new ElementId(int.Parse(opId.Split('-')[0]));
-                //    ElementId curveId = new ElementId(int.Parse(opId.Split('-')[1]));
-                //    MEPCurve mc = linkedDoc.GetElement(curveId) as MEPCurve;
-                //    Curve c = GeometryUtils.FindDuctCurve(mc);
-                //    Element host = doc.GetElement(hostId);
-                //    var faces = GeometryUtils.GetFaces(host);
-                //    if (c != null) 
-                //    { 
-                //    XYZ[] interPts = (from face in faces select FindFaceIntersection(c, face)).ToArray();
-                //        if (interPts.Any(x => x != null))
-                        {
-                            doc.Delete(op.Id);
-                        }
-                //    }
-                //}
-            }         
-        }
-
-        protected bool PlaceOpeningFamilies(List<Intersection> intersections)
+        protected void PlaceOpeningFamilies(IEnumerable<Intersection> intersections)
         {
-            try
+            LoggingMachine.Reset();
+            var log_param = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров размеров");
+            var log_id = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров id");
+            var log_level = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров уровня");
+            var log_cut = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка вырезания");
+            foreach (Intersection i in intersections)
             {
-                List<Intersection> failedIntersections = new List<Intersection>();
-                foreach (Intersection i in intersections)
-                {
-                    ElementId wallDesignOption = i.Host.DesignOption != null ? i.Host.DesignOption.Id : ElementId.InvalidElementId;
-                    if (wallDesignOption == DesignOption.GetActiveDesignOptionId(doc))
+                    Element holeElement;
+                    if (IsExisted(i))
                     {
-                        Element holeElement = doc.Create.NewFamilyInstance(new XYZ(i.CenterPoint.X, i.CenterPoint.Y, i.Level.Elevation), openingFamilySymbol, i.Host, i.Level, StructuralType.NonStructural);
-                        holeElement.LookupParameter("ADSK_Отверстие_Ширина").Set(i.HoleWidth);
-                        holeElement.LookupParameter("ADSK_Отверстие_Высота").Set(i.HoleHeight);
-                        holeElement.LookupParameter("ADSK_Отверстие_Функция").Set(i.Type);
-                        holeElement.LookupParameter("ADSK_Отверстие_Отметка от этажа").Set(i.LevelOffset);
-                        if (i.Level.Elevation == 0) holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(0);
-                        else holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(i.Level.Elevation);
-                        holeElement.LookupParameter("Идентификатор пересечения").Set(i.Id.ToString());
+                        holeElement = ExistingOpenings.Where(x => x.LookupParameter("ТеррНИИ_Идентификатор").AsString() == i.Id.ToString()).First();
+                        LocationPoint loc = holeElement.Location as LocationPoint;
+                        XYZ vec = new XYZ(i.InsertionPoint.X,
+                                          i.InsertionPoint.Y,
+                                          i.Level.ProjectElevation) - loc.Point;
+                        ElementTransformUtils.MoveElement(doc, holeElement.Id, vec);
                     }
                     else
                     {
-                        failedIntersections.Add(i);
+                        holeElement = doc.Create.NewFamilyInstance(
+                            new XYZ(
+                                i.InsertionPoint.X,
+                                i.InsertionPoint.Y,
+                                i.Level.Elevation),
+                            openingFamilySymbol,
+                            i.Level,
+                            StructuralType.NonStructural);
+                        // поворачиваем на нужную позицию
+                        Line axe = Line.CreateUnbound(i.InsertionPoint, XYZ.BasisZ);
+                        ElementTransformUtils.RotateElement(doc, holeElement.Id, axe, i.Angle);
+
+                        //делаем вырез в хосте
+                        try
+                        {
+                        if (i.HasHosts)
+                        {
+                            foreach (var host in i.Hosts) InstanceVoidCutUtils.AddInstanceVoidCut(doc, host, holeElement);
+                        }
+                        }
+                        catch
+                        {
+                            log_cut.AddError(i.Id);
+                        }                        
                     }
-                }                
-                return true;
-            }
-            catch (NullReferenceException)
-            {                
-                return false;
-            }
+                try
+                {
+                    //идентификация
+                    holeElement.LookupParameter("ТеррНИИ_Идентификатор")?.Set(i.Id.ToString());
+                    holeElement.LookupParameter("Связанный файл")?.Set(i.Name);
+                }
+                catch { log_id.AddError(i.Id); }
+
+
+                try
+                {
+                    // задаем параметры
+                    holeElement.LookupParameter("ADSK_Отверстие_Ширина").Set(i.HoleWidth);
+                    holeElement.LookupParameter("ADSK_Отверстие_Высота").Set(i.HoleHeight);
+                    holeElement.LookupParameter("ADSK_Толщина стены").Set(i.HoleDepth);
+                }
+                catch { log_param.AddError(i.Id); }
+
+                try
+                {
+                    // назначаем отметки
+                    holeElement.LookupParameter("ADSK_Отверстие_Отметка от этажа").Set(i.LevelOffset);
+                    if (i.Level.Elevation == 0) holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(0);
+                    else holeElement.LookupParameter("ADSK_Отверстие_Отметка этажа").Set(i.Level.Elevation);
+                    // обнуляем смещение
+                    holeElement.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).Set(0);
+                }
+                catch { log_level.AddError(i.Id); }
+            }            
         }
 
         protected XYZ FindFaceIntersection(Curve DuctCurve, Face WallFace)
@@ -140,134 +160,94 @@ namespace TerrTools
                 return null;
         }
 
-        internal List<Intersection> GetIntersections(IEnumerable<HostObject> hosts)
+
+        public List<IntersectionMepCurve> GetIntersections()
         {
-            var progress = new UI.ProgressBar("Поиск пересечений...", hosts.Count());
-            Transform tr = GeometryUtils.GetCorrectionTransform(linkedDocInstance);
-            List<Intersection> intersectionList = new List<Intersection>();
-            foreach (HostObject host in hosts)
+            linkedDocInstance = GeometryUtils.ChooseLinkedDoc(doc);
+            if (linkedDocInstance==null)
             {
-                List<Face> hostFaces = GeometryUtils.GetFaces(host);
-                if (hostFaces.Count > 0)
+                return new List<IntersectionMepCurve>();
+            }
+            else
+            {
+                var progress = new UI.ProgressBar("Поиск пересечений...", hosts.Count());
+                Transform tr = GeometryUtils.GetCorrectionTransform(linkedDocInstance);
+                List<IntersectionMepCurve> intersectionList = new List<IntersectionMepCurve>();
+                foreach (HostObject host in hosts)
                 {
-                    BoundingBoxXYZ bb = host.get_BoundingBox(null);
-                    Outline outline = new Outline(tr.OfPoint(bb.Min), tr.OfPoint(bb.Max));
-                    BoundingBoxIntersectsFilter filter = new BoundingBoxIntersectsFilter(outline);
-
-                    List<MEPCurve> meps = new FilteredElementCollector(linkedDoc)
-                        .OfClass(typeof(MEPCurve))
-                        .WherePasses(filter)
-                        .Cast<MEPCurve>()
-                        .ToList();
-
-                    foreach (MEPCurve m in meps)
+                    List<Face> hostFaces = GeometryUtils.GetFaces(host);
+                    if (hostFaces.Count > 0)
                     {
-                        Curve mepCurve = GeometryUtils.FindDuctCurve(m);
-                        if (mepCurve != null)
+                        BoundingBoxXYZ bb = host.get_BoundingBox(null);
+                        Outline outline = new Outline(tr.OfPoint(bb.Min), tr.OfPoint(bb.Max));
+                        BoundingBoxIntersectsFilter filter = new BoundingBoxIntersectsFilter(outline);
+
+                        List<MEPCurve> meps = new FilteredElementCollector(linkedDoc)
+                            .OfClass(typeof(MEPCurve))
+                            .WherePasses(filter)
+                            .Cast<MEPCurve>()
+                            .ToList();
+
+                        foreach (MEPCurve m in meps)
                         {
-                            XYZ[] interPts = (from wallFace in hostFaces select FindFaceIntersection(mepCurve, wallFace)).ToArray();
-                            if (interPts.Any(x => x != null))
+                            Curve mepCurve = GeometryUtils.FindDuctCurve(m.ConnectorManager);
+                            if (mepCurve != null)
                             {
-                                Intersection i = new Intersection();
-                                i.CenterPoint = interPts.First(x => x != null);
-                                i.Host = host;
-                                i.Pipe = m;
-                                i.Level = doc.GetElement(host.LevelId) as Level;
-                                i.MinOffset = 50 / 304.8;
-                                // Определение типа систем
-                                switch (m.MEPSystem.Category.Id.IntegerValue)
+                                XYZ[] interPts = (from wallFace in hostFaces select FindFaceIntersection(mepCurve, wallFace)).ToArray();
+                                if (interPts.Any(x => x != null))
                                 {
-                                    //case (int)BuiltInCategory.OST_PipingSystem:
-                                    //    i.Type = "ВК";
-                                    //    break;
-                                    case (int)BuiltInCategory.OST_DuctSystem:
-                                        i.Type = "ОВ";
-                                        break;
-                                    default:
-                                        break;
+                                    XYZ pt = interPts.First(x => x != null);
+                                    IntersectionMepCurve i = new IntersectionMepCurve(host, m, pt, linkedDocInstance);                                   
+                                    intersectionList.Add(i);
                                 }
-                                //Определение размера трубы
-                                try
-                                {
-                                    i.PipeWidth = m.Diameter;
-                                    i.PipeHeight = m.Diameter;
-                                    i.IsRound = true;
-                                }
-                                catch (Autodesk.Revit.Exceptions.InvalidOperationException)
-                                {
-                                    // из-за того, что воздуховод может быть развернут, мы не можем обращаться к внутренним размерам и смотрим на BBox
-                                    BoundingBoxXYZ bbmep = m.get_BoundingBox(null);
-                                    XYZ res = bbmep.Max - bbmep.Min;
-                                    double x = Math.Abs(res.X);
-                                    double y = Math.Abs(res.Y);
-                                    double z = Math.Abs(res.Z);
-                                    i.PipeWidth = host != null ? m.Width : x;
-                                    i.PipeHeight = host != null ? m.Height : y;
-                                    i.IsRound = false;
-                                }
-                                //Определение, кирпичная ли стена
-                                i.IsBrick = false;                                
-                                if (host != null && host is Wall)
-                                {
-                                    foreach (var layer in (host as Wall).WallType.GetCompoundStructure().GetLayers())
-                                    {
-                                        Element materialElement = doc.GetElement(layer.MaterialId);
-                                        i.IsBrick = materialElement != null ? materialElement.Name.Contains("Кирпич") || i.IsBrick : false;
-                                    }
-                                }
-                                intersectionList.Add(i);
                             }
                         }
                     }
+                    progress.StepUp();
                 }
-                progress.StepUp();
+                return intersectionList;
             }
-            return intersectionList;
+        }
+
+
+        public void Init(ExternalCommandData commandData)
+        {
+            doc = commandData.Application.ActiveUIDocument.Document;
+
+            using (Transaction tr = new Transaction(doc, "Загрузка семейства"))
+            {
+                tr.Start();
+                openingFamilySymbol = FindOpeningFamily();
+                if (openingFamilySymbol == null)
+                    throw new ArgumentException("Ошибка загрузки семейства");
+                tr.Commit();
+            }
+
+            ExistingOpenings = new FilteredElementCollector(doc)
+                .OfClass(typeof(FamilyInstance))
+                .Cast<FamilyInstance>()
+                .Where(x => x.Symbol.Id == openingFamilySymbol.Id)
+                .ToArray();           
         }
 
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            doc = commandData.Application.ActiveUIDocument.Document;
-
+            Init(commandData);
             using (Transaction tr = new Transaction(doc, "Создание отверстий"))
-            {
-                tr.Start();
-
-                linkedDocInstance = GeometryUtils.GetLinkedDoc(doc);
-                if (linkedDocInstance == null)
-                    return Result.Cancelled;
-
-                if (linkedDocInstance.GetLinkDocument() == null)
-                {
-                    TaskDialog.Show("Ошибка", "Обновите элемент связи в проекте");
-                    return Result.Failed;
-                }
-
-                openingFamilySymbol = FindOpeningFamily();
-                if (openingFamilySymbol == null)
-                    return Result.Failed;
-
-                DeleteUnusedOpenings();
-                tr.Commit();
-
-                tr.Start();
-                List<Intersection> intersections = GetIntersections(hosts);
-                UI.IntersectionsForm form = new UI.IntersectionsForm(intersections);
-
+            {                
+                UI.IntersectionsForm form = new UI.IntersectionsForm(this);
                 if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
                 {
-                    intersections = form.UpdatedIntersections;
-                    bool result = PlaceOpeningFamilies(intersections);
-                    tr.Commit();
-                    if (result)
+                    tr.Start();
+                    var intersections = form.Intersections.Cast<Intersection>().ToList();
+                    if (form.DoMerge)
                     {
-                        TaskDialog.Show("Успешно", "Отверстия расставлены, но не забудьте их проверить");
+                        intersections = Intersection.AutoMerging(intersections, form.MergeTolerance);
                     }
-                    else
-                    {
-                        TaskDialog.Show("Ошибка", "Отсутствуют требуемые параметры в семействе отверстий. Операция отменена");
-                    }                    
+                    PlaceOpeningFamilies(intersections);                    
+                    tr.Commit();
+                    LoggingMachine.Show();
                     return Result.Succeeded;
                 }
                 else return Result.Cancelled;
@@ -277,86 +257,370 @@ namespace TerrTools
 
     public class Intersection
     {
-        public Element Host { get; set; }
-        public Element Pipe { get; set; }
-        public string Id { get { return string.Format("{0}-{1}", Host.Id.ToString(), Pipe.Id.ToString()); } }
-        public bool IsBrick { get; set; }
-        public bool IsRound { get; set; }
-        public XYZ CenterPoint { get; set; }
-        public Level Level { get; set; }
-        public double PipeWidth { get; set; }
-        public double PipeHeight { get; set; }
-        public double MinOffset { get; set; }
-        public string Type { get; set; }
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public double Angle { get; protected set; } = 0;             
+        public Outline Outline { get; protected set; }
 
-        public double HoleWidth
+        private List<Element> _hosts = new List<Element>();
+        public Element Host { get => _hosts.FirstOrDefault(); set => _hosts = new List<Element>() { value }; }
+        public List<Element> Hosts { get => _hosts; set => _hosts = value; }
+        public bool HasHosts { get => _hosts.Count() > 0; }
+
+        public Level Level { get; private set; }
+        public XYZ InsertionPoint { get; private set; }
+
+        public double HoleHeight { get => Outline.MaximumPoint.Z - Outline.MinimumPoint.Z; }
+        public double HoleWidth { get => Outline.MaximumPoint.X - Outline.MinimumPoint.X; }
+        public double HoleDepth { get => Outline.MaximumPoint.Y - Outline.MinimumPoint.Y; }
+        public double LevelOffset { get => InsertionPoint.Z - Level.ProjectElevation; }
+        public double GroundOffset { get => LevelOffset + Level.ProjectElevation; }
+
+        /// <summary>
+        /// Проверка на пересечение с другим отверстием
+        /// </summary>
+        /// <param name="other">Другое отверстие</param>
+        /// <param name="tolerance">При положительных значениях проверяет пересечение в зазоре</param>
+        /// <returns></returns>
+        public bool IsIntersectedWithAnother(Intersection other, double tolerance)
+        {
+            // проверка на идентичность
+            if (this.Outline.MinimumPoint == other.Outline.MinimumPoint &&
+                this.Outline.MaximumPoint == other.Outline.MaximumPoint) return false;
+            return this.Outline.Intersects(other.Outline, tolerance);
+        }
+
+        public static Outline CreateOutline(XYZ center, double x, double y, double z)
+        {
+            XYZ min = new XYZ(center.X - x / 2, center.Y - y / 2, center.Z - z / 2);
+            XYZ max = new XYZ(center.X + x / 2, center.Y + y / 2, center.Z + z / 2);
+            Outline outline = new Outline(min, max);
+            return outline;
+        }
+
+        #region Initializations
+
+        protected void DefaultInit()
+            {
+                InsertionPoint = new XYZ(
+                (Outline.MinimumPoint.X + Outline.MaximumPoint.X) / 2,
+                (Outline.MinimumPoint.Y + Outline.MaximumPoint.Y) / 2,
+                Outline.MinimumPoint.Z
+                );
+                Level = GeometryUtils.GetLevelByPoint(Host.Document, InsertionPoint);
+            }
+
+        public Intersection()
+        {
+        }
+
+        public Intersection(Outline outline)
+        {
+            Outline = outline;
+            DefaultInit();
+        }
+
+        public Intersection(Outline outline, double angle, List<Element> hosts)
+        {
+            Outline = outline;
+            Angle = angle;
+            Hosts = hosts;
+            DefaultInit();
+        }
+
+        public Intersection(Outline outline, double angle, Element host)
+        {
+            Outline = outline;
+            Angle = angle;
+            Host = host;
+            DefaultInit();
+        }
+        #endregion
+
+        #region Merging
+        public static List<Intersection> AutoMerging(List<Intersection> intrs, double tolerance)
+        {
+            var pairs = SplitOnIntersectedPairs(intrs, tolerance);
+            var groups = GroupIntersectedPairs(pairs);
+            var intersections = groups.Select(x => Merge(x)).ToList();
+            return intersections;
+
+        }
+
+        public static Intersection Merge(IEnumerable<Intersection> intrs)
+        {
+            Outline outline = intrs.First().Outline;
+            for (int i = 1; i < intrs.Count(); i++)
+            {
+                Outline other = intrs.ElementAt(i).Outline;
+                outline.AddPoint(other.MinimumPoint);
+                outline.AddPoint(other.MaximumPoint);
+            }            
+
+            double angle = intrs.Select(x => x.Angle).FirstOrDefault();
+            List<Element> hosts = intrs.Select(x=>x.Host).OfType<Element>().ToList();
+            Document doc = hosts[0].Document;
+
+            string name = string.Join("|", intrs.Select(x => x.Name).OfType<string>().Distinct());
+
+            int id = intrs.ElementAt(0).Id;
+            for (int i = 1; i < intrs.Count(); i++)
+            {
+                id = id | intrs.ElementAt(i).Id;
+            }
+
+            var intr = new Intersection(outline, angle, hosts);
+            intr.Name = name;
+            intr.Id = id;
+            return intr;
+        }
+    
+
+        /// <summary>
+        /// Объединяет списки по пересечению
+        /// </summary>
+        public static List<HashSet<Intersection>> GroupIntersectedPairs(List<HashSet<Intersection>> groups)
+        {
+            bool flag = true;
+            int i = 0;
+            while (flag)
+            {
+                bool changedFlag = false;
+                for (int j = groups.Count() - 1; j > i; j--)
+                {
+                    var left = new HashSet<Intersection>(groups.ElementAt(i));
+                    var right = new HashSet<Intersection>(groups.ElementAt(j));
+                    left.IntersectWith(right);
+                    if (left.Count() > 0)
+                    {
+                        groups.ElementAt(i).UnionWith(right);
+                        groups.RemoveAt(j);
+                        changedFlag = true;
+                    }
+                }
+                flag = i < groups.Count() - 1;
+                if (!changedFlag) i++;
+            }
+            return groups;
+        }
+
+        /// <summary>
+        /// Разбивает массив с пересечениями на пересекающиеся пары (или одиночные непересекаюзиеся)
+        /// </summary>
+        private static List<HashSet<Intersection>> SplitOnIntersectedPairs(List<Intersection> intersections, double tolerance)
+        {
+            List<HashSet<Intersection>> groups = new List<HashSet<Intersection>>();
+            for (int i = 0; i < intersections.Count() - 1; i++)
+            {
+                bool collided = false;
+                for (int j = i + 1; j < intersections.Count(); j++)
+                {
+                    var left = intersections.ElementAt(i);
+                    var right = intersections.ElementAt(j);
+                    if (left.IsIntersectedWithAnother(right, tolerance))
+                    {
+                        HashSet<Intersection> x = new HashSet<Intersection>() { left, right };
+                        collided = true;
+                        groups.Add(x);
+                    }
+                }
+                if (!collided)
+                {
+                    groups.Add(new HashSet<Intersection> { intersections.ElementAt(i) });
+                }
+            }
+            return groups;
+        }
+        #endregion
+
+
+    }
+
+
+    public class IntersectionMepCurve : Intersection
+    {        
+        public RevitLinkInstance LinkInstance { get; set; }
+        public Element Pipe { get; }
+        private ConnectorManager PipeConnectorManager
         {
             get
             {
-                double nominalWidth = PipeWidth + MinOffset * 2;
-                if (IsBrick)
-                {
-                    int bricks = 1;
-                    double bricksWidth = (bricks * 120 + (bricks - 1) * 10 + 20) / 304.8;
-                    while (bricksWidth < nominalWidth)
-                    {
-                        bricks++;
-                        bricksWidth = (bricks * 120 + (bricks - 1) * 10 + 20) / 304.8;
-                    }
-                    return bricksWidth;
-                }
-                else return Math.Ceiling(nominalWidth * 304.8 / 100) * 100 / 304.8;
+                if (Pipe is MEPCurve || Pipe is CableTray) return (Pipe as MEPCurve).ConnectorManager;
+                else if (Pipe is FamilyInstance) return (Pipe as FamilyInstance).MEPModel.ConnectorManager;
+                else return null;
             }
         }
-        public double HoleHeight
-        {
+        
+        public bool IsBrick 
+        { 
+            get 
+            {
+                return false;
+                bool state = false;
+                if (Host != null && Host is Wall)
+                {                    
+                    foreach (var layer in (Host as Wall).WallType.GetCompoundStructure().GetLayers())
+                    {
+                        Element materialElement = Host.Document.GetElement(layer.MaterialId);
+                        state = materialElement != null ? materialElement.Name.ToLower().Contains("кирпич") || state : false;
+                    }
+                }
+                return state;
+            }
+        }       
+        /// <summary>
+        /// Изначальная точка пересечения, взятая из отчета или анализа
+        /// </summary>
+        public XYZ CollisionPoint { get; }     
+        public double PipeWidth { get => HoleWidth - Offset * 2; }
+        public double PipeHeight { get => HoleHeight - Offset * 2; }
+        public double Offset { get; set; } = 50.0 / 304.8;
+
+        public string HoleType {
             get
             {
-                double nominalHeight = PipeHeight + MinOffset * 2;
-                if (IsBrick)
+                return "";
+                MEPCurve m = Pipe as MEPCurve;
+                switch (m.MEPSystem.Category.Id.IntegerValue)
                 {
-                    int bricks = 1;
-                    double bricksHeight = (bricks * 65 + (bricks - 1) * 10 + 20) / 304.8;
-                    while (bricksHeight < nominalHeight)
-                    {
-                        bricks++;
-                        bricksHeight = (bricks * 65 + (bricks - 1) * 10 + 20) / 304.8;
-                    }
-                    return bricksHeight;
+                    //case (int)BuiltInCategory.OST_PipingSystem:
+                    //    i.Type = "ВК";
+                    //    break;
+                    case (int)BuiltInCategory.OST_DuctSystem:
+                        return "ОВ";
+                    default:
+                        return "";
                 }
-                else return Math.Ceiling(nominalHeight * 304.8 / 100) * 100 / 304.8;
             }
-        }
-        public XYZ InsertPoint { get { return new XYZ(CenterPoint.X, CenterPoint.Y, LevelOffset); } }
-        public double LevelOffset
+        }        
+       
+        double CalculateHorAngle()
         {
-            get
+            XYZ vec = GeometryUtils.GetDuctDirection(PipeConnectorManager);
+            // проецируем вектор на плоскость XY
+            XYZ hor_vec = new XYZ(vec.X, vec.Y, 0);
+            return hor_vec.AngleTo(XYZ.BasisY);
+        }
+
+        private XYZ calculateProjectedPoint()
+        {
+            Curve pipe_curve = GeometryUtils.FindDuctCurve(PipeConnectorManager);
+            if (pipe_curve == null) return new XYZ(CollisionPoint.X, CollisionPoint.Y, CollisionPoint.Z);
+            Transform tr = GeometryUtils.GetCorrectionTransform(LinkInstance);
+            pipe_curve = pipe_curve.CreateTransformed(tr.Inverse);
+
+            XYZ pt = null;
+            if (Host is Wall)
             {
-                double nominalLevelOffset = CenterPoint.Z - Level.Elevation - HoleHeight / 2;
-                if (IsBrick)
-                {
-                    int bricks = 0;
-                    double bricksHeight = (bricks * 65 + (bricks - 1) * 10) / 304.8;
-                    while (bricksHeight < nominalLevelOffset)
-                    {
-                        bricks++;
-                        bricksHeight = (bricks * 65 + (bricks - 1) * 10) / 304.8;
-                    }
-                    return bricksHeight;
-                }
-                else return Math.Round(nominalLevelOffset * 304.8 / 50) * 50 / 304.8;
+                Wall w = Host as Wall;
+                LocationCurve wloc = w.Location as LocationCurve;
+                Curve wall_curve = wloc.Curve;
+                var intersectCurve = pipe_curve.Project(wall_curve.GetEndPoint(0));
+                pt = intersectCurve.XYZPoint;
             }
+            else if (Host is Floor)
+            {
+                Solid s = GeometryUtils.GetSolid(Host);
+                PlanarFace face = s.Faces.Cast<PlanarFace>().Where(x => x.FaceNormal.IsAlmostEqualTo(XYZ.BasisZ)).First();
+                Surface surface = face.GetSurface();
+                UV uv; 
+                double distance;
+                surface.Project(pipe_curve.GetEndPoint(0), out uv, out distance);
+                pt = face.Evaluate(uv);
+            }
+            return pt;
         }
-        public double GroundOffset
+
+        private Outline CalculatePipeOutline()
         {
-            get { return LevelOffset + Level.Elevation; }
+            // находим габариты MepCurve по размерам коннекторов
+            // если они круглые - берем радиус, в противном случае ширина х высота
+            var connectors = GeometryUtils.GetConnectors(PipeConnectorManager);
+            var roundCons = connectors.Where(x => x.Shape == ConnectorProfileType.Round);
+            var rectangleCons = connectors.Where(x => x.Shape == ConnectorProfileType.Rectangular);
+
+            double maxR = roundCons.Count() > 0 ? roundCons.Max(x => x.Radius) * 2 : 0;
+            double maxW = rectangleCons.Count() > 0 ? rectangleCons.Max(x => x.Width) : 0;
+            double maxH = rectangleCons.Count() > 0 ? rectangleCons.Max(x => x.Height) : 0;
+
+            double width = maxR > maxW ? maxR : maxW;
+            double height = maxR > maxH ? maxR : maxH;
+            
+            // вычисляем толщины конструкции
+            double depth = 1;
+            if (Host is Wall)
+            {
+                depth = (Host as Wall).Width;
+            }
+            else if (Host is Floor)
+            {
+                depth = (Host as Floor).get_Parameter(BuiltInParameter.FLOOR_ATTR_THICKNESS_PARAM).AsDouble();
+            }
+
+            // Определяем направление воздуховода и пересечение с конструкцией
+            XYZ vec = GeometryUtils.GetDuctDirection(PipeConnectorManager);
+            XYZ pt = calculateProjectedPoint();
+            // Сеть идет строго вертикально
+            if (vec.IsAlmostEqualTo(XYZ.BasisZ) | vec.IsAlmostEqualTo(XYZ.BasisZ.Negate()))
+            {
+                width += Offset * 2;
+                height += Offset * 2;
+                //смещаем на половину глубины, т.к. точка у перекрытий вычисляется на поверхности
+                pt = new XYZ(pt.X, pt.Y, pt.Z - depth / 2);
+
+                // определяем большую сторону сети по габаритам
+                // т.к. в вертикальной плоскости ширина воздуховода может идти и по оси Х и по оси Y
+                var bbox = Pipe.get_BoundingBox(null);
+                XYZ diagonal = bbox.Max - bbox.Min;
+                Outline outline;
+                if (diagonal.X > diagonal.Y)
+                {
+                    outline = Intersection.CreateOutline(pt, width, height, depth);
+                }
+                else
+                {
+                    outline = Intersection.CreateOutline(pt, height, width, depth);
+                }
+                // угол не задает, т.к. в горзонтальной плоскости уже все развернуто
+                return outline;
+            }
+            // Сеть идет в горизонтальной плоскости
+            else if (vec.IsAlmostEqualTo(new XYZ(vec.X, vec.Y, 0)))
+            {
+                width += Offset * 2;
+                height += Offset * 2;
+                var outline = Intersection.CreateOutline(pt, width, depth, height);
+                // а здесь угол вычисляем
+                Angle = CalculateHorAngle();
+                return outline;
+            }
+            else
+            {
+                throw new NotImplementedException("Поддерживаются только вертикальные воздуховоды или расположенные в горизонтальной плоскости");
+            }
+
+            
+        }
+
+        public IntersectionMepCurve(Element host, Element pipe, XYZ pt, RevitLinkInstance instance)
+        {
+            Host = host;
+            Pipe = pipe;
+            Id = host.Id.GetHashCode() | pipe.Id.GetHashCode();
+            LinkInstance = instance;
+            CollisionPoint = pt;
+            if (Host == null) throw new ArgumentNullException("Host", "Элемент не может быть null");
+            if (Pipe == null) throw new ArgumentNullException("Pipe", "Элемент не может быть null");
+            Outline = CalculatePipeOutline();
+            DefaultInit();
         }
     }
+
 
     [Transaction(TransactionMode.Manual)]
     class WallOpeningHandler : BaseIntersectionHandler, IExternalCommand
     {
-        internal override string openingFamilyName { get { return "ТеррНИИ_ОтверстиеПрямоугольное_Стена"; } }
+        internal override string openingFamilyName { get { return TerrSettings.WallOpeningFamilyName; } }
 
         internal override IEnumerable<HostObject> hosts
         {
@@ -374,7 +638,7 @@ namespace TerrTools
     [Transaction(TransactionMode.Manual)]
     class FloorOpeningHandler : BaseIntersectionHandler, IExternalCommand
     {
-        internal override string openingFamilyName { get { return "ТеррНИИ_ОтверстиеПрямоугольное_Перекрытие"; } }
+        internal override string openingFamilyName { get { return TerrSettings.FloorOpeningFamilyName; } }
 
         internal override IEnumerable<HostObject> hosts
         {
