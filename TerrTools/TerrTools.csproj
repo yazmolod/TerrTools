@@ -114,6 +114,7 @@
     <Compile Include="Commands\ColumnFinish.cs" />
     <Compile Include="Commands\DebuggingTools.cs" />
     <Compile Include="Commands\GridAxes.cs" />
+    <Compile Include="Commands\IzometryGenerator .cs" />
     <Compile Include="Commands\PythonExecuter.cs" />
     <Compile Include="GlobalSettings.cs" />
     <Compile Include="Logging.cs" />
@@ -156,7 +157,7 @@
     </Compile>
     <Compile Include="UI\TwoDoc.Designer.cs">
       <DependentUpon>TwoDoc.cs</DependentUpon>
-      </Compile>
+    </Compile>
     <Compile Include="UI\GridAxesForm.cs">
       <SubType>Form</SubType>
     </Compile>
