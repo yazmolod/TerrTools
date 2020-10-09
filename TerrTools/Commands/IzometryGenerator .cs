@@ -35,7 +35,10 @@ namespace TerrTools
                 trans.Start();
                 foreach (var sysName in systemsNames)
                 {
-                    CreateAView(doc, sysName, viewNames, viewType);
+                    if (sysName != null)
+                    {
+                        CreateAView(doc, sysName, viewNames, viewType);
+                    }
                 }
                 trans.Commit();
             }
@@ -102,6 +105,15 @@ namespace TerrTools
         // Метод для создания фильтра
         private ParameterFilterElement CreateAFilter(Document doc, string systemName)
         {
+            // Получаем список фильтров в документе.
+            var docFiltersList = new FilteredElementCollector(doc).OfClass(typeof(ParameterFilterElement)).ToElements();
+            // Содержит имена существующих в проекте фильтров.
+            List<string> docNamesFiltersList = new List<string>();
+            foreach (var item in docFiltersList)
+            {
+                docNamesFiltersList.Add(item.Name);
+            }
+            // Необходимые для работы категории.
             List<BuiltInCategory> categories = new List<BuiltInCategory>() {
                 BuiltInCategory.OST_DuctAccessory,
                 BuiltInCategory.OST_PipeAccessory,
@@ -131,27 +143,44 @@ namespace TerrTools
             // Правила.
             var rule = ParameterFilterRuleFactory.CreateNotEqualsRule(parameterId, systemName, true);
             var elementFilter = new ElementParameterFilter(rule);
-            // Имя фильтра.vehfl
+            // Имя фильтра.
             string filterName = null;
             ParameterFilterElement filter = null;
-            if (FilterElement.IsNameUnique(doc, systemName))
+            // Проверяет, уникально ли имя systemName.
+            // Если да, то создает новое имя для фильтра
+            // с префиксом _terrPlugin, в обратном случае
+            // использует уже существующее.
+            // проверять не методом IsNameUnique,
+            // а сверять по списку docFiltersList!!! ***
+            filterName = string.Concat(systemName, "_terrPlugin");
+            if (docNamesFiltersList.Contains(filterName))
             {
-                filterName = systemName;
+                foreach (var item in docFiltersList)
+                {
+                    if (item.Name == filterName)
+                    {
+                        filterName = item.Name;
+                        // Используем уже имеющийся фильтр. ***
+                        filter = (ParameterFilterElement)item;
+                    }
+                }
             }
             else
             {
-                filterName = systemName + "_generated";
+                // Создаем новый, т.к. его ещё нету.
+                if (filterName != null)
+                {
+                    // Создаем фильтр. ***
+                    filter = ParameterFilterElement.Create(doc, filterName, categoriesIds, elementFilter);
+                }
             }
-            if (filterName!=null)
-            {
-                // Создаем фильтр.
-                filter = ParameterFilterElement.Create(doc, filterName, categoriesIds, elementFilter);
-            }
+            
             return filter;
         }
         // Метод для добавления фильтра.
         private View AddFilter(Document doc, View view, string systemName)
         {
+            // сюда надо имя системы без префиксов
             var filter = CreateAFilter(doc, systemName);
             view.AddFilter(filter.Id);
             view.SetFilterVisibility(filter.Id, false);
@@ -175,17 +204,28 @@ namespace TerrTools
             var viewtypeId = views.Where(x => x.Name == "3D вид").ToList();
             return viewtypeId[0].Id;
         }
-        
         // Метод для создания видов.
         private void CreateAView(Document doc, string systemName, List<string> viewNames, ElementId viewType)
         {
+            string filterName = systemName;
             View view = View3D.CreateIsometric(doc, viewType);
             // Если в проекте уже имеется 3D-вид с таким названием,
             // то добавляем к имени создаваемого 3D-вида
             // префикс с текущим временем.
+            
             if (viewNames.Contains(systemName))
             {
-                view.Name = systemName + "test!";
+                int counter = 1;
+                while (viewNames.Contains(systemName))
+                {
+                    if (systemName.Contains("_"))
+                    {
+                        systemName = systemName.Remove(systemName.Length - 2, 2);
+                    }
+                    systemName = String.Concat(systemName, "_", counter);
+                    counter++;
+                }
+                view.Name = systemName;
             }
             else
             {
@@ -194,7 +234,8 @@ namespace TerrTools
             // Устанавливаем ориентацию вида.
             view = SetOrientation((View3D)view);
             // Устанавливаем фильтр для вида.
-            view = AddFilter(doc, view, systemName);
+            // вероятно тут надо другое имя
+            view = AddFilter(doc, view, filterName);
             var p = view.LookupParameter("Подкатегория");
             if (p!=null)
             {
