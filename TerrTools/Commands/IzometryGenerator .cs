@@ -30,6 +30,8 @@ namespace TerrTools
             var viewNames = Get3DViewNames(doc);
             var viewType = GetViewType(doc);
             var systemsNames = GetSystemNames(doc);
+            IzometryGeneratorForm form = new IzometryGeneratorForm(systemsNames);
+            form.ShowDialog();
             using (Transaction trans = new Transaction(doc, "Создание изометрий"))
             {
                 trans.Start();
