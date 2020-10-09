@@ -66,7 +66,6 @@ namespace TerrTools
 
         protected void PlaceOpeningFamilies(IEnumerable<Intersection> intersections)
         {
-            LoggingMachine.Reset();
             var log_param = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров размеров");
             var log_id = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров id");
             var log_level = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров уровня");
@@ -145,7 +144,7 @@ namespace TerrTools
         {
             // Коррекция позиции связанного файла
             // Так как перемещаем не ПЛОСКОСТЬ, а ЛУЧИ, то инвертируем перемещение
-            Transform tf = GeometryUtils.GetCorrectionTransform(linkedDocInstance);
+            Transform tf = DocumentUtils.GetCorrectionTransform(linkedDocInstance);
             tf = tf.Inverse;
             Curve correctedCurve = DuctCurve.CreateTransformed(tf);
             //The intersection point
@@ -163,7 +162,7 @@ namespace TerrTools
 
         public List<IntersectionMepCurve> GetIntersections()
         {
-            linkedDocInstance = GeometryUtils.ChooseLinkedDoc(doc);
+            linkedDocInstance = DocumentUtils.ChooseLinkedDoc(doc);
             if (linkedDocInstance==null)
             {
                 return new List<IntersectionMepCurve>();
@@ -171,7 +170,7 @@ namespace TerrTools
             else
             {
                 var progress = new UI.ProgressBar("Поиск пересечений...", hosts.Count());
-                Transform tr = GeometryUtils.GetCorrectionTransform(linkedDocInstance);
+                Transform tr = DocumentUtils.GetCorrectionTransform(linkedDocInstance);
                 List<IntersectionMepCurve> intersectionList = new List<IntersectionMepCurve>();
                 foreach (HostObject host in hosts)
                 {
@@ -506,7 +505,7 @@ namespace TerrTools
         {
             Curve pipe_curve = GeometryUtils.FindDuctCurve(PipeConnectorManager);
             if (pipe_curve == null) return new XYZ(CollisionPoint.X, CollisionPoint.Y, CollisionPoint.Z);
-            Transform tr = GeometryUtils.GetCorrectionTransform(LinkInstance);
+            Transform tr = DocumentUtils.GetCorrectionTransform(LinkInstance);
             pipe_curve = pipe_curve.CreateTransformed(tr.Inverse);
 
             XYZ pt = null;

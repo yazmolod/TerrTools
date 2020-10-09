@@ -10,36 +10,43 @@ namespace TerrTools
 {
     class ElementProcessingLog
     {
-        public ElementProcessingLog(string operation, IEnumerable<ElementId> all, string type = "", string tip = "")
+        public ElementProcessingLog(string operation, IEnumerable<ElementId> all, string errorType = "", string tip = "")
         {
             AllElementIds = all.Select(x => x.ToString()) ;
             Operation = operation;
             Tip = tip;
-            ErrorType = type;
+            ErrorType = errorType;
         }
 
-        public ElementProcessingLog(string operation, IEnumerable<int> all, string type = "", string tip = "")
+        public ElementProcessingLog(string operation, string errorType = "", string tip = "")
+        {
+            Operation = operation;
+            Tip = tip;
+            ErrorType = errorType;
+        }
+
+        public ElementProcessingLog(string operation, IEnumerable<int> all, string errorType = "", string tip = "")
         {
             AllElementIds = all.Select(x => x.ToString());
             Operation = operation;
             Tip = tip;
-            ErrorType = type;
+            ErrorType = errorType;
         }
 
-        public ElementProcessingLog(string operation, IEnumerable<Element> all, string type = "", string tip = "")
+        public ElementProcessingLog(string operation, IEnumerable<Element> all, string errorType = "", string tip = "")
         {
             AllElementIds = all.Select(x=>x.Id.ToString());
             Operation = operation;
             Tip = tip;
-            ErrorType = type;
+            ErrorType = errorType;
         }
 
-        public ElementProcessingLog(string operation, IEnumerable<string> all, string type = "", string tip = "")
+        public ElementProcessingLog(string operation, IEnumerable<string> all, string errorType = "", string tip = "")
         {
             AllElementIds = all;
             Operation = operation;
             Tip = tip;
-            ErrorType = type;
+            ErrorType = errorType;
         }
 
         public void AddError(string item)
@@ -67,15 +74,6 @@ namespace TerrTools
     static class LoggingMachine
     {
         static private Stack<ElementProcessingLog> Stack { get; set; } = new Stack<ElementProcessingLog>();
-        static public void Add(ElementProcessingLog error)
-        {
-            Stack.Push(error);
-        }
-
-        static public void AddLog(IEnumerable<ElementProcessingLog> errors)
-        {
-            foreach (var e in errors) Stack.Push(e);
-        }
 
         static public void Reset()
         {
@@ -85,6 +83,13 @@ namespace TerrTools
         static public ElementProcessingLog NewLog(string operation, IEnumerable<ElementId> all, string type = "", string tip = "")
         {
             ElementProcessingLog log = new ElementProcessingLog(operation, all, type, tip);
+            Stack.Push(log);
+            return log;
+        }
+
+        static public ElementProcessingLog NewLog(string operation, string type = "", string tip = "")
+        {
+            ElementProcessingLog log = new ElementProcessingLog(operation, type, tip);
             Stack.Push(log);
             return log;
         }
@@ -118,8 +123,16 @@ namespace TerrTools
                 if (!showEmpty && error.FailedElementIds.Count() == 0) continue;
                 string allErrorIds = String.Join(", ", error.FailedElementIds);
                 TaskDialog dialog = new TaskDialog("Результат");
-                dialog.MainInstruction = String.Format("Операция: {0}\nТип ошибки: {1}\nНеудачно: {2} из {3}", 
-                    error.Operation, error.ErrorType, error.FailedElementIds.Count(), error.AllElementIds.Count());
+                if (error.AllElementIds != null)
+                {
+                    dialog.MainInstruction = String.Format("Операция: {0}\nТип ошибки: {1}\nНеудачно: {2} из {3}",
+                        error.Operation, error.ErrorType, error.FailedElementIds.Count(), error.AllElementIds.Count());
+                }
+                else
+                {
+                    dialog.MainInstruction = String.Format("Операция: {0}\nТип ошибки: {1}\nНеудачно: {2}",
+                        error.Operation, error.ErrorType, error.FailedElementIds.Count());
+                }
                 dialog.MainContent = "Перечень id элементов:\n"
                     + allErrorIds;
                 dialog.FooterText = error.Tip;
@@ -131,6 +144,7 @@ namespace TerrTools
                     TaskDialog.Show("Результат", "Данные успешно скопированы в буфер обмена");
                 }
             }
+            LoggingMachine.Reset();
         }
     }
 }
