@@ -144,7 +144,7 @@ namespace TerrTools.UI
             dialog.Multiselect = false;
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                var i = CollisionUtilities.HTMLToMEPIntersections(Handler.doc, dialog.FileName);
+                var i = CollisionUtils.HTMLToMEPIntersections(Handler.doc, dialog.FileName);
                 Intersections.AddRange(i);
                 UpdateTableValues();
             }

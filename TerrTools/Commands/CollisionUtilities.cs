@@ -11,7 +11,6 @@ using HtmlAgilityPack;
 using System.IO;
 using TerrTools.UI;
 using Autodesk.Revit.UI;
-using TerrTools.UI;
 
 namespace TerrTools
 {
@@ -22,6 +21,8 @@ namespace TerrTools
         public CollisionReportHeader Header { get; }
         public List<CollisionReportRow> Rows { get; }
         public CollisionReportRow this[int i] { get => Rows[i]; }
+        public string Document1Name { get; }
+        public string Document2Name { get; }
         public CollisionReportTable(string path)
         {
             Path = path;
@@ -288,133 +289,78 @@ namespace TerrTools
         }
     }
 
-    class CollisionUtilities
+    class CollisionUtils
     {
+        /// <summary>
+        /// Поиск элементов из строки отчета в текущем документе и связанных файлах
+        /// </summary>
+        /// <param name="elementsInDocument">Коллекция, в которую складываются элементы из текущего документа</param>
+        /// /// <param name="elementsInLink">Коллекция, в которую складываются элементы из связанного</param>
+        /// /// <param name="linkInstance">Если найдены элементы в связи, возвращает объект связи; в противном случае null</param>
+        static public void GetElementsFromReportRow(Document doc,
+                                                          CollisionReportRow row,
+                                                          out ICollection<Element> elementsInDocument,
+                                                          out ICollection<Element> elementsInLink,
+                                                          out RevitLinkInstance linkInstance)
+        {
+            linkInstance = null;
+            DocumentDataSet docSet = new DocumentDataSet(doc, true);
+            Document doc1 = docSet[row.E1_DocumentName]?.Document;
+            Document doc2 = docSet[row.E2_DocumentName]?.Document;
+            Element e1 = null;
+            Element e2 = null;
+            if (doc1 != null) e1 = doc1.GetElement(row.E1_Id);
+            if (doc2 != null) e2 = doc2.GetElement(row.E2_Id);
+
+            elementsInDocument = new List<Element>();
+            elementsInLink = new List<Element>();
+            if (e1 != null)
+            {
+                if (doc1.IsLinked)
+                {
+                    elementsInLink.Add(e1);
+                    linkInstance = docSet[row.E1_DocumentName].Instance;
+                }
+                else elementsInDocument.Add(e1);
+            }
+            if (e2 != null)
+            {
+                if (doc2.IsLinked)
+                {
+                    elementsInLink.Add(e2);
+                    linkInstance = docSet[row.E2_DocumentName].Instance;
+                }
+                else elementsInDocument.Add(e2);
+            }
+        }
+
         public static List<IntersectionMepCurve> HTMLToMEPIntersections(Document hostdoc, string path)
-        {            
+        {
+            var rowLog = LoggingMachine.NewLog("Распознование коллизий", "", "Не найден файл с элементом, не обновлена связь или элементы уже удалены");
             List<IntersectionMepCurve> result = new List<IntersectionMepCurve>();
             CollisionReportTable table = new CollisionReportTable(path);
-
-            // логгирование
-            LoggingMachine.Reset();
-            var log_lostHost = LoggingMachine.NewLog("Чтение строк HTML", 
-                table.Rows.Select(x => x.E1_Id), "Элемент отсутствует в текущем документе");
-            var log_lostLink = LoggingMachine.NewLog("Чтение строк HTML", 
-                table.Rows.Select(x => x.E2_Id), "Элемент отсутствует в связанном документе");
-
-            var dialog = new UI.TwoDoc(hostdoc, table);
-            if (System.Windows.Forms.DialogResult.OK == dialog.ShowDialog())
+            foreach (CollisionReportRow row in table.Rows)
             {
-                foreach (CollisionReportRow row in table.Rows)
+                GetElementsFromReportRow(hostdoc, row,
+                    out ICollection<Element> docElems, out ICollection<Element> linkElems, out RevitLinkInstance linkdocInstance);
+                // в Naviswork система координат по внутренней площадке документа
+                // поэтому необходимо и корректировать по местной системе координат
+                ProjectLocation pl = hostdoc.ActiveProjectLocation;
+                XYZ centerPoint = pl.GetTransform().OfPoint(row.Point);
+                // определяем, где конструкция, а где сеть
+                var findedElems = docElems.Concat(linkElems);
+                Element host = findedElems.FirstOrDefault(x => x is Wall || x is Floor);
+                Element pipe = findedElems.FirstOrDefault(x => x is MEPCurve ||
+                                                        (x is FamilyInstance && (x as FamilyInstance).MEPModel.ConnectorManager != null));
+                // создание объекта пересечения
+                if (host != null && pipe != null)
                 {
-                    /* спарсенный отчет мы превращаем в массив из объектов кастомного класса 
-                     * IntersectionMepCurve (см. реализацию в файле Openings.cs)
-                     * Ниже прописана логика забора элемента из текущего и связанного документа
-                     * на основе выбора в диалоге. На данный момент сейчас работает ТОЛЬКО
-                     * один вариант - один в текущем, другой в связанном. Для остальных случаев тут 
-                     * надо править логику
-                     */
-                    ElementId hostid = ElementId.InvalidElementId;
-                    ElementId pipeid = ElementId.InvalidElementId;
-                    RevitLinkInstance linkdocInstance = null;
-                    Element host = null;
-                    Element pipe = null;
-                    switch (dialog.LinkElementNumber)
-                    {
-                        case 0:
-                            //ни один не линк
-                            break;
-                        case 1:
-                            //линк первый элемент
-                            linkdocInstance = dialog.LinkInstance1;
-                            pipeid = row.E1_Id;
-                            pipe = linkdocInstance.GetLinkDocument().GetElement(pipeid);
-                            break;
-                        case 2:
-                            //линк второй элемент
-                            linkdocInstance = dialog.LinkInstance2;
-                            pipeid = row.E2_Id;
-                            pipe = linkdocInstance.GetLinkDocument().GetElement(pipeid);
-                            break;
-                        case 3:
-                            // оба линки
-                            linkdocInstance = dialog.LinkInstance1;
-                            Element e1 = linkdocInstance.GetLinkDocument().GetElement(row.E1_Id);
-                            linkdocInstance = dialog.LinkInstance2;
-                            Element e2 = linkdocInstance.GetLinkDocument().GetElement(row.E2_Id);
-                            if (e1 is HostObject)
-                            {
-                                host = e1;
-                                hostid = row.E1_Id;
-                                pipe = e2;
-                                pipeid = row.E2_Id;
-                            }
-                            else
-                            {
-                                host = e2;
-                                hostid = row.E2_Id;
-                                pipe = e1;
-                                pipeid = row.E1_Id;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-
-                    switch (dialog.HostElementNumber)
-                    {
-                        case 0:
-                            //ни один не в текущем документе
-                            break;
-                        case 1:
-                            //линк первый элемент
-                            hostid = row.E1_Id;
-                            host = hostdoc.GetElement(hostid);
-                            break;
-                        case 2:
-                            //линк второй элемент
-                            hostid = row.E2_Id;
-                            host = hostdoc.GetElement(hostid);
-                            break;
-                        case 3:
-                            //оба в текущем документе
-                            Element e1 = hostdoc.GetElement(row.E1_Id);
-                            Element e2 = hostdoc.GetElement(row.E2_Id);
-                            if (e1 is HostObject)
-                            {
-                                host = e1;
-                                hostid = row.E1_Id;
-                                pipe = e2;
-                                pipeid = row.E2_Id;
-                            }
-                            else
-                            {
-                                host = e2;
-                                hostid = row.E2_Id;
-                                pipe = e1;
-                                pipeid = row.E1_Id;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-
-                    // точка из отчета дана относительно площадки - корректируем на проект
-                    ProjectLocation pl = hostdoc.ActiveProjectLocation;
-                    XYZ corrPt = pl.GetTransform().OfPoint(row.Point);
-                    if (host == null)
-                    {
-                        log_lostHost.AddError(hostid);
-                    }
-                    else if (pipe == null)
-                    {
-                        log_lostHost.AddError(pipeid);
-                    }
-                    else
-                    {
-                        var intr = new IntersectionMepCurve(host, pipe, corrPt, linkdocInstance);
-                        result.Add(intr);
-                    }
+                    var intr = new IntersectionMepCurve(host, pipe, centerPoint, linkdocInstance);
+                    result.Add(intr);
+                }
+                else
+                {
+                    rowLog.AddError(row.Name);
                 }
             }
             LoggingMachine.Show();

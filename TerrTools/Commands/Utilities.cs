@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.IFC;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
-
+using System.Collections;
 
 namespace TerrTools
 {
@@ -449,7 +449,7 @@ namespace TerrTools
                                 .OfCategory(BuiltInCategory.OST_Levels)
                                 .WhereElementIsNotElementType()
                                 .Cast<Level>()
-                                .OrderBy(x=>x.ProjectElevation)
+                                .OrderBy(x => x.ProjectElevation)
                                 .ToArray();
             double z = pt.Z;
             for (int i = levels.Length - 1; i > 0; i--)
@@ -526,9 +526,97 @@ namespace TerrTools
                 if (pf != null) normalFaces.Add(pf);
             }
             return normalFaces;
-        }                  
+        }
+    }
 
-        static public RevitLinkInstance GetLinkedDoc(Document doc)
+    public class DocumentDataSet: IEnumerable<DocumentData>
+    {
+        ICollection<DocumentData> Docs { get; }
+        public DocumentData this[string name]
+        {
+            get
+            {
+                return Docs.Where(x => x.Basename == name).FirstOrDefault();
+            }
+        }
+
+        /// <summary>
+        /// Возвращает данные по всем связанным документам в проекте
+        /// </summary>
+        /// <param name="doc">Документ, в котором документы</param>
+        /// <param name="includeCurrent">Включать ли текущий документ в выдачу</param>
+        public DocumentDataSet(Document doc, bool includeCurrent)
+        {
+            Docs = new FilteredElementCollector(doc).OfClass(typeof(RevitLinkInstance))
+                .Cast<RevitLinkInstance>().Select(x => new DocumentData(x)).ToList();
+            if (includeCurrent) Docs.Add(new DocumentData(doc));
+        }
+
+        public IEnumerator<DocumentData> GetEnumerator()
+        {
+            return Docs.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+    }
+
+    public class DocumentData
+    {
+        /// <summary>
+        /// Имя документа без расширения и указания локальной копии пользователя
+        /// </summary>
+        public string Basename { get; }
+        /// <summary>
+        /// Указывает, является ли подгруженной связью
+        /// </summary>
+        public bool IsLink { get; }
+        /// <summary>
+        /// Указывает, загружена ли связь в проект
+        /// </summary>
+        public bool IsLoaded { get; }
+        public Document Document { get; }
+        public RevitLinkInstance Instance { get; }
+        /// <summary>
+        /// Вектор, который позволяет скорректировать координаты из связи относительно координатной системы в проекте
+        /// </summary>
+        public Transform InstanceCorrectionTransform { get; }
+
+        /// <summary>
+        /// Экземпляр класса с информацией по документу
+        /// </summary>
+        public DocumentData(Document doc)
+        {
+            Basename = Regex.Match(doc.Title, @"(.+)_.+").Groups[1].Value;
+            if (Basename == "") Basename = doc.Title;
+            IsLink = false;
+            Document = doc;
+            Instance = null;
+            IsLoaded = false;
+            InstanceCorrectionTransform = null;
+        }
+
+        /// <summary>
+        /// Экземпляр класса с информацией по документу связанного файла
+        /// </summary>
+        public DocumentData(RevitLinkInstance link)
+        {
+            Basename = Regex.Match(link.Name, @"(.+)\.rvt").Groups[1].Value;
+            IsLink = true;
+            Document = link.GetLinkDocument();
+            IsLoaded = Document != null;
+            Instance = link;
+            InstanceCorrectionTransform = DocumentUtils.GetCorrectionTransform(link);
+        }
+    }
+    
+    class DocumentUtils {
+        /// <summary>
+        /// Выбор связанного документа через диалоговое окно
+        /// </summary>
+        static public RevitLinkInstance ChooseLinkInstance(Document doc)
         {
             RevitLinkInstance[] linkedDocs = new FilteredElementCollector(doc).OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().ToArray();
             var form = new UI.OneComboboxForm("Выберите связанный файл", (from d in linkedDocs select d.Name).ToArray());
@@ -545,7 +633,7 @@ namespace TerrTools
 
         static public RevitLinkInstance ChooseLinkedDoc(Document currentDoc)
         {
-            RevitLinkInstance linkedDocInstance = GetLinkedDoc(currentDoc);
+            RevitLinkInstance linkedDocInstance = ChooseLinkInstance(currentDoc);
             if (linkedDocInstance == null)
                 return null;
 
@@ -559,6 +647,7 @@ namespace TerrTools
                 return linkedDocInstance;
             }
         }
+
 
         static public Transform GetCorrectionTransform(RevitLinkInstance linkedDocInstance)
         {
@@ -714,7 +803,7 @@ namespace TerrTools
         public void DrawGroup(CurveArray curves, string name)
         {
             ModelCurveArray roomShape = MakeModelCurve(curves);
-            Group group = _doc.Create.NewGroup(roomShape.Cast<ModelCurve>().Select(x => x.Id).ToList());
+            Autodesk.Revit.DB.Group group = _doc.Create.NewGroup(roomShape.Cast<ModelCurve>().Select(x => x.Id).ToList());
             group.GroupType.Name = name;
         }
     }

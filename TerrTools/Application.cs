@@ -270,15 +270,12 @@ namespace TerrTools
                     "В проекте и семействах"
                     ));
 
-            /*  Толку от этой функции немного
-             *  
             pbDict.Add("CopyRoomShape",
                 MakePushButton(
                     "CopyRoomShape",
                     "Создать контур\nпомещения",
                     iconName:"Shape.png"
-                    ));
-            */
+                    ));            
 
             pbDict.Add("SystemScheduleExporter",
                 MakePushButton(
@@ -306,6 +303,14 @@ namespace TerrTools
                     "Создать сетку\nкоординационных осей",
                     iconName: "Grids.png",
                     toolTip: "Создает сетку осей с заданным шагом"
+                    ));
+
+            pbDict.Add("CollisionViewer",
+                MakePushButton(
+                    "CollisionViewer",
+                    "Просмотр\nколлизий",
+                    iconName: "Goal.png",
+                    toolTip: "Просмотр отчета о коллизиях в отдельном окне"
                     ));
 
             ///
@@ -340,13 +345,15 @@ namespace TerrTools
             /// Общая панель
             ///
             panelGeneral.AddItem(pbDict["FocusOnElement"]);
+            panelGeneral.AddItem(pbDict["CollisionViewer"]);
             tempBtn = panelGeneral.AddItem(plDict["UpdateType"]) as PulldownButton;
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
             panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
             panelGeneral.AddItem(pbDict["GridAxes"]);
-            panelGeneral.AddItem(pbDict["PythonExecuter"]);
-            
+            panelGeneral.AddItem(pbDict["CopyRoomShape"]);
+            panelGeneral.AddItem(pbDict["PythonExecuter"]);            
+
 
             ///
             /// Настройки
