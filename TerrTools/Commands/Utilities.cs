@@ -736,17 +736,17 @@ namespace TerrTools
             return modelCurve;
         }
 
-        public ModelCurveArray MakeModelCurve(XYZ[] pts, bool close = true)
+        public ModelCurveArray MakeModelCurve(IEnumerable<XYZ> pts, bool close = true)
         {
             ModelCurve modelCurve;
             ModelCurveArray array = new ModelCurveArray();
-            if (pts.Length < 3)
+            if (pts.Count() < 3)
             {
                 throw new ArgumentException("Требуется больше трех точек");
             }
-            for (int i = 0; i < pts.Length - 1; i++)
+            for (int i = 0; i < pts.Count() - 1; i++)
             {
-                modelCurve = MakeModelCurve(pts[i], pts[i + 1]);
+                modelCurve = MakeModelCurve(pts.ElementAt(i), pts.ElementAt(i + 1));
                 array.Append(modelCurve);
             }
             if (close)

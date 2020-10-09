@@ -241,14 +241,14 @@ namespace TerrTools
             pbDict.Add("WallOpening",
            MakePushButton(
                 "WallOpeningHandler",
-                "Генерация отверстий",
+                "Генерация\nотверстий",
                 "Вставляет отверстия в местах пересечений с системами",
                 "Openings.png"
                 ));
             pbDict.Add("GenerateFloor",
            MakePushButton(
                 "FloorFinishing",
-                "Отделка пола",
+                "Отделка\nпола",
                 "Создает элемент \"Перекрытие\" нужного типоразмера в указанных помещениях",
                 "Brush.png"
                 ));
@@ -293,14 +293,14 @@ namespace TerrTools
             pbDict.Add("ColumnFinish",
                 MakePushButton(
                     "ColumnFinish",
-                    "Отделка колонн",
+                    "Отделка\nколонн",
                     iconName: "Column.png",
                     toolTip: "Автоматически генерирует штукатурку для всех колонн, находящихся в помещениях"
                     ));
             pbDict.Add("GridAxes",
                 MakePushButton(
                     "GridAxes",
-                    "Создать сетку\nкоординационных осей",
+                    "Создать сетку\nосей",
                     iconName: "Grids.png",
                     toolTip: "Создает сетку осей с заданным шагом"
                     ));
@@ -313,12 +313,19 @@ namespace TerrTools
                     toolTip: "Просмотр отчета о коллизиях в отдельном окне"
                     ));
 
+            pbDict.Add("InsulCurves",
+                MakePushButton(
+                    "InsulCurves",
+                    "3D маркировка\nизоляции",
+                    iconName: "Insul.png"
+                    ));
+
             ///
             /// Pulldown buttons
             ///
             plDict.Add("UpdateType",
                 MakePulldownButton(
-                    "Обновить шрифт",
+                    "Обновить\nшрифт",
                     "Обновление всех шрифтов в проекте под стандарты предприятия",
                     "Type.png"
                     ));
@@ -339,6 +346,7 @@ namespace TerrTools
             ///
             panelMEP.AddItem(pbDict["DiffuserProcessing"]);
             panelMEP.AddItem(pbDict["RadiatorProcessing"]);
+            panelMEP.AddItem(pbDict["InsulCurves"]);
 
 
             ///
