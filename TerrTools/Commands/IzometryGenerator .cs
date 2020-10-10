@@ -27,11 +27,36 @@ namespace TerrTools
             // Получаем uidoc
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
             // Переменные вынесены в global scope для оптимизации
-            var viewNames = Get3DViewNames(doc);
+            // В views хранятся 3D-виды, существующие в проекте.
+            IList<Element> views;
+            var viewNames = Get3DViewNames(doc, out views);
             var viewType = GetViewType(doc);
             var systemsNames = GetSystemNames(doc);
-            IzometryGeneratorForm form = new IzometryGeneratorForm(systemsNames);
-            form.ShowDialog();
+            // Уже существующие системы.
+            List<string> usedSystems = new List<string>();
+            // надо додумать, как быть если название уже с префиксом? 
+            // contains может привести к дублированию систем в форме!
+            //
+            foreach (var item in viewNames)
+            {
+                foreach (var name in systemsNames)
+                {
+                    if (item == name)
+                    {
+                        usedSystems.Add(name);
+                    }
+                }
+            }
+            IzometryGeneratorForm form = new IzometryGeneratorForm(systemsNames, usedSystems);
+            System.Windows.Forms.DialogResult r = form.ShowDialog();
+            if (r == System.Windows.Forms.DialogResult.Cancel)
+            {
+                return Result.Cancelled;
+            }
+            systemsNames = form.Result;
+            // Определяет, нужно ли автоматически заменять существующие виды
+            // или нет.
+            bool changeUsedViews = form.changeUsedViews;
             using (Transaction trans = new Transaction(doc, "Создание изометрий"))
             {
                 trans.Start();
@@ -39,7 +64,7 @@ namespace TerrTools
                 {
                     if (sysName != null)
                     {
-                        CreateAView(doc, sysName, viewNames, viewType);
+                        CreateAView(doc, sysName, viewNames, viewType, changeUsedViews, views);
                     }
                 }
                 trans.Commit();
@@ -49,10 +74,12 @@ namespace TerrTools
 
         // Метод для получения списка названий 
         // существующих 3D-видов.
-        private List<string> Get3DViewNames(Document doc)
+        private List<string> Get3DViewNames(Document doc, out IList<Element> views)
         {
+            // Названия существующих в проекте 3D-видов.
             List<string> viewNames = new List<string>();
-            var views = new FilteredElementCollector(doc).OfClass(typeof(View3D)).WhereElementIsNotElementType().ToElements();
+            // Существующие в проекте 3D-виды.
+            views = new FilteredElementCollector(doc).OfClass(typeof(View3D)).WhereElementIsNotElementType().ToElements();
             foreach (var item in views)
             {
                 viewNames.Add(item.Name);
@@ -207,14 +234,82 @@ namespace TerrTools
             return viewtypeId[0].Id;
         }
         // Метод для создания видов.
-        private void CreateAView(Document doc, string systemName, List<string> viewNames, ElementId viewType)
+        private void CreateAView(Document doc, string systemName, 
+            List<string> viewNames, ElementId viewType, bool changeUsedViews, 
+            IList<Element> views)
         {
             string filterName = systemName;
             View view = View3D.CreateIsometric(doc, viewType);
-            // Если в проекте уже имеется 3D-вид с таким названием,
-            // то добавляем к имени создаваемого 3D-вида
-            // префикс с текущим временем.
-            
+
+            // Если пользователь поставил галку на 
+            // автоматическую замену существующих
+            // 3D-видов, то будет происходить удаление
+            // существующего вида и создание нового с таким же
+            // названием.
+            if (changeUsedViews == true)
+            {
+                // Удаление старого, создание нового.
+                CreateInsteadTheOldView(doc, views, systemName, view);
+                // Устанавливаем ориентацию вида.
+                view = SetOrientation((View3D)view);
+                // Устанавливаем фильтр для вида.
+                // вероятно тут надо другое имя
+                view = AddFilter(doc, view, filterName);
+                var p = view.LookupParameter("Подкатегория");
+                if (p != null)
+                {
+                    p.Set("Сгенерированные изометрии");
+                }
+            }
+            // Если галочка на автоматической замене видов не стоит,
+            // то, если 3D-вид для создаваемой системе существует, 
+            // пользователю будет дан выбор, как поступить:
+            // создать с заменой вида, создать с сохранением старого вида(префикс),
+            // либо не создавать новый вид, оставив предыдущий.
+            else
+            {
+                if (viewNames.Contains(systemName))
+                {
+                    IzometryUserChoiceForm form2 = new IzometryUserChoiceForm(systemName);
+                    form2.ShowDialog();
+                    if (form2.Result == "С заменой")
+                    {
+                        CreateInsteadTheOldView(doc, views, systemName, view);
+                        // Устанавливаем ориентацию вида.
+                        view = SetOrientation((View3D)view);
+                        // Устанавливаем фильтр для вида.
+                        // вероятно тут надо другое имя
+                        view = AddFilter(doc, view, filterName);
+                        var p = view.LookupParameter("Подкатегория");
+                        if (p != null)
+                        {
+                            p.Set("Сгенерированные изометрии");
+                        }
+                    }
+                    else if (form2.Result == "Без замены")
+                    {
+                        CreateOverTheOldView(view, systemName, viewNames);
+                        // Устанавливаем ориентацию вида.
+                        view = SetOrientation((View3D)view);
+                        // Устанавливаем фильтр для вида.
+                        // вероятно тут надо другое имя
+                        view = AddFilter(doc, view, filterName);
+                        var p = view.LookupParameter("Подкатегория");
+                        if (p != null)
+                        {
+                            p.Set("Сгенерированные изометрии");
+                        }
+                    }
+                    else
+                    {
+                        doc.Delete(view.Id);
+                    }
+                }
+            }
+        }
+        // Создание с префиксом.
+        private void CreateOverTheOldView(View view, string systemName, List<string> viewNames)
+        {
             if (viewNames.Contains(systemName))
             {
                 int counter = 1;
@@ -233,16 +328,19 @@ namespace TerrTools
             {
                 view.Name = systemName;
             }
-            // Устанавливаем ориентацию вида.
-            view = SetOrientation((View3D)view);
-            // Устанавливаем фильтр для вида.
-            // вероятно тут надо другое имя
-            view = AddFilter(doc, view, filterName);
-            var p = view.LookupParameter("Подкатегория");
-            if (p!=null)
+        }
+        private void CreateInsteadTheOldView(Document doc, IList<Element> views, 
+            string systemName, View view)
+        {
+            foreach (var item in views)
             {
-                p.Set("Сгенерированные изометрии");
+                if (item.Name == systemName)
+                {
+                    doc.Delete(item.Id);  
+                }
+                break;
             }
+            view.Name = systemName;
         }
     }
 }
