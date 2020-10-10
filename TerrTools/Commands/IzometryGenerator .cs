@@ -31,23 +31,24 @@ namespace TerrTools
             IList<Element> views;
             var viewNames = Get3DViewNames(doc, out views);
             var viewType = GetViewType(doc);
+            // Все имена систем.
             var systemsNames = GetSystemNames(doc);
             // Уже существующие системы.
-            List<string> usedSystems = new List<string>();
+            /*List<string> usedSystems = new List<string>();
             // надо додумать, как быть если название уже с префиксом? 
             // contains может привести к дублированию систем в форме!
             //
-            foreach (var item in viewNames)
+            foreach (var item in views)
             {
                 foreach (var name in systemsNames)
                 {
-                    if (item == name)
+                    if (item.Name.Contains(name))
                     {
                         usedSystems.Add(name);
                     }
                 }
-            }
-            IzometryGeneratorForm form = new IzometryGeneratorForm(systemsNames, usedSystems);
+            }*/
+            IzometryGeneratorForm form = new IzometryGeneratorForm(systemsNames, viewNames);
             System.Windows.Forms.DialogResult r = form.ShowDialog();
             if (r == System.Windows.Forms.DialogResult.Cancel)
             {
@@ -262,7 +263,7 @@ namespace TerrTools
                 }
             }
             // Если галочка на автоматической замене видов не стоит,
-            // то, если 3D-вид для создаваемой системе существует, 
+            // то, если 3D-вид для создаваемой системы существует, 
             // пользователю будет дан выбор, как поступить:
             // создать с заменой вида, создать с сохранением старого вида(префикс),
             // либо не создавать новый вид, оставив предыдущий.
@@ -305,6 +306,22 @@ namespace TerrTools
                         doc.Delete(view.Id);
                     }
                 }
+                // Если для данной системы нет 3D-вида, 
+                // Создаем новый вид с названием имени системы.
+                else
+                {
+                    view.Name = systemName;
+                    // Устанавливаем ориентацию вида.
+                        view = SetOrientation((View3D)view);
+                        // Устанавливаем фильтр для вида.
+                        // вероятно тут надо другое имя
+                        view = AddFilter(doc, view, filterName);
+                        var p = view.LookupParameter("Подкатегория");
+                        if (p != null)
+                        {
+                            p.Set("Сгенерированные изометрии");
+                        }
+                }
             }
         }
         // Создание с префиксом.
@@ -329,6 +346,7 @@ namespace TerrTools
                 view.Name = systemName;
             }
         }
+        // Создание с "перезаписью".
         private void CreateInsteadTheOldView(Document doc, IList<Element> views, 
             string systemName, View view)
         {

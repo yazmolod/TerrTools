@@ -19,9 +19,7 @@ namespace TerrTools.UI
         public IzometryUserChoiceForm(string systemName)
         {
             InitializeComponent();
-            label1.Text = $"Внимание! Для системы '{systemName}' уже есть 3D-вид.";
-            label2.Text = "Для продолжения выберите один из трёх вариантов.";
-            
+            label1.Text = $"Внимание! В проекте для системы '{systemName}' уже есть 3D-вид.";
         }
 
         private void IzometryUserChoiceForm_Load(object sender, EventArgs e)

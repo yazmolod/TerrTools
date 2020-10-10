@@ -18,28 +18,58 @@ namespace TerrTools.UI
         // Result - те имена систем, для которых пользователь хочет создать 3D-вид.
         public List<string> Result { get; set; } = new List<string>();
         public bool changeUsedViews { get; set; } = false;
-        public IzometryGeneratorForm(List<string> systemsNames, List<string> usedSystems)
+        public IzometryGeneratorForm(List<string> systemsNames, List<string> viewNames)
         {
             InitializeComponent();
-            // Те системы, для которых поставится чекер по умолчанию.
-            // Для этих систем еще не создан 3D-вид.
-            List<string> newSystems = systemsNames.Except(usedSystems).ToList();
-            foreach (var item in newSystems)
+            // Те системы, которые уже есть(их соответственно
+            // не помечаем).
+            List<string> existingSystems = new List<string>();
+            List<string> systemsNamesCopy = new List<string>();
+            foreach (var item in systemsNames)
             {
-                if (item!=null)
+                systemsNamesCopy.Add(item);
+            }
+            foreach (var item in viewNames)
+            {
+                foreach (var name in systemsNames)
+                {
+                    if (name != null)
+                    {
+                        if (item.Contains(name))
+                        {
+                            systemsNamesCopy.Remove(name);
+                            if (existingSystems.Contains(name))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                existingSystems.Add(name);
+                            }
+                        }
+                    }
+                    
+                }
+            }
+            // systemsNamesCopy - новые системы, для
+            // которых нужно создать 3D-вид.
+            foreach (var item in systemsNamesCopy)
+            {
+                if (item != null)
                 {
                     checkedListBox1.Items.Add(item, true);
                 }
+                
             }
-            // Те системы, которые уже есть 3D-вид.
-            // По умолчанию, для них отключен чекер.
-            foreach (var item in usedSystems)
+            foreach (var item in existingSystems)
             {
                 if (item != null)
                 {
                     checkedListBox1.Items.Add(item);
                 }
+                
             }
+
         }
 
         private void IzometryGeneratorForm_Load(object sender, EventArgs e)
