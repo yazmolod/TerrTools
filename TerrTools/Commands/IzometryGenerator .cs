@@ -334,11 +334,18 @@ namespace TerrTools
         {
             foreach (var item in views)
             {
-                if (item.Name == systemName)
+                try
                 {
-                    doc.Delete(item.Id);  
+                    if (item.Name == systemName)
+                    {
+                        doc.Delete(item.Id);
+                        break;
+                    }
                 }
-                break;
+                catch (Exception)
+                {
+                }
+                
             }
             view.Name = systemName;
         }
