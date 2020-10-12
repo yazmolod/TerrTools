@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using WF = System.Windows.Forms;
 using Autodesk.Revit.DB;
@@ -29,26 +29,28 @@ namespace TerrTools.UI
             {
                 systemsNamesCopy.Add(item);
             }
-            foreach (var item in viewNames)
+            foreach (var name in systemsNames)
             {
-                foreach (var name in systemsNames)
+                if (name != null)
                 {
-                    if (name != null)
+                    foreach (var item in viewNames)
                     {
-                        if (item.Contains(name))
                         {
-                            systemsNamesCopy.Remove(name);
-                            if (existingSystems.Contains(name))
+                            if (Regex.Match(item, "^" + name + @"(_\d+)?$").Success)
                             {
-                                continue;
-                            }
-                            else
-                            {
-                                existingSystems.Add(name);
+                                systemsNamesCopy.Remove(name);
+                                if (existingSystems.Contains(name))
+                                {
+                                    continue;
+                                }
+                                else
+                                {
+                                    existingSystems.Add(name);
+                                }
+                                break;
                             }
                         }
                     }
-                    
                 }
             }
             // systemsNamesCopy - новые системы, для

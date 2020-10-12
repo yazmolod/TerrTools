@@ -40,20 +40,20 @@
             // 
             this.checkedListBox1.CheckOnClick = true;
             this.checkedListBox1.FormattingEnabled = true;
-            this.checkedListBox1.Location = new System.Drawing.Point(12, 25);
+            this.checkedListBox1.Location = new System.Drawing.Point(12, 40);
             this.checkedListBox1.Name = "checkedListBox1";
-            this.checkedListBox1.Size = new System.Drawing.Size(234, 424);
+            this.checkedListBox1.Size = new System.Drawing.Size(234, 394);
             this.checkedListBox1.TabIndex = 0;
             this.checkedListBox1.SelectedIndexChanged += new System.EventHandler(this.checkedListBox1_SelectedIndexChanged);
             // 
             // checkBox1
             // 
             this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(12, 455);
+            this.checkBox1.Location = new System.Drawing.Point(12, 440);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(324, 17);
+            this.checkBox1.Size = new System.Drawing.Size(231, 30);
             this.checkBox1.TabIndex = 1;
-            this.checkBox1.Text = "Автоматически заменять существущие 3D-виды на новые";
+            this.checkBox1.Text = "Автоматически заменять существущие \r\n3D-виды на новые";
             this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // label1
@@ -61,13 +61,13 @@
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(9, 9);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(365, 13);
+            this.label1.Size = new System.Drawing.Size(241, 26);
             this.label1.TabIndex = 2;
-            this.label1.Text = "Выберите системы, для которых необходимо сформировать 3D-виды:";
+            this.label1.Text = "Выберите системы, для которых необходимо \r\nсформировать 3D-виды:";
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(342, 443);
+            this.button1.Location = new System.Drawing.Point(252, 437);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(112, 31);
             this.button1.TabIndex = 3;
@@ -77,7 +77,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(252, 54);
+            this.button2.Location = new System.Drawing.Point(252, 69);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(112, 23);
             this.button2.TabIndex = 4;
@@ -87,7 +87,7 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(252, 25);
+            this.button3.Location = new System.Drawing.Point(252, 40);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(112, 23);
             this.button3.TabIndex = 5;
@@ -99,7 +99,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(458, 481);
+            this.ClientSize = new System.Drawing.Size(378, 474);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);

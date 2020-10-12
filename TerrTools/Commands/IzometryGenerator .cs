@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing.Text;
 using System.Linq;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using Autodesk.Revit.ApplicationServices;
@@ -279,9 +279,19 @@ namespace TerrTools
             {
                 if (viewNames.Contains(systemName))
                 {
-                    IzometryUserChoiceForm form2 = new IzometryUserChoiceForm(systemName);
-                    form2.ShowDialog();
-                    if (form2.Result == "С заменой")
+                    TaskDialog td = new TaskDialog("Внимание");
+                    td.MainInstruction = $"Внимание! В проекте для системы '{systemName}' уже есть 3D-вид.";
+                    td.MainContent = "Для продолжения выберите один из трёх вариантов:" +
+                        "\n - \"С заменой\". Новый вид будет создан, заменяя старый;" +
+                        "\n - \"Без замены\". Создать новый вид, сохранив старый;" +
+                        "\n - \"Пропустить\". Новый вид не будет создан;";
+                    td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "С заменой");
+                    td.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Без замены");
+                    td.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Пропустить");
+                    td.AllowCancellation = false;
+                    var result = td.Show();
+
+                    if (result == TaskDialogResult.CommandLink1)
                     {
                         CreateInsteadTheOldView(doc, views, systemName, view);
                         // Устанавливаем ориентацию вида.
@@ -295,7 +305,7 @@ namespace TerrTools
                             p.Set("Сгенерированные изометрии");
                         }
                     }
-                    else if (form2.Result == "Без замены")
+                    else if (result == TaskDialogResult.CommandLink2)
                     {
                         CreateOverTheOldView(view, systemName, viewNames);
                         // Устанавливаем ориентацию вида.
