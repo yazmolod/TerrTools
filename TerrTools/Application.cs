@@ -269,6 +269,13 @@ namespace TerrTools
                     "TypeChangerDeep",
                     "В проекте и семействах"
                     ));
+            pbDict.Add("IzometryGenerator",
+                MakePushButton(
+                    "IzometryGenerator",
+                    "Создать 3D виды\nпо системам",
+                    "Генерирует 3D-виды с фильтрами по системам",
+                    "3D.png"
+                    ));
 
             pbDict.Add("CopyRoomShape",
                 MakePushButton(
@@ -339,6 +346,7 @@ namespace TerrTools
             ///
             panelMEP.AddItem(pbDict["DiffuserProcessing"]);
             panelMEP.AddItem(pbDict["RadiatorProcessing"]);
+            panelMEP.AddItem(pbDict["IzometryGenerator"]);
 
 
             ///
