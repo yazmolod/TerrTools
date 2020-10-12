@@ -33,6 +33,10 @@ namespace TerrTools
             var viewType = GetViewType(doc);
             // Все имена систем.
             var systemsNames = GetSystemNames(doc);
+            if (systemsNames.Count == 0 )
+            {
+                return Result.Cancelled;
+            }
             // Уже существующие системы.
             /*List<string> usedSystems = new List<string>();
             // надо додумать, как быть если название уже с префиксом? 
@@ -104,8 +108,8 @@ namespace TerrTools
             }
             else
             {
+                TaskDialog.Show("Ошибка", "В проекте не найдено ни одной системы");
                 return names;
-                //TaskDialog.Show("Ошибка", "Не найдены системы или параметр ТеррНИИ_Наименование системы");
             }
         }
         // Метод для получения айди общего параметра.
@@ -231,7 +235,11 @@ namespace TerrTools
         private ElementId GetViewType(Document doc)
         {
             var views = new FilteredElementCollector(doc).OfClass(typeof(ViewFamilyType)).ToElements();
-            var viewtypeId = views.Where(x => x.Name == "3D вид").ToList();
+            var viewtypeId = views.Where(x => x.Name == "3D вид" || x.Name == "3D View").ToList();
+            /*if (viewtypeId == null)
+            {
+                throw new Exception("")
+            }*/
             return viewtypeId[0].Id;
         }
         // Метод для создания видов.

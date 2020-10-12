@@ -272,9 +272,9 @@ namespace TerrTools
             pbDict.Add("IzometryGenerator",
                 MakePushButton(
                     "IzometryGenerator",
-                    "Создать изометрические виды\nпо системам",
+                    "Создать 3D виды\nпо системам",
                     "Генерирует 3D-виды с фильтрами по системам",
-                    ""
+                    "3D.png"
                     ));
 
             /*  Толку от этой функции немного
