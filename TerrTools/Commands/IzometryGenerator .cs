@@ -236,10 +236,6 @@ namespace TerrTools
         {
             var views = new FilteredElementCollector(doc).OfClass(typeof(ViewFamilyType)).ToElements();
             var viewtypeId = views.Where(x => x.Name == "3D вид" || x.Name == "3D View").ToList();
-            /*if (viewtypeId == null)
-            {
-                throw new Exception("")
-            }*/
             return viewtypeId[0].Id;
         }
         // Метод для создания видов.
@@ -249,7 +245,6 @@ namespace TerrTools
         {
             string filterName = systemName;
             View view = View3D.CreateIsometric(doc, viewType);
-
             // Если пользователь поставил галку на 
             // автоматическую замену существующих
             // 3D-видов, то будет происходить удаление
@@ -263,12 +258,9 @@ namespace TerrTools
                 view = SetOrientation((View3D)view);
                 // Устанавливаем фильтр для вида.
                 // вероятно тут надо другое имя
-                view = AddFilter(doc, view, filterName);
-                var p = view.LookupParameter("Подкатегория");
-                if (p != null)
-                {
-                    p.Set("Сгенерированные изометрии");
-                }
+                view = AddFilter(doc, view, filterName);                
+                SetViewTemplate(doc, view);
+
             }
             // Если галочка на автоматической замене видов не стоит,
             // то, если 3D-вид для создаваемой системы существует, 
@@ -299,11 +291,7 @@ namespace TerrTools
                         // Устанавливаем фильтр для вида.
                         // вероятно тут надо другое имя
                         view = AddFilter(doc, view, filterName);
-                        var p = view.LookupParameter("Подкатегория");
-                        if (p != null)
-                        {
-                            p.Set("Сгенерированные изометрии");
-                        }
+                        SetViewTemplate(doc, view);
                     }
                     else if (result == TaskDialogResult.CommandLink2)
                     {
@@ -313,11 +301,7 @@ namespace TerrTools
                         // Устанавливаем фильтр для вида.
                         // вероятно тут надо другое имя
                         view = AddFilter(doc, view, filterName);
-                        var p = view.LookupParameter("Подкатегория");
-                        if (p != null)
-                        {
-                            p.Set("Сгенерированные изометрии");
-                        }
+                        SetViewTemplate(doc, view);
                     }
                     else
                     {
@@ -334,11 +318,7 @@ namespace TerrTools
                         // Устанавливаем фильтр для вида.
                         // вероятно тут надо другое имя
                         view = AddFilter(doc, view, filterName);
-                        var p = view.LookupParameter("Подкатегория");
-                        if (p != null)
-                        {
-                            p.Set("Сгенерированные изометрии");
-                        }
+                        SetViewTemplate(doc, view);
                 }
             }
         }
@@ -384,6 +364,48 @@ namespace TerrTools
                 
             }
             view.Name = systemName;
+        }
+        // Метод для получения шаблона вида из проекта.
+        private View GetViewTemplate(Document doc)
+        {
+            View viewTemplate;
+            try
+            {
+                viewTemplate = (from v in new FilteredElementCollector(doc).
+                                 OfClass(typeof(View))
+                                 .Cast<View>()
+                                where v.IsTemplate == true && v.Name == "terrSystemTemplate"
+                                select v)
+                                 .First();
+                return viewTemplate;
+            }
+            // Обработка случая, когда последовательность
+            // не будет содержать элементов.
+            catch (System.InvalidOperationException)
+            {
+                return null;
+            }
+            
+        }
+        private void SetViewTemplate(Document doc, View view)
+        {
+            // Если в проекте будет найден шаблон
+            // "terrSystemTemplate", то применим
+            // его для создаваемого вида.
+            if (GetViewTemplate(doc) != null)
+            {
+                view.ViewTemplateId = GetViewTemplate(doc).Id;
+            }
+            // Если шаблон не найден, то занесем вид
+            // в подкатегорию без установки шаблона.
+            else
+            {
+                var p = view.LookupParameter("Подкатегория");
+                if (p != null)
+                {
+                    p.Set("Сгенерированные изометрии");
+                }
+            }
         }
     }
 }
