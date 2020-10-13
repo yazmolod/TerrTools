@@ -159,6 +159,12 @@
     <Compile Include="UI\ExportSchedulesForm.Designer.cs">
       <DependentUpon>ExportSchedulesForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\InsulCurvesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\InsulCurvesForm.Designer.cs">
+      <DependentUpon>InsulCurvesForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\TwoDoc.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -243,6 +249,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\HorizontalFinishingForm.resx">
       <DependentUpon>HorizontalFinishingForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\InsulCurvesForm.resx">
+      <DependentUpon>InsulCurvesForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\IntersectionsForm.resx">
       <DependentUpon>IntersectionsForm.cs</DependentUpon>
