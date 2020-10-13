@@ -17,10 +17,29 @@ namespace TerrTools.UI
     {
         // Result - те имена систем, для которых пользователь хочет создать 3D-вид.
         public List<string> Result { get; set; } = new List<string>();
-        public bool changeUsedViews { get; set; } = false;
-        public IzometryGeneratorForm(List<string> systemsNames, List<string> viewNames)
+        public bool ReplaceUsedViews { get; set; } = false;
+        public ElementId ViewTypeId { get; set; }
+        public ElementId ViewTemplateId { get; set; }
+
+        public IzometryGeneratorForm(List<string> systemsNames,
+                                     List<string> viewNames,
+                                     List<ViewFamilyType> viewTypes,
+                                     List<View3D> viewTemplates)
         {
             InitializeComponent();
+            InitListBox(systemsNames, viewNames);
+
+            viewTypeComboBox.DataSource = viewTypes;
+            viewTypeComboBox.DisplayMember = "Name";
+            ViewTypeId = viewTypes[0].Id;
+
+            templateViewComboBox.DataSource = viewTemplates;
+            templateViewComboBox.DisplayMember = "Name";
+            ViewTemplateId = ElementId.InvalidElementId;
+        }
+
+        private void InitListBox(List<string> systemsNames, List<string> viewNames)
+        {
             // Те системы, которые уже есть(их соответственно
             // не помечаем).
             List<string> existingSystems = new List<string>();
@@ -61,7 +80,6 @@ namespace TerrTools.UI
                 {
                     checkedListBox1.Items.Add(item, true);
                 }
-                
             }
             foreach (var item in existingSystems)
             {
@@ -69,19 +87,7 @@ namespace TerrTools.UI
                 {
                     checkedListBox1.Items.Add(item);
                 }
-                
             }
-
-        }
-
-        private void IzometryGeneratorForm_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        private void checkedListBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
         }
 
         // Кнопка "Отметить все".
@@ -101,17 +107,41 @@ namespace TerrTools.UI
                 checkedListBox1.SetItemChecked(i, false);
             }
         }
+
         // Кнопка "Создать 3D-виды".
         private void button1_Click(object sender, EventArgs e)
         {
-            foreach (var item in checkedListBox1.CheckedItems)
-            {
-                Result.Add((string)item);
-            }
-            changeUsedViews = checkBox1.Checked;
+            Result.AddRange(checkedListBox1.CheckedItems.Cast<string>());
+            ReplaceUsedViews = checkBox1.Checked;
             this.DialogResult = WF.DialogResult.OK;
-            this.Close();
-           
+            this.Close();           
+        }
+
+        private void templateCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            WF.CheckBox cb = sender as WF.CheckBox;
+            if (cb.Checked)
+            {
+                ViewTemplateId = (templateViewComboBox.SelectedItem as Element).Id;
+                templateViewComboBox.Enabled = true;
+            }
+            else
+            {
+                ViewTemplateId = ElementId.InvalidElementId;
+                templateViewComboBox.Enabled = false;
+            }
+        }
+
+        private void viewTypeComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            WF.ComboBox cb = sender as WF.ComboBox;
+            ViewTypeId = (cb.SelectedItem as Element).Id;
+        }
+
+        private void templateViewComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            WF.ComboBox cb = sender as WF.ComboBox;
+            ViewTemplateId = (cb.SelectedItem as Element).Id;
         }
     }
 }

@@ -18,84 +18,82 @@ namespace TerrTools
     [Transaction(TransactionMode.Manual)]
     class IzometryGenerator : IExternalCommand
     {
+        /// >> Саша: используй свойства (или переменные класса, но с ними сложнее дебажить)
+        /// потому что ты эти переменные используешь постоянно в разных функциях.
+        /// Вместо того, чтобы передавать их из функции в функции, просто обращаемся к свойству
+        Document Doc { get; set; }
+        List<View3D> Existing3DViews { get; set; }
+        /// >> Саша: а если тебе нужно какое то свойство элементов из списка, 
+        /// можно вот так быстро реализовать это через свойства. К тому же оно будет 
+        /// зависимым от изначального списка, поэтому ты не сможешь по-разному
+        /// модифицировать и выстрелить себе в ногу этим
+        List<string> Existing3DViewNames { get => Existing3DViews.Select(x => x.Name).ToList();  }
+        List <string> SystemNames { get; set; }
+        List<View3D> ExcessViews { get; set; } = new List<View3D>();
+
+
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            // Получаем uiapp
-            UIApplication uiapp = commandData.Application;
             // Получаем документ
-            Document doc = uiapp.ActiveUIDocument.Document;
-            // Получаем uidoc
-            UIDocument uidoc = commandData.Application.ActiveUIDocument;
-            // Переменные вынесены в global scope для оптимизации
-            // В views хранятся 3D-виды, существующие в проекте.
-            IList<Element> views;
-            var viewNames = Get3DViewNames(doc, out views);
-            var viewType = GetViewType(doc);
+            Doc = commandData.Application.ActiveUIDocument.Document;
+            // В Existing3DViews хранятся 3D-виды, существующие в проекте.
+            Existing3DViews = Get3DViewNames();
+            var viewTypes = GetViewTypes();
+            var viewTemplates = GetViewTemplates();
             // Все имена систем.
-            var systemsNames = GetSystemNames(doc);
-            if (systemsNames.Count == 0 )
+            SystemNames = GetSystemNames();
+            if (SystemNames.Count == 0 )
             {
                 return Result.Cancelled;
             }
-            // Уже существующие системы.
-            /*List<string> usedSystems = new List<string>();
-            // надо додумать, как быть если название уже с префиксом? 
-            // contains может привести к дублированию систем в форме!
-            //
-            foreach (var item in views)
-            {
-                foreach (var name in systemsNames)
-                {
-                    if (item.Name.Contains(name))
-                    {
-                        usedSystems.Add(name);
-                    }
-                }
-            }*/
-            IzometryGeneratorForm form = new IzometryGeneratorForm(systemsNames, viewNames);
-            System.Windows.Forms.DialogResult r = form.ShowDialog();
-            if (r == System.Windows.Forms.DialogResult.Cancel)
+
+            IzometryGeneratorForm form = new IzometryGeneratorForm(SystemNames, Existing3DViewNames, viewTypes, viewTemplates);
+            if (form.ShowDialog() == System.Windows.Forms.DialogResult.Cancel)
             {
                 return Result.Cancelled;
             }
-            systemsNames = form.Result;
-            // Определяет, нужно ли автоматически заменять существующие виды
-            // или нет.
-            bool changeUsedViews = form.changeUsedViews;
-            using (Transaction trans = new Transaction(doc, "Создание изометрий"))
+
+            SystemNames = form.Result;
+
+            using (Transaction trans = new Transaction(Doc, "Создание изометрий"))
             {
                 trans.Start();
-                foreach (var sysName in systemsNames)
+                foreach (var sysName in SystemNames)
                 {
                     if (sysName != null)
                     {
-                        CreateAView(doc, sysName, viewNames, viewType, changeUsedViews, views);
+                        CreateView(sysName, form.ViewTypeId, form.ViewTemplateId, form.ReplaceUsedViews);
                     }
                 }
+                DeleteExcessViews();
                 trans.Commit();
             }
             return Result.Succeeded;
         }
 
-        // Метод для получения списка названий 
-        // существующих 3D-видов.
-        private List<string> Get3DViewNames(Document doc, out IList<Element> views)
+        private void DeleteExcessViews()
         {
-            // Названия существующих в проекте 3D-видов.
-            List<string> viewNames = new List<string>();
-            // Существующие в проекте 3D-виды.
-            views = new FilteredElementCollector(doc).OfClass(typeof(View3D)).WhereElementIsNotElementType().ToElements();
-            foreach (var item in views)
+            foreach (var item in ExcessViews)
             {
-                viewNames.Add(item.Name);
+                Doc.Delete(item.Id);
             }
-            return viewNames;
         }
+
+        // Метод для получения списка
+        // существующих 3D-видов.
+        private List<View3D> Get3DViewNames()
+        {
+            // Существующие в проекте 3D-виды.
+            List<View3D> views = new FilteredElementCollector(Doc).OfClass(typeof(View3D))
+                .WhereElementIsNotElementType().Cast<View3D>().ToList();
+            return views;
+        }
+
         // Метод для получения имен систем.
-        private List<string> GetSystemNames(Document doc)
+        private List<string> GetSystemNames()
         {
             List<string> names = new List<string>();
-            var systems = new FilteredElementCollector(doc).OfClass(typeof(MEPSystem)).WhereElementIsNotElementType().ToElements();
+            var systems = new FilteredElementCollector(Doc).OfClass(typeof(MEPSystem)).WhereElementIsNotElementType().ToElements();
             if (systems.Count > 0 && systems[0].LookupParameter("ТеррНИИ_Наименование системы") != null)
             {
                 foreach (var item in systems)
@@ -114,9 +112,9 @@ namespace TerrTools
         }
         // Метод для получения айди общего параметра.
         // не забыть при общем вызове методов проверить на null!
-        private ElementId GetSharedParameterId(Document doc)
+        private ElementId GetSharedParameterId()
         {
-            var shared = new FilteredElementCollector(doc).OfClass(typeof(SharedParameterElement)).ToElements();
+            var shared = new FilteredElementCollector(Doc).OfClass(typeof(SharedParameterElement)).ToElements();
             List<Element> param = new List<Element>();
             foreach (var item in shared)
             {
@@ -137,16 +135,14 @@ namespace TerrTools
             }
         }
         // Метод для создания фильтра
-        private ParameterFilterElement CreateAFilter(Document doc, string systemName)
+        private ParameterFilterElement CreateFilter(string systemName)
         {
             // Получаем список фильтров в документе.
-            var docFiltersList = new FilteredElementCollector(doc).OfClass(typeof(ParameterFilterElement)).ToElements();
+            List<ParameterFilterElement> docFiltersList = new FilteredElementCollector(Doc).OfClass(typeof(ParameterFilterElement))
+                                                          .Cast< ParameterFilterElement>().ToList();
             // Содержит имена существующих в проекте фильтров.
-            List<string> docNamesFiltersList = new List<string>();
-            foreach (var item in docFiltersList)
-            {
-                docNamesFiltersList.Add(item.Name);
-            }
+            List<string> docNamesFiltersList = docFiltersList.Select(x => x.Name).ToList();
+
             // Необходимые для работы категории.
             List<BuiltInCategory> categories = new List<BuiltInCategory>() {
                 BuiltInCategory.OST_DuctAccessory,
@@ -165,28 +161,22 @@ namespace TerrTools
                 BuiltInCategory.OST_PipeCurves
             };
             // Получаем Id из BuiltInCategory в списке categories.
-            // но это не точно
-            List<ElementId> categoriesIds = new List<ElementId>();
-            foreach (var item in categories)
-            {
-                categoriesIds.Add(Category.GetCategory(doc, item).Id);
-            }
+            List<ElementId> categoriesIds = categories.Select(x => Category.GetCategory(Doc, x).Id).ToList();
 
             // Id общего параметра(ТеррНИИ_Наименование системы).
-            ElementId parameterId = GetSharedParameterId(doc);
+            ElementId parameterId = GetSharedParameterId();
             // Правила.
             var rule = ParameterFilterRuleFactory.CreateNotEqualsRule(parameterId, systemName, true);
             var elementFilter = new ElementParameterFilter(rule);
             // Имя фильтра.
-            string filterName = null;
+            string filterName = systemName + "_terrPlugin";
             ParameterFilterElement filter = null;
             // Проверяет, уникально ли имя systemName.
             // Если да, то создает новое имя для фильтра
             // с префиксом _terrPlugin, в обратном случае
             // использует уже существующее.
             // проверять не методом IsNameUnique,
-            // а сверять по списку docFiltersList!!! ***
-            filterName = string.Concat(systemName, "_terrPlugin");
+            // а сверять по списку docFiltersList!!! ***            
             if (docNamesFiltersList.Contains(filterName))
             {
                 foreach (var item in docFiltersList)
@@ -205,23 +195,23 @@ namespace TerrTools
                 if (filterName != null)
                 {
                     // Создаем фильтр. ***
-                    filter = ParameterFilterElement.Create(doc, filterName, categoriesIds, elementFilter);
+                    filter = ParameterFilterElement.Create(Doc, filterName, categoriesIds, elementFilter);
                 }
-            }
-            
+            }            
             return filter;
         }
+
         // Метод для добавления фильтра.
-        private View AddFilter(Document doc, View view, string systemName)
+        private void AddFilter(View view, string systemName)
         {
             // сюда надо имя системы без префиксов
-            var filter = CreateAFilter(doc, systemName);
+            var filter = CreateFilter(systemName);
             view.AddFilter(filter.Id);
             view.SetFilterVisibility(filter.Id, false);
-            return view;
         }
+
         // Метод для установки ориентации 3D-вида.
-        private View3D SetOrientation(View3D view)
+        private void SetOrientation(View3D view)
         {
             var eyePosition = new XYZ(500, 50, 200);
             var upDirection = new XYZ(-1, 1, 2);
@@ -229,47 +219,35 @@ namespace TerrTools
             var orientation = new ViewOrientation3D(eyePosition, upDirection, forwardDirection);
             view.SetOrientation(orientation);
             view.SaveOrientationAndLock();
-            return view;
-        }
-        // Метод для получения Id 3D-вида.
-        private ElementId GetViewType(Document doc)
-        {
-            var views = new FilteredElementCollector(doc).OfClass(typeof(ViewFamilyType)).ToElements();
-            var viewtypeId = views.Where(x => x.Name == "3D вид" || x.Name == "3D View").ToList();
-            return viewtypeId[0].Id;
-        }
+        }        
+
         // Метод для создания видов.
-        private void CreateAView(Document doc, string systemName, 
-            List<string> viewNames, ElementId viewType, bool changeUsedViews, 
-            IList<Element> views)
+        private void CreateView(string systemName, ElementId viewType, ElementId viewTemplate, bool changeUsedViews)
         {
             string filterName = systemName;
-            View view = View3D.CreateIsometric(doc, viewType);
-            // Если пользователь поставил галку на 
-            // автоматическую замену существующих
-            // 3D-видов, то будет происходить удаление
-            // существующего вида и создание нового с таким же
-            // названием.
-            if (changeUsedViews == true)
-            {
-                // Удаление старого, создание нового.
-                CreateInsteadTheOldView(doc, views, systemName, view);
-                // Устанавливаем ориентацию вида.
-                view = SetOrientation((View3D)view);
-                // Устанавливаем фильтр для вида.
-                // вероятно тут надо другое имя
-                view = AddFilter(doc, view, filterName);                
-                SetViewTemplate(doc, view);
+            View3D view = View3D.CreateIsometric(Doc, viewType);
 
+            if (!Existing3DViewNames.Contains(systemName))
+            {
+                view.Name = systemName;
             }
-            // Если галочка на автоматической замене видов не стоит,
-            // то, если 3D-вид для создаваемой системы существует, 
-            // пользователю будет дан выбор, как поступить:
-            // создать с заменой вида, создать с сохранением старого вида(префикс),
-            // либо не создавать новый вид, оставив предыдущий.
             else
             {
-                if (viewNames.Contains(systemName))
+                // Если пользователь поставил галку на 
+                // автоматическую замену существующих
+                // 3D-видов, то будет происходить удаление
+                // существующего вида и создание нового с таким же
+                // названием.
+                if (changeUsedViews == true)
+                {
+                    CreateInsteadOldView(view, systemName);
+                }
+                // Если галочка на автоматической замене видов не стоит,
+                // то, если 3D-вид для создаваемой системы существует, 
+                // пользователю будет дан выбор, как поступить:
+                // создать с заменой вида, создать с сохранением старого вида(префикс),
+                // либо не создавать новый вид, оставив предыдущий.
+                else
                 {
                     TaskDialog td = new TaskDialog("Внимание");
                     td.MainInstruction = $"Внимание! В проекте для системы '{systemName}' уже есть 3D-вид.";
@@ -285,54 +263,44 @@ namespace TerrTools
 
                     if (result == TaskDialogResult.CommandLink1)
                     {
-                        CreateInsteadTheOldView(doc, views, systemName, view);
-                        // Устанавливаем ориентацию вида.
-                        view = SetOrientation((View3D)view);
-                        // Устанавливаем фильтр для вида.
-                        // вероятно тут надо другое имя
-                        view = AddFilter(doc, view, filterName);
-                        SetViewTemplate(doc, view);
+                        CreateInsteadOldView(view, systemName);
                     }
                     else if (result == TaskDialogResult.CommandLink2)
                     {
-                        CreateOverTheOldView(view, systemName, viewNames);
-                        // Устанавливаем ориентацию вида.
-                        view = SetOrientation((View3D)view);
-                        // Устанавливаем фильтр для вида.
-                        // вероятно тут надо другое имя
-                        view = AddFilter(doc, view, filterName);
-                        SetViewTemplate(doc, view);
+                        CreateOverOldView(view, systemName);
                     }
                     else
                     {
-                        doc.Delete(view.Id);
+                        Doc.Delete(view.Id);
+                        return;
                     }
                 }
-                // Если для данной системы нет 3D-вида, 
-                // Создаем новый вид с названием имени системы.
-                else
-                {
-                    view.Name = systemName;
-                    // Устанавливаем ориентацию вида.
-                        view = SetOrientation((View3D)view);
-                        // Устанавливаем фильтр для вида.
-                        // вероятно тут надо другое имя
-                        view = AddFilter(doc, view, filterName);
-                        SetViewTemplate(doc, view);
-                }
             }
+            // Устанавливаем ориентацию вида.
+            SetOrientation(view);
+            // Устанавливаем фильтр для вида.
+            // вероятно тут надо другое имя
+            AddFilter(view, filterName);
+            // добавляем шаблон
+            view.ViewTemplateId = viewTemplate;
+            // Заносим в подкатегорию
+            view.LookupParameter("Подкатегория")?.Set("Сгенерированные изометрии");
         }
-        // Создание с префиксом.
-        private void CreateOverTheOldView(View view, string systemName, List<string> viewNames)
+
+        // Создание с суффиксом.
+        private void CreateOverOldView(View view, string systemName)
         {
-            if (viewNames.Contains(systemName))
+            if (Existing3DViewNames.Contains(systemName))
             {
                 int counter = 1;
-                while (viewNames.Contains(systemName))
+                while (Existing3DViewNames.Contains(systemName))
                 {
                     if (systemName.Contains("_"))
                     {
-                        systemName = systemName.Remove(systemName.Length - 2, 2);
+                        /// >> Саша: вот такая строчка - выстрел себе в ногу
+                        /// потому что могут теоретически и двухзначные числа
+                        //systemName = systemName.Remove(systemName.Length - 2, 2);
+
                     }
                     systemName = String.Concat(systemName, "_", counter);
                     counter++;
@@ -344,68 +312,36 @@ namespace TerrTools
                 view.Name = systemName;
             }
         }
+
         // Создание с "перезаписью".
-        private void CreateInsteadTheOldView(Document doc, IList<Element> views, 
-            string systemName, View view)
+        private void CreateInsteadOldView(View view, string systemName)
         {
-            foreach (var item in views)
+            foreach (var item in Existing3DViews.Where(x => x.Name == systemName))
             {
                 try
                 {
-                    if (item.Name == systemName)
-                    {
-                        doc.Delete(item.Id);
-                        break;
-                    }
+                    item.Name = new Random().Next().ToString();
+                    ExcessViews.Add(item);
                 }
-                catch (Exception)
-                {
-                }
-                
+                catch (Exception) { }                
             }
             view.Name = systemName;
         }
+
         // Метод для получения шаблона вида из проекта.
-        private View GetViewTemplate(Document doc)
+        private List<View3D> GetViewTemplates()
         {
-            View viewTemplate;
-            try
-            {
-                viewTemplate = (from v in new FilteredElementCollector(doc).
-                                 OfClass(typeof(View))
-                                 .Cast<View>()
-                                where v.IsTemplate == true && v.Name == "terrSystemTemplate"
-                                select v)
-                                 .First();
-                return viewTemplate;
-            }
-            // Обработка случая, когда последовательность
-            // не будет содержать элементов.
-            catch (System.InvalidOperationException)
-            {
-                return null;
-            }
-            
+            var views = new FilteredElementCollector(Doc).OfClass(typeof(View3D))
+                            .Cast<View3D>().Where(x => x.IsTemplate).ToList();
+            return views;
         }
-        private void SetViewTemplate(Document doc, View view)
+
+        // Метод для получения Id 3D-вида.
+        private List<ViewFamilyType> GetViewTypes()
         {
-            // Если в проекте будет найден шаблон
-            // "terrSystemTemplate", то применим
-            // его для создаваемого вида.
-            if (GetViewTemplate(doc) != null)
-            {
-                view.ViewTemplateId = GetViewTemplate(doc).Id;
-            }
-            // Если шаблон не найден, то занесем вид
-            // в подкатегорию без установки шаблона.
-            else
-            {
-                var p = view.LookupParameter("Подкатегория");
-                if (p != null)
-                {
-                    p.Set("Сгенерированные изометрии");
-                }
-            }
+            var views = new FilteredElementCollector(Doc).OfClass(typeof(ViewFamilyType))
+                .Cast<ViewFamilyType>().Where(x => x.ViewFamily == ViewFamily.ThreeDimensional).ToList();
+            return views;
         }
     }
 }
