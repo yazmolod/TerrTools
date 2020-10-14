@@ -546,10 +546,13 @@ namespace TerrTools
             if (CheckUpdates(out string lastReleaseVersion, out string patchNote))
             {
                 TaskDialog td = new TaskDialog("Доступно обновление");
-                td.MainInstruction = "На сервере доступна новая версия плагина. РЕКОМЕНДУЕТСЯ закрыть программу и обновить плагин прямо сейчас";
+                td.MainInstruction = "На сервере доступна новая версия плагина. РЕКОМЕНДУЕТСЯ обновить плагин прямо сейчас";
                 td.MainContent = string.Format("Текущая версия: {0}\nДоступная версия: {1}\n\nЧто нового: \n{2}", App.Version, lastReleaseVersion, patchNote);
-                td.FooterText = "Для установки новой версии, запустите файл " + UpdaterPath;
+                td.FooterText = "Вы можете обновить плагин до последней версии в любое время, запустив файл " + UpdaterPath;
+                td.AllowCancellation = false;
                 td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Закрыть Revit и обновить");
+                td.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Продолжить без обновления");
+
                 if (td.Show() == TaskDialogResult.CommandLink1)
                 {
                     var revitProcess = System.Diagnostics.Process.GetCurrentProcess();
