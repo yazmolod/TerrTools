@@ -21,13 +21,15 @@ namespace TerrTools
         /// >> Саша: используй свойства (или переменные класса, но с ними сложнее дебажить)
         /// потому что ты эти переменные используешь постоянно в разных функциях.
         /// Вместо того, чтобы передавать их из функции в функции, просто обращаемся к свойству
-        Document Doc { get; set; }
+        Document Doc { get => UIDoc.Document; }
+        UIDocument UIDoc { get; set; }
         List<View3D> Existing3DViews { get; set; }
         /// >> Саша: а если тебе нужно какое то свойство элементов из списка, 
         /// можно вот так быстро реализовать это через свойства. К тому же оно будет 
         /// зависимым от изначального списка, поэтому ты не сможешь по-разному
         /// модифицировать и выстрелить себе в ногу этим
-        List<string> Existing3DViewNames { get => Existing3DViews.Select(x => x.Name).ToList();  }
+        List<string> Existing3DView_Names { get => Existing3DViews.Select(x => x.Name).ToList();  }
+        List<View3D> Created3DViews { get; set; } = new List<View3D>();
         List <string> SystemNames { get; set; }
         List<View3D> ExcessViews { get; set; } = new List<View3D>();
 
@@ -35,7 +37,7 @@ namespace TerrTools
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             // Получаем документ
-            Doc = commandData.Application.ActiveUIDocument.Document;
+            UIDoc = commandData.Application.ActiveUIDocument;
             // В Existing3DViews хранятся 3D-виды, существующие в проекте.
             Existing3DViews = Get3DViewNames();
             var viewTypes = GetViewTypes();
@@ -47,37 +49,43 @@ namespace TerrTools
                 return Result.Cancelled;
             }
 
-            IzometryGeneratorForm form = new IzometryGeneratorForm(SystemNames, Existing3DViewNames, viewTypes, viewTemplates);
+            IzometryGeneratorForm form = new IzometryGeneratorForm(SystemNames, Existing3DView_Names, viewTypes, viewTemplates);
             if (form.ShowDialog() == System.Windows.Forms.DialogResult.Cancel)
             {
                 return Result.Cancelled;
             }
 
             SystemNames = form.Result;
-
-            using (Transaction trans = new Transaction(Doc, "Создание изометрий"))
+            using (TransactionGroup transGroup = new TransactionGroup(Doc, "Создание изометрий"))
             {
-                trans.Start();
-                foreach (var sysName in SystemNames)
+                transGroup.Start();
+                using (Transaction trans = new Transaction(Doc))
                 {
-                    if (sysName != null)
+                    trans.Start("Создание новых видов");
+                    foreach (var sysName in SystemNames)
                     {
-                        CreateView(sysName, form.ViewTypeId, form.ViewTemplateId, form.ReplaceUsedViews);
+                        if (sysName != null)
+                        {
+                            CreateView(sysName, form.ViewTypeId, form.ViewTemplateId, form.ReplaceUsedViews);
+                        }
                     }
+                    trans.Commit();
+
+                    /// При попытке удалить активный вид выкидывается Autodesk.Revit.Exceptions ArgumentException 
+                    /// поэтому перед удалением старых видов меняем активный вид на любой новосозданный.
+                    /// Загвоздка в том, что делать это можно только вне транзакции, поэтому делаем смену вида между транзакциями
+                    UIDoc.ActiveView = Created3DViews[0];
+
+                    // удаляем отложенные старые виды
+                    trans.Start("Удаление старых видов");
+                    Doc.Delete(ExcessViews.Select(x => x.Id).ToList());
+                    trans.Commit();
                 }
-                DeleteExcessViews();
-                trans.Commit();
+                transGroup.Assimilate();
             }
             return Result.Succeeded;
         }
 
-        private void DeleteExcessViews()
-        {
-            foreach (var item in ExcessViews)
-            {
-                Doc.Delete(item.Id);
-            }
-        }
 
         // Метод для получения списка
         // существующих 3D-видов.
@@ -85,7 +93,7 @@ namespace TerrTools
         {
             // Существующие в проекте 3D-виды.
             List<View3D> views = new FilteredElementCollector(Doc).OfClass(typeof(View3D))
-                .WhereElementIsNotElementType().Cast<View3D>().ToList();
+                .WhereElementIsNotElementType().Cast<View3D>().Where(x => !x.IsTemplate).ToList();
             return views;
         }
 
@@ -227,7 +235,7 @@ namespace TerrTools
             string filterName = systemName;
             View3D view = View3D.CreateIsometric(Doc, viewType);
 
-            if (!Existing3DViewNames.Contains(systemName))
+            if (!Existing3DView_Names.Contains(systemName))
             {
                 view.Name = systemName;
             }
@@ -278,34 +286,42 @@ namespace TerrTools
             }
             // Устанавливаем ориентацию вида.
             SetOrientation(view);
-            // Устанавливаем фильтр для вида.
-            // вероятно тут надо другое имя
-            AddFilter(view, filterName);
             // добавляем шаблон
-            view.ViewTemplateId = viewTemplate;
+            if (viewTemplate != ElementId.InvalidElementId)
+            {
+                view.ViewTemplateId = viewTemplate;
+            }
+            else
+            {
+                view.LookupParameter("Подкатегория")?.Set("Сгенерированные изометрии");
+            }            
+            // Устанавливаем фильтр для вида.
+            AddFilter(view, filterName);            
             // Заносим в подкатегорию
-            view.LookupParameter("Подкатегория")?.Set("Сгенерированные изометрии");
+            
+            // и вид в свойства, чтобы можно было обратиться при необходимости
+            Created3DViews.Add(view);
         }
 
         // Создание с суффиксом.
         private void CreateOverOldView(View view, string systemName)
         {
-            if (Existing3DViewNames.Contains(systemName))
+            if (Existing3DView_Names.Contains(systemName))
             {
                 int counter = 1;
-                while (Existing3DViewNames.Contains(systemName))
+                string systemNameSuffixed = systemName;
+                while (Existing3DView_Names.Contains(systemNameSuffixed))
                 {
-                    if (systemName.Contains("_"))
-                    {
-                        /// >> Саша: вот такая строчка - выстрел себе в ногу
-                        /// потому что могут теоретически и двухзначные числа
-                        //systemName = systemName.Remove(systemName.Length - 2, 2);
-
-                    }
-                    systemName = String.Concat(systemName, "_", counter);
+                    /// >> Саша: вот такая проверка - выстрел себе в ногу
+                    /// потому что могут теоретически и двухзначные числа
+                    //if (systemName.Contains("_"))
+                    //{
+                    //systemName = systemName.Remove(systemName.Length - 2, 2);
+                    //}
+                    systemNameSuffixed = String.Concat(systemName, "_", counter);
                     counter++;
                 }
-                view.Name = systemName;
+                view.Name = systemNameSuffixed;
             }
             else
             {
@@ -318,12 +334,14 @@ namespace TerrTools
         {
             foreach (var item in Existing3DViews.Where(x => x.Name == systemName))
             {
-                try
-                {
-                    item.Name = new Random().Next().ToString();
-                    ExcessViews.Add(item);
-                }
-                catch (Exception) { }                
+                /// >> Саша: удалять на ходу во время транзакции элементы,
+                /// которые ко всему прочему находятся в списке, который ты итерируешь,
+                /// не очень хорошая идея - выкинет ошибку, если ты обратишься к удаленному элементу
+                /// в той же транзакции
+                /// Поэтому применяем следующую логику - переименовываем данный вид рандомным именем 
+                /// (чтобы не мешать уникальности именам) и откладываем вид в список на удаление потом
+                item.Name = new Random().Next().ToString();
+                ExcessViews.Add(item);
             }
             view.Name = systemName;
         }

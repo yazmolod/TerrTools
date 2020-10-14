@@ -36,6 +36,8 @@ namespace TerrTools.UI
             templateViewComboBox.DataSource = viewTemplates;
             templateViewComboBox.DisplayMember = "Name";
             ViewTemplateId = ElementId.InvalidElementId;
+
+            warningLabel.Visible = false;
         }
 
         private void InitListBox(List<string> systemsNames, List<string> viewNames)
@@ -124,11 +126,13 @@ namespace TerrTools.UI
             {
                 ViewTemplateId = (templateViewComboBox.SelectedItem as Element).Id;
                 templateViewComboBox.Enabled = true;
+                warningLabel.Visible = true;
             }
             else
             {
                 ViewTemplateId = ElementId.InvalidElementId;
                 templateViewComboBox.Enabled = false;
+                warningLabel.Visible = false;
             }
         }
 
@@ -141,7 +145,7 @@ namespace TerrTools.UI
         private void templateViewComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             WF.ComboBox cb = sender as WF.ComboBox;
-            ViewTemplateId = (cb.SelectedItem as Element).Id;
-        }
+            ViewTemplateId = (cb.SelectedItem as Element).Id;            
+        }        
     }
 }
