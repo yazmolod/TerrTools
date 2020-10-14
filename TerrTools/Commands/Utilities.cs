@@ -678,6 +678,7 @@ namespace TerrTools
 
         Autodesk.Revit.ApplicationServices.Application _app;
         Document _doc;
+        public GraphicsStyle LineStyle { get; set; } = null;
 
         public ModelCurveCreator(Document doc)
         {
@@ -709,6 +710,7 @@ namespace TerrTools
             try
             {
                 ModelCurve modelCurve = _doc.Create.NewModelCurve(curve, skPlane);
+                if (LineStyle != null) modelCurve.LineStyle = LineStyle;
                 return modelCurve;
             }
             catch (Autodesk.Revit.Exceptions.ArgumentException)
@@ -723,8 +725,8 @@ namespace TerrTools
             ModelCurveArray array = new ModelCurveArray();
             foreach (Curve c in arr)
             {
-                ModelCurve mc = MakeModelCurve(c);
-                array.Append(mc);
+                ModelCurve modelCurve = MakeModelCurve(c);
+                array.Append(modelCurve);
             }
             return array;
         }
@@ -733,26 +735,27 @@ namespace TerrTools
         {
             Curve curve = Line.CreateBound(p1, p2);
             ModelCurve modelCurve = MakeModelCurve(curve);
+            if (LineStyle != null) modelCurve.LineStyle = LineStyle;
             return modelCurve;
         }
 
-        public ModelCurveArray MakeModelCurve(XYZ[] pts, bool close = true)
+        public List<ModelCurve> MakeModelCurve(IEnumerable<XYZ> pts, bool close)
         {
             ModelCurve modelCurve;
-            ModelCurveArray array = new ModelCurveArray();
-            if (pts.Length < 3)
+            List<ModelCurve> array = new List<ModelCurve>();
+            if (pts.Count() < 3)
             {
                 throw new ArgumentException("Требуется больше трех точек");
             }
-            for (int i = 0; i < pts.Length - 1; i++)
+            for (int i = 0; i < pts.Count() - 1; i++)
             {
-                modelCurve = MakeModelCurve(pts[i], pts[i + 1]);
-                array.Append(modelCurve);
+                modelCurve = MakeModelCurve(pts.ElementAt(i), pts.ElementAt(i + 1));
+                array.Add(modelCurve);
             }
             if (close)
             {
                 modelCurve = MakeModelCurve(pts.First(), pts.Last());
-                array.Append(modelCurve);
+                array.Add(modelCurve);
             }
             return array;
         }                

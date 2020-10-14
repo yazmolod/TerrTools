@@ -116,6 +116,7 @@
     <Compile Include="Commands\DebuggingTools.cs" />
     <Compile Include="Commands\GridAxes.cs" />
     <Compile Include="Commands\IzometryGenerator .cs" />
+    <Compile Include="Commands\InsulCurves.cs" />
     <Compile Include="Commands\PythonExecuter.cs" />
     <Compile Include="GlobalSettings.cs" />
     <Compile Include="Logging.cs" />
@@ -164,6 +165,12 @@
     </Compile>
     <Compile Include="UI\IzometryGeneratorForm.Designer.cs">
       <DependentUpon>IzometryGeneratorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\InsulCurvesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\InsulCurvesForm.Designer.cs">
+      <DependentUpon>InsulCurvesForm.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\TwoDoc.cs">
       <SubType>Form</SubType>
@@ -249,6 +256,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\HorizontalFinishingForm.resx">
       <DependentUpon>HorizontalFinishingForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\InsulCurvesForm.resx">
+      <DependentUpon>InsulCurvesForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\IntersectionsForm.resx">
       <DependentUpon>IntersectionsForm.cs</DependentUpon>
@@ -366,6 +376,9 @@
 </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\3D.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\Insul.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
