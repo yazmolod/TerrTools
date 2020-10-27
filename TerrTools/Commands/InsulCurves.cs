@@ -11,117 +11,112 @@ using Autodesk.Revit.Attributes;
 namespace TerrTools
 {
     [Transaction(TransactionMode.Manual)]
-    class InsulCurves : IExternalCommand
+    abstract class InsulCurves : IExternalCommand
     {
-        Document doc;
-        UIDocument uidoc;
+        protected Document doc { get; set; }
+        protected UIDocument uidoc { get; set; }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             uidoc = commandData.Application.ActiveUIDocument;
             doc = uidoc.Document;
-            // собираем типы линий
-            var lineStyles = new FilteredElementCollector(doc).OfClass(typeof(GraphicsStyle)).Cast<GraphicsStyle>()
-                .Where(x => x.GraphicsStyleCategory.Parent?.Id.IntegerValue == (int)BuiltInCategory.OST_Lines).ToList();
-            // диалоговое окно
-            var form = new UI.InsulCurvesForm(lineStyles);
-            if (form.DialogResult == System.Windows.Forms.DialogResult.OK)
-            {                
-                // получаем объекты для штриховки и задаем параметры
-                var elems = GetElements(form.ResultScope);
-                var step = UnitUtils.ConvertToInternalUnits(form.ResultStep, DisplayUnitType.DUT_MILLIMETERS);
-                var height = UnitUtils.ConvertToInternalUnits(form.ResultHeight, DisplayUnitType.DUT_MILLIMETERS);
-                var style = form.ResultStyle;
-                using (Transaction tr = new Transaction(doc, "Создание 3D штриховок"))
+            string familyName = "ТеррНИИ_УГО_3D_Теплоизоляция зигзаг";
+            string familyFolder = @"L:\REVIT\Семейства\ТеррНИИ\Условники\3D";
+            string familyType = "-";
+
+            // получаем объекты для штриховки и задаем параметры
+            var elems = GetElements();
+            if (elems == null) return Result.Cancelled;
+            using (Transaction tr = new Transaction(doc))
+            {
+                tr.Start("Загрузка семейства");
+                FamilySymbol zigzagSymbol = FamilyInstanceUtils.FindOpeningFamily(doc, familyName, familyFolder, familyType);
+                tr.Commit();
+
+                tr.Start("Добавление общих параметров");
+                var systemParamName = "ТеррНИИ_Наименование системы";
+                var idParamName = "ТеррНИИ_Идентификатор";
+                // добавляем общие параметры, в который будем копировать марку и систему
+
+                SharedParameterUtils.AddSharedParameter(doc, systemParamName,
+                                                        new BuiltInCategory[] { BuiltInCategory.OST_GenericModel },
+                                                        BuiltInParameterGroup.PG_TEXT);
+                SharedParameterUtils.AddSharedParameter(doc, idParamName,
+                                                        new BuiltInCategory[] { BuiltInCategory.OST_GenericModel },
+                                                        BuiltInParameterGroup.PG_ADSK_MODEL_PROPERTIES);
+
+                tr.Commit();
+
+                tr.Start("Рисование штриховок");
+                // проверяем какие штриховки уже есть в проекте и удаляем если есть обновляемые 
+                List<ElementId> toDelete = new List<ElementId>();
+                List<string> elemsIds = elems.Select(x => x.Id.IntegerValue.ToString()).ToList();
+                List<FamilyInstance> fills = new FilteredElementCollector(doc).OfClass(typeof(FamilyInstance))
+                                                    .Cast<FamilyInstance>().Where(x => x.Symbol.FamilyName == familyName).ToList();
+                foreach (FamilyInstance i in fills)
                 {
-                    tr.Start();
-                    // проверяем какие штриховки уже есть в проекте и удаляем если есть обновляемые 
-                    string dimension = form.ResultLine == UI.InsulCurvesForm.LineType.ModelLine ? "3D" : "2D";
-                    IEnumerable<string> elemsIds = elems.Select(x => $"Зигзаг для id{x.Id.IntegerValue} {dimension}");
-                    ICollection<ElementId> existedGroups = new FilteredElementCollector(doc).OfClass(typeof(Group))
-                        .Where(x => elemsIds.Contains(x.Name)).Select(x => x.Id).ToList();
-                    doc.Delete(existedGroups);
-
-                    foreach (var e in elems)
+                    var param = i.LookupParameter(idParamName);
+                    if (param != null && elemsIds.Contains(param.AsString()))
                     {
-                        var groupName = $"Зигзаг для id{e.Id.IntegerValue}";
-                        // рисуем линии
-                        var modelArray = DrawInsulLine(e, step, height, style);
-                        // преобразуем в линии аннотации, если была выбрана такая опция
-                        DetailCurveArray detailArray = null;
-                        if (form.ResultLine == UI.InsulCurvesForm.LineType.DetailLine)
-                        {
-                            try
-                            {
-                                ModelCurveArray curvesArray = new ModelCurveArray();
-                                foreach (var curve in modelArray)
-                                {
-                                    curvesArray.Append(curve);
-                                }                                
-                                detailArray = doc.ConvertModelToDetailCurves(doc.ActiveView, curvesArray);
-                            }
-                            catch (System.ArgumentException)
-                            {
-                                TaskDialog.Show("Ошибка", "На данном виде невозможно создать линии аннотации");
-                                return Result.Failed;
-
-                            }
-                        }
-                        // группируем линии для объекта
-                        List<ElementId> curvesIds = new List<ElementId>();
-                        if (detailArray != null)
-                        {
-                            groupName = groupName + " 2D";
-                            foreach (DetailCurve item in detailArray)
-                            {
-                                curvesIds.Add(item.Id);
-                            }
-                        }
-                        else if (modelArray != null)
-                        {
-                            groupName = groupName + " 3D";
-                            curvesIds = modelArray.Select(x => x.Id).ToList();
-                        }
-                        Group group = doc.Create.NewGroup(curvesIds);
-                        group.GroupType.Name = groupName;
+                        toDelete.Add(i.Id);
                     }
-                    tr.Commit();
                 }
-                return Result.Succeeded;
-            }
-            else
-            {
-                return Result.Cancelled;
-            }            
-        }
+                doc.Delete(toDelete);
 
-        private List<MEPCurve> GetElements(UI.InsulCurvesForm.ScopeType scope)
-        {
-            List<MEPCurve> elems = new List<MEPCurve>();
-            switch (scope)
-            {
-                case UI.InsulCurvesForm.ScopeType.Document:
-                    elems = new FilteredElementCollector(doc).OfClass(typeof(MEPCurve)).WhereElementIsNotElementType()
-                        .Cast<MEPCurve>().Where(x => x.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0)
-                        .ToList();
-                    break;
-                case UI.InsulCurvesForm.ScopeType.Selection:
+                foreach (var e in elems)
+                {
+                    // находим самую большую грань и размещаемся на ней
+                    Face face = null;
+                    double maxArea = 0.0;
+                    foreach (Face f in GeometryUtils.GetSolid(e).Faces)
+                    {
+                        if (f.Area > maxArea)
+                        {
+                            face = f;
+                            maxArea = face.Area;
+                        }
+                    }
+                    Curve ductCurve = GeometryUtils.FindDuctCurve(e.ConnectorManager);
+                    XYZ pt1 = ductCurve.GetEndPoint(0); XYZ pt2 = ductCurve.GetEndPoint(1);
+                    pt1 = face.Project(pt1).XYZPoint;
+                    pt2 = face.Project(pt2).XYZPoint;
+                    FamilyInstance fi;
                     try
                     {
-                        elems = uidoc.Selection
-                            .PickObjects(ObjectType.Element, new InsulMepFilter(), "Выберите воздуховоды или трубопроводы для штриховки")
-                            .Select(x=>doc.GetElement(x.ElementId)).Cast<MEPCurve>().ToList();
+                        Line line = Line.CreateBound(pt1, pt2);
+                        fi = doc.Create.NewFamilyInstance(face, line, zigzagSymbol);
                     }
-                    catch (Autodesk.Revit.Exceptions.OperationCanceledException) { }
-                    break;
-                case UI.InsulCurvesForm.ScopeType.View:
-                    elems = new FilteredElementCollector(doc, doc.ActiveView.Id).OfClass(typeof(MEPCurve)).WhereElementIsNotElementType()
-                        .Cast<MEPCurve>().Where(x => x.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0)
-                        .ToList();
-                    break;
+                    catch (Autodesk.Revit.Exceptions.ArgumentsInconsistentException)
+                    {
+                        continue;
+                    }
+
+                    // Вычисляем марку
+                    string insul_type = e.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_TYPE).AsString();
+                    string insul_thickness = e.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsValueString();
+
+                    // вычисляем наименование системы
+                    var p = e.LookupParameter(systemParamName);
+                    string element_system = p != null ? p.AsString() : "";
+
+                    // вычисляем смещение
+                    double ductWidth = e.get_Parameter(BuiltInParameter.RBS_CURVE_WIDTH_PARAM).AsDouble();
+                    double ductHeight = e.get_Parameter(BuiltInParameter.RBS_CURVE_HEIGHT_PARAM).AsDouble();
+                    double fillOffset = ductWidth > ductHeight ? ductHeight / 2 : ductWidth / 2;
+
+                    // Назначаем параметры
+                    fi.LookupParameter("Марка").Set(insul_type + " " + insul_thickness);
+                    fi.LookupParameter(systemParamName).Set(element_system);
+                    fi.LookupParameter("Смещение по Z").Set(fillOffset);
+                    fi.LookupParameter(idParamName).Set(e.Id.IntegerValue.ToString());
+                }
+                tr.Commit();
+
             }
-            return elems;
+            return Result.Succeeded;
         }
+
+        abstract public List<MEPCurve> GetElements();
 
         private List<ModelCurve> DrawInsulLine(MEPCurve e, double stepLength, double height, GraphicsStyle style)
         {
@@ -165,6 +160,49 @@ namespace TerrTools
             {
                 return null;
             }
+        }                
+    }
+
+
+    [Transaction(TransactionMode.Manual)]
+    class InsulCurvesDocument : InsulCurves, IExternalCommand
+    {
+        public override List<MEPCurve> GetElements()
+        {
+            var elems = new FilteredElementCollector(doc).OfClass(typeof(MEPCurve)).WhereElementIsNotElementType()
+                        .Cast<MEPCurve>().Where(x => x.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0)
+                        .ToList();
+            return elems;
+        }
+    }
+
+
+    [Transaction(TransactionMode.Manual)]
+    class InsulCurvesView : InsulCurves, IExternalCommand
+    {
+        public override List<MEPCurve> GetElements()
+        {
+            var elems = new FilteredElementCollector(doc, doc.ActiveView.Id).OfClass(typeof(MEPCurve)).WhereElementIsNotElementType()
+                        .Cast<MEPCurve>().Where(x => x.get_Parameter(BuiltInParameter.RBS_REFERENCE_INSULATION_THICKNESS).AsDouble() > 0)
+                        .ToList();
+            return elems;
+        }
+    }
+
+
+    [Transaction(TransactionMode.Manual)]
+    class InsulCurvesSelection : InsulCurves, IExternalCommand
+    {
+        public override List<MEPCurve> GetElements()
+        {
+            try
+            {
+                var elems = uidoc.Selection
+                    .PickObjects(ObjectType.Element, new InsulMepFilter(), "Выберите воздуховоды или трубопроводы для штриховки")
+                    .Select(x => doc.GetElement(x.ElementId)).Cast<MEPCurve>().ToList();
+                return elems;
+            }
+            catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return null; }
         }
 
         private class InsulMepFilter : ISelectionFilter

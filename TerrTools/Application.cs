@@ -57,8 +57,7 @@ namespace TerrTools
             }
         }
 
-        private PushButtonData MakePushButton
-    (string className, string btnText, string toolTip = null, string iconName = null)
+        private PushButtonData MakePushButton (string className, string btnText, string toolTip = null, string iconName = null)
         {
             btnCounter++;
             PushButtonData btnData = new PushButtonData(
@@ -71,8 +70,7 @@ namespace TerrTools
             return btnData;
         }
 
-        private PulldownButtonData MakePulldownButton
-            (string btnText, string toolTip = null, string iconName = null)
+        private PulldownButtonData MakePulldownButton (string btnText, string toolTip = null, string iconName = null)
         {
             pullBtnCounter++;
             PulldownButtonData btnData = new PulldownButtonData("PulldownButton" + pullBtnCounter.ToString(), btnText);
@@ -320,12 +318,24 @@ namespace TerrTools
                     toolTip: "Просмотр отчета о коллизиях в отдельном окне"
                     ));
 
-            pbDict.Add("InsulCurves",
+            pbDict.Add("InsulCurvesDocument",
                 MakePushButton(
-                    "InsulCurves",
-                    "3D маркировка\nизоляции",
-                    iconName: "Insul.png"
+                    "InsulCurvesDocument",
+                    "Во всем документе"
                     ));
+
+            pbDict.Add("InsulCurvesView",
+                MakePushButton(
+                    "InsulCurvesView",
+                    "На текущем виде"
+                    ));
+
+            pbDict.Add("InsulCurvesSelection",
+                MakePushButton(
+                    "InsulCurvesSelection",
+                    "Выбрать вручную"
+                    ));
+
 
             ///
             /// Pulldown buttons
@@ -335,6 +345,12 @@ namespace TerrTools
                     "Обновить\nшрифт",
                     "Обновление всех шрифтов в проекте под стандарты предприятия",
                     "Type.png"
+                    ));
+
+            plDict.Add("InsulCurves",
+                MakePulldownButton(
+                    "3D маркировка\nизоляции",
+                    iconName: "Insul.png"
                     ));
 
             ///
@@ -354,7 +370,11 @@ namespace TerrTools
             panelMEP.AddItem(pbDict["DiffuserProcessing"]);
             panelMEP.AddItem(pbDict["RadiatorProcessing"]);
             panelMEP.AddItem(pbDict["IzometryGenerator"]);
-            panelMEP.AddItem(pbDict["InsulCurves"]);
+
+            tempBtn = panelMEP.AddItem(plDict["InsulCurves"]) as PulldownButton;
+            tempBtn.AddPushButton(pbDict["InsulCurvesDocument"]);
+            tempBtn.AddPushButton(pbDict["InsulCurvesView"]);
+            tempBtn.AddPushButton(pbDict["InsulCurvesSelection"]);
 
 
             ///
@@ -362,9 +382,11 @@ namespace TerrTools
             ///
             panelGeneral.AddItem(pbDict["FocusOnElement"]);
             panelGeneral.AddItem(pbDict["CollisionViewer"]);
+
             tempBtn = panelGeneral.AddItem(plDict["UpdateType"]) as PulldownButton;
             tempBtn.AddPushButton(pbDict["UpdateTypeCurrent"]);
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
+
             panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
             panelGeneral.AddItem(pbDict["GridAxes"]);
             panelGeneral.AddItem(pbDict["CopyRoomShape"]);

@@ -27,36 +27,7 @@ namespace TerrTools
         protected FamilySymbol openingFamilySymbol;
         public Document linkedDoc { get { return linkedDocInstance.GetLinkDocument(); } }
 
-        public FamilyInstance[] ExistingOpenings { get; private set; }
-
-        protected FamilySymbol FindOpeningFamily()
-        {
-            FamilySymbol symbol;
-            Family openingFamily = new FilteredElementCollector(doc)
-                .OfClass(typeof(Family))
-                .Where(x => x.Name == openingFamilyName)
-                .Cast<Family>()
-                .FirstOrDefault();
-            if (openingFamily != null)
-            {
-                symbol = (FamilySymbol)doc.GetElement(openingFamily.GetFamilySymbolIds().First());
-                return symbol;
-            }
-            else
-            {
-                try
-                {
-                    doc.LoadFamilySymbol(Path.Combine(TerrSettings.OpeningsFolder, openingFamilyName + ".rfa"), "Проем", out symbol);
-                    symbol.Activate();
-                    return symbol;
-                }
-                catch (Autodesk.Revit.Exceptions.ArgumentException)
-                {
-                    TaskDialog.Show("Ошибка", "Не удалось найти семейство, требуемое для работы плагина. Обратитесь к BIM-менеджеру");
-                    return null;
-                }
-            }
-        }
+        public FamilyInstance[] ExistingOpenings { get; private set; }        
 
         protected bool IsExisted(Intersection i)
         {
@@ -216,7 +187,7 @@ namespace TerrTools
             using (Transaction tr = new Transaction(doc, "Загрузка семейства"))
             {
                 tr.Start();
-                openingFamilySymbol = FindOpeningFamily();
+                openingFamilySymbol = FamilyInstanceUtils.FindOpeningFamily(doc, openingFamilyName, TerrSettings.OpeningsFolder, "Проем");
                 if (openingFamilySymbol == null)
                     throw new ArgumentException("Ошибка загрузки семейства");
                 tr.Commit();

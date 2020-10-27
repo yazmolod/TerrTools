@@ -7,17 +7,8 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-ВНИМАНИЕ: для установки этого обновления требуется закрыть программу и вручную запустить файл
-L:\REVIT\Плагины\TerrTools\TerrToolsUpdater.exe
-
 Что нового:
-- Генерация отделки колонн
-- Генерация сетки осей
-- Генерация изометрий по системам
-- Генерация 3D штриховок на теплоизоляции труб и воздуховодов 
-- Переписана система обновления плагина
-- Переписан модуль по работе с отверстиями
-- Добавлен просмотрщик коллизий
+- Переделан штриховщик для изоляции инженерных сетей
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -44,4 +35,4 @@ L:\REVIT\Плагины\TerrTools\TerrToolsUpdater.exe
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0")]

@@ -9,6 +9,7 @@ using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 using System.Collections;
+using System.IO;
 
 namespace TerrTools
 {
@@ -146,6 +147,35 @@ namespace TerrTools
 
     static class FamilyInstanceUtils
     {
+        static public FamilySymbol FindOpeningFamily(Document doc, string familyName, string loadPath, string typeName)
+        {
+            FamilySymbol symbol;
+            Family openingFamily = new FilteredElementCollector(doc)
+                .OfClass(typeof(Family))
+                .Where(x => x.Name == familyName)
+                .Cast<Family>()
+                .FirstOrDefault();
+            if (openingFamily != null)
+            {
+                symbol = (FamilySymbol)doc.GetElement(openingFamily.GetFamilySymbolIds().First());
+                return symbol;
+            }
+            else
+            {
+                try
+                {
+                    doc.LoadFamilySymbol(Path.Combine(loadPath, familyName + ".rfa"), typeName, out symbol);
+                    symbol.Activate();
+                    return symbol;
+                }
+                catch (Autodesk.Revit.Exceptions.ArgumentException)
+                {
+                    TaskDialog.Show("Ошибка", "Не удалось найти семейство, требуемое для работы плагина. Обратитесь к BIM-менеджеру");
+                    return null;
+                }
+            }
+        }
+
         public static string SizeLookup(FamilySizeTable fmt, string columnName, string[] args)
         {
             int columnIndex = -1;
@@ -467,6 +497,7 @@ namespace TerrTools
         static public Solid GetSolid(Element e)
         {
             Options opt = new Options();
+            opt.ComputeReferences = true;
             GeometryElement geomElem = e.get_Geometry(opt);
             foreach (GeometryObject geomObj in geomElem)
             {

@@ -166,12 +166,6 @@
     <Compile Include="UI\IzometryGeneratorForm.Designer.cs">
       <DependentUpon>IzometryGeneratorForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\InsulCurvesForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="UI\InsulCurvesForm.Designer.cs">
-      <DependentUpon>InsulCurvesForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="UI\TwoDoc.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -226,8 +220,6 @@
   <ItemGroup>
     <None Include=".editorconfig" />
     <None Include="app.config" />
-    <None Include="manifests\TerrTools_19.addin" />
-    <None Include="manifests\TerrTools_20.addin" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -256,9 +248,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\HorizontalFinishingForm.resx">
       <DependentUpon>HorizontalFinishingForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="UI\InsulCurvesForm.resx">
-      <DependentUpon>InsulCurvesForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\IntersectionsForm.resx">
       <DependentUpon>IntersectionsForm.cs</DependentUpon>
@@ -373,7 +362,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\Goal.png" />
-</ItemGroup>
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\3D.png" />
   </ItemGroup>

@@ -166,7 +166,8 @@ namespace TerrTools
                 BuiltInCategory.OST_DuctSystem,
                 BuiltInCategory.OST_DuctFitting,
                 BuiltInCategory.OST_PipeFitting,
-                BuiltInCategory.OST_PipeCurves
+                BuiltInCategory.OST_PipeCurves,
+                BuiltInCategory.OST_GenericModel
             };
             // Получаем Id из BuiltInCategory в списке categories.
             List<ElementId> categoriesIds = categories.Select(x => Category.GetCategory(Doc, x).Id).ToList();
