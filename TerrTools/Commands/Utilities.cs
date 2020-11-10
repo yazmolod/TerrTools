@@ -519,20 +519,50 @@ namespace TerrTools
             return list;
         }
 
+        static public Curve FindLongestCurveFromPoints(List<XYZ> pts)
+        {
+            Curve curve = null;
+            for (int i = 0; i < pts.Count() - 1; i++)
+            {
+                XYZ pt1 = pts[i];
+                for (int j = 0; j < pts.Count(); j++)
+                {
+                    XYZ pt2 = pts[j];
+                    try
+                    {
+                        Curve new_curve = Line.CreateBound(pt1, pt2);
+                        if (curve != null)
+                        {
+                            if (curve.Length < new_curve.Length)
+                            {
+                                curve = new_curve;
+                            }
+                        }
+                        else
+                        {
+                            curve = new_curve;
+                        }
+                    }
+                    catch (Autodesk.Revit.Exceptions.ArgumentsInconsistentException)
+                    {
+                        // короткая линия
+                    }
+                }
+            }
+            return curve;
+        }
+
         static public Curve FindDuctCurve(ConnectorManager conMngr)
         {
             try
             {
                 var connectors = GetConnectors(conMngr);
-                var connectorsPts = connectors.Select(x => x.Origin);
-                Curve curve = Line.CreateBound(connectorsPts.First(), connectorsPts.Last());
+                var connectorsPts = connectors.Select(x => x.Origin).ToList();
+                // ищем самую длинную линию
+                Curve curve = FindLongestCurveFromPoints(connectorsPts);                
                 return curve;
             }
             catch (Autodesk.Revit.Exceptions.InvalidOperationException)
-            {
-                return null;
-            }
-            catch (Autodesk.Revit.Exceptions.ArgumentsInconsistentException)
             {
                 return null;
             }
@@ -544,6 +574,21 @@ namespace TerrTools
             var connectorsPts = connectors.Select(x => x.Origin);
             XYZ vec = connectorsPts.Last() - connectorsPts.ElementAt(0);
             return vec.Normalize();
+        }
+
+        public enum DuctOrientation
+        {
+            StraightVertical,
+            Horizontal,
+            Angled
+        } 
+
+        static public DuctOrientation GetDuctOrientation(MEPCurve curve)
+        {
+            XYZ orientation = GetDuctDirection(curve.ConnectorManager);
+            if (orientation.IsAlmostEqualTo(XYZ.BasisZ) || orientation.IsAlmostEqualTo(XYZ.BasisZ.Negate())) return DuctOrientation.StraightVertical;
+            else if (Math.Abs(orientation.Z) <= GlobalVariables.MinThreshold) return DuctOrientation.Horizontal;
+            else return DuctOrientation.Angled;
         }
 
         static public List<Face> GetFaces(Element e)

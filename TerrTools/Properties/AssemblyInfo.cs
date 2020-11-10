@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription(@"
 Что нового:
 - Переделан штриховщик для изоляции инженерных сетей
+- Исправлена ошибка в анализе пересечений 
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -35,4 +36,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("1.1.0")]
+[assembly: AssemblyFileVersion("1.2.0")]

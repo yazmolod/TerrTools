@@ -8,6 +8,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using Autodesk.Revit.Attributes;
 
+
 namespace TerrTools
 {
     [Transaction(TransactionMode.Manual)]
@@ -20,7 +21,8 @@ namespace TerrTools
         {
             uidoc = commandData.Application.ActiveUIDocument;
             doc = uidoc.Document;
-            string familyName = "ТеррНИИ_УГО_3D_Теплоизоляция зигзаг";
+            string horFamilyName = "ТеррНИИ_УГО_3D_Теплоизоляция зигзаг";
+            string verFamilyName = "ТеррНИИ_УГО_3D_Теплоизоляция зигзаг_Вертикальный";
             string familyFolder = @"L:\REVIT\Семейства\ТеррНИИ\Условники\3D";
             string familyType = "-";
 
@@ -30,7 +32,8 @@ namespace TerrTools
             using (Transaction tr = new Transaction(doc))
             {
                 tr.Start("Загрузка семейства");
-                FamilySymbol zigzagSymbol = FamilyInstanceUtils.FindOpeningFamily(doc, familyName, familyFolder, familyType);
+                FamilySymbol horZigzagSymbol = FamilyInstanceUtils.FindOpeningFamily(doc, horFamilyName, familyFolder, familyType);
+                FamilySymbol verZigzagSymbol = FamilyInstanceUtils.FindOpeningFamily(doc, verFamilyName, familyFolder, familyType);
                 tr.Commit();
 
                 tr.Start("Добавление общих параметров");
@@ -52,7 +55,7 @@ namespace TerrTools
                 List<ElementId> toDelete = new List<ElementId>();
                 List<string> elemsIds = elems.Select(x => x.Id.IntegerValue.ToString()).ToList();
                 List<FamilyInstance> fills = new FilteredElementCollector(doc).OfClass(typeof(FamilyInstance))
-                                                    .Cast<FamilyInstance>().Where(x => x.Symbol.FamilyName == familyName).ToList();
+                                                    .Cast<FamilyInstance>().Where(x => x.Symbol.FamilyName == horFamilyName || x.Symbol.FamilyName == verFamilyName).ToList();
                 foreach (FamilyInstance i in fills)
                 {
                     var param = i.LookupParameter(idParamName);
@@ -63,28 +66,40 @@ namespace TerrTools
                 }
                 doc.Delete(toDelete);
 
-                foreach (var e in elems)
+                foreach (MEPCurve e in elems)
                 {
-                    // находим самую большую грань и размещаемся на ней
-                    Face face = null;
-                    double maxArea = 0.0;
-                    foreach (Face f in GeometryUtils.GetSolid(e).Faces)
-                    {
-                        if (f.Area > maxArea)
-                        {
-                            face = f;
-                            maxArea = face.Area;
-                        }
-                    }
-                    Curve ductCurve = GeometryUtils.FindDuctCurve(e.ConnectorManager);
-                    XYZ pt1 = ductCurve.GetEndPoint(0); XYZ pt2 = ductCurve.GetEndPoint(1);
-                    pt1 = face.Project(pt1).XYZPoint;
-                    pt2 = face.Project(pt2).XYZPoint;
-                    FamilyInstance fi;
+                    Curve ductCurve = (e.Location as LocationCurve).Curve;
+                    Level level = e.ReferenceLevel;
+
+                    var dir = GeometryUtils.GetDuctOrientation(e);
+
+                    XYZ pt1 = ductCurve.GetEndPoint(0);
+                    XYZ pt2 = ductCurve.GetEndPoint(1);
+                    XYZ project_pt1 = new XYZ(pt1.X, pt1.Y, level.Elevation);
+                    XYZ project_pt2 = new XYZ(pt2.X, pt2.Y, level.Elevation);
+
+                    FamilyInstance fi = null;
                     try
                     {
-                        Line line = Line.CreateBound(pt1, pt2);
-                        fi = doc.Create.NewFamilyInstance(face, line, zigzagSymbol);
+                        if (dir == GeometryUtils.DuctOrientation.Horizontal)
+                        {
+                            Line line = Line.CreateBound(project_pt1, project_pt2);
+                            fi = doc.Create.NewFamilyInstance(line, horZigzagSymbol, level, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                            fi.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).Set(e.LevelOffset);
+                        }
+                        else if (dir == GeometryUtils.DuctOrientation.StraightVertical)
+                        {
+                            fi = doc.Create.NewFamilyInstance(project_pt1, verZigzagSymbol, level, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                            fi.LookupParameter("Длина").Set(
+                                pt1.DistanceTo(pt2)
+                                );                            
+                            var offset = e.LookupParameter("Нижняя отметка").AsDouble();
+                            fi.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).Set(offset);
+                        }
+                        else
+                        {
+                            continue;
+                        }
                     }
                     catch (Autodesk.Revit.Exceptions.ArgumentsInconsistentException)
                     {
@@ -100,14 +115,23 @@ namespace TerrTools
                     string element_system = p != null ? p.AsString() : "";
 
                     // вычисляем смещение
-                    double ductWidth = e.get_Parameter(BuiltInParameter.RBS_CURVE_WIDTH_PARAM).AsDouble();
-                    double ductHeight = e.get_Parameter(BuiltInParameter.RBS_CURVE_HEIGHT_PARAM).AsDouble();
-                    double fillOffset = ductWidth > ductHeight ? ductHeight / 2 : ductWidth / 2;
+                    Parameter ductWidth = e.get_Parameter(BuiltInParameter.RBS_CURVE_WIDTH_PARAM);
+                    Parameter ductHeight = e.get_Parameter(BuiltInParameter.RBS_CURVE_HEIGHT_PARAM);
+                    Parameter ductDiameter = e.get_Parameter(BuiltInParameter.RBS_CURVE_DIAMETER_PARAM);
+                    Parameter pipeDiameter = e.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM);
+
+                    double fillOffset = 0;
+                    if (ductDiameter != null) fillOffset = ductDiameter.AsDouble() / 2;
+                    else if (pipeDiameter != null) fillOffset = pipeDiameter.AsDouble() / 2;
+                    else
+                    {
+                        fillOffset = ductWidth.AsDouble() > ductHeight.AsDouble() ? ductHeight.AsDouble() / 2 : ductWidth.AsDouble() / 2;
+                    }
 
                     // Назначаем параметры
                     fi.LookupParameter("Марка").Set(insul_type + " " + insul_thickness);
                     fi.LookupParameter(systemParamName).Set(element_system);
-                    fi.LookupParameter("Смещение по Z").Set(fillOffset);
+                    //fi.LookupParameter("Смещение по Z").Set(fillOffset);
                     fi.LookupParameter(idParamName).Set(e.Id.IntegerValue.ToString());
                 }
                 tr.Commit();

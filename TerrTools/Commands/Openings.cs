@@ -167,14 +167,22 @@ namespace TerrTools
                                 if (interPts.Any(x => x != null))
                                 {
                                     XYZ pt = interPts.First(x => x != null);
-                                    IntersectionMepCurve i = new IntersectionMepCurve(host, m, pt, linkedDocInstance);                                   
-                                    intersectionList.Add(i);
+                                    try
+                                    {
+                                        IntersectionMepCurve i = new IntersectionMepCurve(host, m, pt, linkedDocInstance);
+                                        intersectionList.Add(i);
+                                    }
+                                    catch (NotImplementedException)
+                                    {
+
+                                    }
                                 }
                             }
                         }
                     }
                     progress.StepUp();
                 }
+                progress.Close();
                 return intersectionList;
             }
         }
