@@ -440,12 +440,14 @@ namespace TerrTools
         private void Application_DocumentOpened(object sender, DocumentOpenedEventArgs e)
         {
             Document doc = e.Document;
+            GlobalVariables.CurrentDocument = doc;
             AddUpdaterSharedParameters(doc);
             RegisterUpdaters(doc);
         }
         private void Application_DocumentCreated(object sender, DocumentCreatedEventArgs e)
         {
             Document doc = e.Document;
+            GlobalVariables.CurrentDocument = doc;
             AddUpdaterSharedParameters(doc);
             RegisterUpdaters(doc);
         }

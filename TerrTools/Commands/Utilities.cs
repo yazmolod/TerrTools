@@ -22,6 +22,7 @@ namespace TerrTools
 #endif
 
         public const double MinThreshold = 1.0 / 12.0 / 16.0;
+        public static Document CurrentDocument = null;
     }
 
     static class SharedParameterUtils

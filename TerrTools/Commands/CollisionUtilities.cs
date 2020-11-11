@@ -99,7 +99,9 @@ namespace TerrTools
             else
             {
                 res = Regex.Split(v, "&gt;")[2];
-                return Regex.Match(res, @"[a-zA-Zа-яА-Я0-9_][a-zA-Zа-яА-Я0-9_ ]+(\.ifc)?").Value;
+                res = Regex.Match(res, @"([a-zA-Zа-яА-Я0-9_ \.]+)\..{3}").Groups[1].Value;
+                return res;
+                    
             }
         }
 
@@ -334,37 +336,66 @@ namespace TerrTools
             }
         }
 
+        public static IntersectionMepCurve HTMLRowToIntersection(CollisionReportRow row, Document hostdoc, ElementProcessingLog rowLog, ElementProcessingLog angledPipeLog)
+        {
+            GetElementsFromReportRow(hostdoc, row,
+                    out ICollection<Element> docElems, out ICollection<Element> linkElems, out RevitLinkInstance linkdocInstance);
+            // в Naviswork система координат по внутренней площадке документа
+            // поэтому необходимо и корректировать по местной системе координат
+            ProjectLocation pl = hostdoc.ActiveProjectLocation;
+            XYZ centerPoint = pl.GetTransform().OfPoint(row.Point);
+            // определяем, где конструкция, а где сеть
+            var findedElems = docElems.Concat(linkElems);
+            Element host = findedElems.FirstOrDefault(x => x is Wall || x is Floor);
+            if (host == null)
+            {
+                // Случай, когда стена разбита на части
+                Part part = findedElems.FirstOrDefault(x => x is Part) as Part;
+                LinkElementId linkId = part.GetSourceElementIds().First();
+                host = hostdoc.GetElement(linkId.HostElementId);
+            }
+
+            Element pipe = findedElems.FirstOrDefault(x => x is MEPCurve ||
+                                                (x is FamilyInstance && (x as FamilyInstance).MEPModel.ConnectorManager != null));
+            // создание объекта пересечения
+            if (host != null && pipe != null)
+            {
+                try
+                {
+                    var intr = new IntersectionMepCurve(host, pipe, centerPoint, linkdocInstance);
+                    return intr;
+                }
+                catch (NotImplementedException)
+                {
+                    angledPipeLog.AddError(row.Name);
+                }
+            }
+            else
+            {
+                rowLog.AddError(row.Name);
+            }
+            return null;
+        }
+
+
         public static List<IntersectionMepCurve> HTMLToMEPIntersections(Document hostdoc, string path)
         {
             var rowLog = LoggingMachine.NewLog("Распознование коллизий", "", "Не найден файл с элементом, не обновлена связь или элементы уже удалены");
-            List<IntersectionMepCurve> result = new List<IntersectionMepCurve>();
+            var angledPipeLog = LoggingMachine.NewLog("Распознование коллизий", "", "Труба или воздуховод не лежат в допустимой плоскости");
+
             CollisionReportTable table = new CollisionReportTable(path);
-            foreach (CollisionReportRow row in table.Rows)
+
+            List<IntersectionMepCurve> result = new List<IntersectionMepCurve>();
+            foreach (var row in table.Rows)
             {
-                GetElementsFromReportRow(hostdoc, row,
-                    out ICollection<Element> docElems, out ICollection<Element> linkElems, out RevitLinkInstance linkdocInstance);
-                // в Naviswork система координат по внутренней площадке документа
-                // поэтому необходимо и корректировать по местной системе координат
-                ProjectLocation pl = hostdoc.ActiveProjectLocation;
-                XYZ centerPoint = pl.GetTransform().OfPoint(row.Point);
-                // определяем, где конструкция, а где сеть
-                var findedElems = docElems.Concat(linkElems);
-                Element host = findedElems.FirstOrDefault(x => x is Wall || x is Floor);
-                Element pipe = findedElems.FirstOrDefault(x => x is MEPCurve ||
-                                                        (x is FamilyInstance && (x as FamilyInstance).MEPModel.ConnectorManager != null));
-                // создание объекта пересечения
-                if (host != null && pipe != null)
-                {
-                    var intr = new IntersectionMepCurve(host, pipe, centerPoint, linkdocInstance);
-                    result.Add(intr);
-                }
-                else
-                {
-                    rowLog.AddError(row.Name);
-                }
+                var item = HTMLRowToIntersection(row, hostdoc, rowLog, angledPipeLog);
+                result.Add(item);
             }
+
+            result.RemoveAll(item => item == null);
+
             LoggingMachine.Show();
             return result;
-        }   
+        }
     }
 }
