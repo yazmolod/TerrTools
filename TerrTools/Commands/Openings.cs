@@ -95,6 +95,8 @@ namespace TerrTools
                     holeElement.LookupParameter("ADSK_Отверстие_Ширина").Set(i.HoleWidth);
                     holeElement.LookupParameter("ADSK_Отверстие_Высота").Set(i.HoleHeight);
                     holeElement.LookupParameter("ADSK_Толщина стены").Set(i.HoleDepth);
+                    // (временно) работа с отверстиями в кирпиче
+                    holeElement.LookupParameter("ТеррНИИ_Отверстие_В кирпиче")?.Set(1);
                 }
                 catch { log_param.AddError(i.Id); }
 
@@ -244,15 +246,28 @@ namespace TerrTools
         public Element Host { get => _hosts.FirstOrDefault(); set => _hosts = new List<Element>() { value }; }
         public List<Element> Hosts { get => _hosts; set => _hosts = value; }
         public bool HasHosts { get => _hosts.Count() > 0; }
-
+        public bool IsBrick { get; set;} = false;
         public Level Level { get; private set; }
         public XYZ InsertionPoint { get; private set; }
+        public double HoleHeight { get => RoundValue(Outline.MaximumPoint.Z - Outline.MinimumPoint.Z, DisplayUnitType.DUT_MILLIMETERS, 1); }
+        public double HoleWidth { get => RoundValue(Outline.MaximumPoint.X - Outline.MinimumPoint.X, DisplayUnitType.DUT_MILLIMETERS, 1); }
+        public double HoleDepth { get => RoundValue(Outline.MaximumPoint.Y - Outline.MinimumPoint.Y, DisplayUnitType.DUT_MILLIMETERS, 1); }
+        public double LevelOffset { get => RoundValue(InsertionPoint.Z - Level.ProjectElevation, DisplayUnitType.DUT_MILLIMETERS, 1); }
+        public double GroundOffset { get => RoundValue(LevelOffset + Level.ProjectElevation, DisplayUnitType.DUT_MILLIMETERS, 1); }
 
-        public double HoleHeight { get => Outline.MaximumPoint.Z - Outline.MinimumPoint.Z; }
-        public double HoleWidth { get => Outline.MaximumPoint.X - Outline.MinimumPoint.X; }
-        public double HoleDepth { get => Outline.MaximumPoint.Y - Outline.MinimumPoint.Y; }
-        public double LevelOffset { get => InsertionPoint.Z - Level.ProjectElevation; }
-        public double GroundOffset { get => LevelOffset + Level.ProjectElevation; }
+        /// <summary>
+        /// Округляет число во внутренней системе исчисления относительно указанной
+        /// </summary>
+        /// <param name="x">Число для округления</param>
+        /// <param name="displayUnitType">Система исчисления, относительно которой нужно округлять</param>
+        /// <param name="i">Степень округления</param>
+        /// <returns></returns>
+        public double RoundValue(double x, DisplayUnitType displayUnitType, int i = 1)
+        {
+            double humanUnitValue = UnitUtils.ConvertFromInternalUnits(x, displayUnitType);
+            double roundedValue = Math.Round(humanUnitValue / i) * i;
+            return UnitUtils.ConvertToInternalUnits(roundedValue, displayUnitType);
+        }
 
         /// <summary>
         /// Проверка на пересечение с другим отверстием
@@ -350,6 +365,7 @@ namespace TerrTools
             var intr = new Intersection(outline, angle, hosts);
             intr.Name = name;
             intr.Id = id;
+            intr.IsBrick = intrs.Select(x => x.IsBrick).Any();
             return intr;
         }
     
@@ -427,25 +443,8 @@ namespace TerrTools
                 else if (Pipe is FamilyInstance) return (Pipe as FamilyInstance).MEPModel.ConnectorManager;
                 else return null;
             }
-        }
-        
-        public bool IsBrick 
-        { 
-            get 
-            {
-                return false;
-                bool state = false;
-                if (Host != null && Host is Wall)
-                {                    
-                    foreach (var layer in (Host as Wall).WallType.GetCompoundStructure().GetLayers())
-                    {
-                        Element materialElement = Host.Document.GetElement(layer.MaterialId);
-                        state = materialElement != null ? materialElement.Name.ToLower().Contains("кирпич") || state : false;
-                    }
-                }
-                return state;
-            }
-        }       
+        }        
+          
         /// <summary>
         /// Изначальная точка пересечения, взятая из отчета или анализа
         /// </summary>
@@ -493,6 +492,7 @@ namespace TerrTools
                 Wall w = Host as Wall;
                 LocationCurve wloc = w.Location as LocationCurve;
                 Curve wall_curve = wloc.Curve;
+                pipe_curve.MakeUnbound();       // на тот случай когда линия воздуховоды не проходит сквозь стену, а только ее часть
                 var intersectCurve = pipe_curve.Project(wall_curve.GetEndPoint(0));
                 pt = intersectCurve.XYZPoint;
             }
@@ -536,10 +536,10 @@ namespace TerrTools
             }
 
             // Определяем направление воздуховода и пересечение с конструкцией
-            XYZ vec = GeometryUtils.GetDuctDirection(PipeConnectorManager);
+            var direction = GeometryUtils.GetDuctOrientation(PipeConnectorManager);
             XYZ pt = calculateProjectedPoint();
             // Сеть идет строго вертикально
-            if (vec.IsAlmostEqualTo(XYZ.BasisZ) | vec.IsAlmostEqualTo(XYZ.BasisZ.Negate()))
+            if (direction == GeometryUtils.DuctOrientation.StraightVertical)
             {
                 width += Offset * 2;
                 height += Offset * 2;
@@ -563,7 +563,7 @@ namespace TerrTools
                 return outline;
             }
             // Сеть идет в горизонтальной плоскости
-            else if (vec.IsAlmostEqualTo(new XYZ(vec.X, vec.Y, 0)))
+            else if (direction == GeometryUtils.DuctOrientation.Horizontal)
             {
                 width += Offset * 2;
                 height += Offset * 2;
@@ -575,9 +575,21 @@ namespace TerrTools
             else
             {
                 throw new NotImplementedException("Поддерживаются только вертикальные воздуховоды или расположенные в горизонтальной плоскости");
-            }
+            }            
+        }
 
-            
+        private bool IsBrickAnalyze()
+        {
+            bool state = false;
+            if (Host != null && Host is Wall)
+            {
+                foreach (var layer in (Host as Wall).WallType.GetCompoundStructure().GetLayers())
+                {
+                    Element materialElement = Host.Document.GetElement(layer.MaterialId);
+                    state = materialElement != null ? materialElement.Name.ToLower().Contains("кирпич") || state : false;
+                }
+            }
+            return state;
         }
 
         public IntersectionMepCurve(Element host, Element pipe, XYZ pt, RevitLinkInstance instance)
@@ -590,6 +602,7 @@ namespace TerrTools
             if (Host == null) throw new ArgumentNullException("Host", "Элемент не может быть null");
             if (Pipe == null) throw new ArgumentNullException("Pipe", "Элемент не может быть null");
             Outline = CalculatePipeOutline();
+            IsBrick = IsBrickAnalyze();
             DefaultInit();
         }
     }

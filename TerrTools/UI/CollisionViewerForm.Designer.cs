@@ -52,7 +52,7 @@
             // 
             // showButton
             // 
-            this.showButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.showButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.showButton.Location = new System.Drawing.Point(713, 415);
             this.showButton.Name = "showButton";
             this.showButton.Size = new System.Drawing.Size(75, 23);
@@ -63,6 +63,7 @@
             // 
             // loadButton
             // 
+            this.loadButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.loadButton.Location = new System.Drawing.Point(12, 415);
             this.loadButton.Name = "loadButton";
             this.loadButton.Size = new System.Drawing.Size(103, 23);
@@ -73,6 +74,7 @@
             // 
             // selectButton
             // 
+            this.selectButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.selectButton.Location = new System.Drawing.Point(632, 415);
             this.selectButton.Name = "selectButton";
             this.selectButton.Size = new System.Drawing.Size(75, 23);

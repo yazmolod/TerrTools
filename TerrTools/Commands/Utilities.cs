@@ -526,7 +526,7 @@ namespace TerrTools
             for (int i = 0; i < pts.Count() - 1; i++)
             {
                 XYZ pt1 = pts[i];
-                for (int j = 0; j < pts.Count(); j++)
+                for (int j = i + 1; j < pts.Count(); j++)
                 {
                     XYZ pt2 = pts[j];
                     try
@@ -584,11 +584,11 @@ namespace TerrTools
             Angled
         } 
 
-        static public DuctOrientation GetDuctOrientation(MEPCurve curve)
+        static public DuctOrientation GetDuctOrientation(ConnectorManager conMngr)
         {
-            XYZ orientation = GetDuctDirection(curve.ConnectorManager);
+            XYZ orientation = GetDuctDirection(conMngr);
             if (orientation.IsAlmostEqualTo(XYZ.BasisZ) || orientation.IsAlmostEqualTo(XYZ.BasisZ.Negate())) return DuctOrientation.StraightVertical;
-            else if (Math.Abs(orientation.Z) <= GlobalVariables.MinThreshold) return DuctOrientation.Horizontal;
+            else if (orientation.IsAlmostEqualTo(new XYZ(orientation.X, orientation.Y, 0))) return DuctOrientation.Horizontal;
             else return DuctOrientation.Angled;
         }
 
@@ -606,6 +606,22 @@ namespace TerrTools
         }
     }
 
+    [Serializable]
+    public class DocumentNotFoundException : Exception
+    {
+        public DocumentNotFoundException(string docName) : base($"В проекте не найден документ с именем \"{docName}\"")
+        {
+        }
+    }
+
+    [Serializable]
+    public class DocumentNotLoadedException : Exception
+    {
+        public DocumentNotLoadedException(string docName) : base($"Связанный файл \"{docName}\" не подгружен в текущий проект")
+        {
+        }
+    }
+
     public class DocumentDataSet: IEnumerable<DocumentData>
     {
         ICollection<DocumentData> Docs { get; }
@@ -613,7 +629,9 @@ namespace TerrTools
         {
             get
             {
-                return Docs.Where(x => x.Basename == name).FirstOrDefault();
+                DocumentData doc = Docs.Where(x => x.Basename == name).FirstOrDefault();
+                if (doc != null) return doc;
+                else throw new DocumentNotFoundException(name);
             }
         }
 
@@ -654,7 +672,15 @@ namespace TerrTools
         /// Указывает, загружена ли связь в проект
         /// </summary>
         public bool IsLoaded { get; }
-        public Document Document { get; }
+        private Document _Document { get; }
+        public Document Document { get
+            {
+                if (_Document == null)
+                {
+                    throw new DocumentNotLoadedException(Basename);
+                }
+                else return _Document;
+            } }
         public RevitLinkInstance Instance { get; }
         /// <summary>
         /// Вектор, который позволяет скорректировать координаты из связи относительно координатной системы в проекте
@@ -669,7 +695,7 @@ namespace TerrTools
             Basename = Regex.Match(doc.Title, @"(.+)_.+").Groups[1].Value;
             if (Basename == "") Basename = doc.Title;
             IsLink = false;
-            Document = doc;
+            _Document = doc;
             Instance = null;
             IsLoaded = false;
             InstanceCorrectionTransform = null;
@@ -682,8 +708,8 @@ namespace TerrTools
         {
             Basename = Regex.Match(link.Name, @"(.+)\.rvt").Groups[1].Value;
             IsLink = true;
-            Document = link.GetLinkDocument();
-            IsLoaded = Document != null;
+            _Document = link.GetLinkDocument();
+            IsLoaded = _Document != null;
             Instance = link;
             InstanceCorrectionTransform = DocumentUtils.GetCorrectionTransform(link);
         }

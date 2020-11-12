@@ -307,12 +307,12 @@ namespace TerrTools
         {
             linkInstance = null;
             DocumentDataSet docSet = new DocumentDataSet(doc, true);
-            Document doc1 = docSet[row.E1_DocumentName]?.Document;
-            Document doc2 = docSet[row.E2_DocumentName]?.Document;
-            Element e1 = null;
-            Element e2 = null;
-            if (doc1 != null) e1 = doc1.GetElement(row.E1_Id);
-            if (doc2 != null) e2 = doc2.GetElement(row.E2_Id);
+            DocumentData docData1 = docSet[row.E1_DocumentName];
+            DocumentData docData2 = docSet[row.E2_DocumentName];
+            Document doc1 = docData1.Document;
+            Document doc2 = docData2.Document;
+            Element e1 = doc1.GetElement(row.E1_Id);
+            Element e2 = doc2.GetElement(row.E2_Id);
 
             elementsInDocument = new List<Element>();
             elementsInLink = new List<Element>();
@@ -321,7 +321,7 @@ namespace TerrTools
                 if (doc1.IsLinked)
                 {
                     elementsInLink.Add(e1);
-                    linkInstance = docSet[row.E1_DocumentName].Instance;
+                    linkInstance = docData1.Instance;
                 }
                 else elementsInDocument.Add(e1);
             }
@@ -330,7 +330,7 @@ namespace TerrTools
                 if (doc2.IsLinked)
                 {
                     elementsInLink.Add(e2);
-                    linkInstance = docSet[row.E2_DocumentName].Instance;
+                    linkInstance = docData2.Instance;
                 }
                 else elementsInDocument.Add(e2);
             }
@@ -386,15 +386,28 @@ namespace TerrTools
             CollisionReportTable table = new CollisionReportTable(path);
 
             List<IntersectionMepCurve> result = new List<IntersectionMepCurve>();
-            foreach (var row in table.Rows)
+            try
             {
-                var item = HTMLRowToIntersection(row, hostdoc, rowLog, angledPipeLog);
-                result.Add(item);
+                foreach (var row in table.Rows)
+                {
+
+                    var item = HTMLRowToIntersection(row, hostdoc, rowLog, angledPipeLog);
+                    result.Add(item);
+                }
+                result.RemoveAll(x => x == null);
+                LoggingMachine.Show();
             }
-
-            result.RemoveAll(item => item == null);
-
-            LoggingMachine.Show();
+            catch (DocumentNotFoundException e)
+            {
+                TaskDialog.Show("Ошибка", e.Message);
+            }
+            catch (DocumentNotLoadedException e)
+            {
+                var td = new TaskDialog("Ошибка");
+                td.MainInstruction = e.Message;
+                td.MainContent = "Обновите связанный документ и повторите попытку";
+                td.Show();
+            }
             return result;
         }
     }

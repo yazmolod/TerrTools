@@ -71,7 +71,7 @@ namespace TerrTools
                     Curve ductCurve = (e.Location as LocationCurve).Curve;
                     Level level = e.ReferenceLevel;
 
-                    var dir = GeometryUtils.GetDuctOrientation(e);
+                    var dir = GeometryUtils.GetDuctOrientation(e.ConnectorManager);
 
                     XYZ pt1 = ductCurve.GetEndPoint(0);
                     XYZ pt2 = ductCurve.GetEndPoint(1);

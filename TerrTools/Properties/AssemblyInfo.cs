@@ -8,10 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
 Что нового:
-- Переделан штриховщик для изоляции инженерных сетей
-- Исправлена ошибка в анализе пересечений 
-
-- Исправлены баги в пересечениях по отчету
+- Ускорение поиска пересечений по отчету, исправление ошибок
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -38,4 +35,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("1.2.2")]
+[assembly: AssemblyFileVersion("1.3")]

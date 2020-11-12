@@ -36,18 +36,6 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
-            this.Level = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.HostName = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.HostId = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.PipeName = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.PipeId = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Offset = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.IsBrick = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.HoleSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.LevelOffset = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.GroundOffset = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.HoleId = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.AddToProject = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.button1 = new System.Windows.Forms.Button();
             this.offsetTextBox = new System.Windows.Forms.TextBox();
             this.minSizeTextBox = new System.Windows.Forms.TextBox();
@@ -60,6 +48,18 @@
             this.toleranceTextBox = new System.Windows.Forms.TextBox();
             this.mergeCheckBox = new System.Windows.Forms.CheckBox();
             this.clearButton = new System.Windows.Forms.Button();
+            this.Level = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.HostName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.HostId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.PipeName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.PipeId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Offset = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.IsBrick = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.HoleSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.LevelOffset = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.GroundOffset = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.HoleId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.AddToProject = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -86,113 +86,14 @@
             this.AddToProject});
             this.dataGridView1.Location = new System.Drawing.Point(93, 12);
             this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.Size = new System.Drawing.Size(723, 519);
+            this.dataGridView1.Size = new System.Drawing.Size(736, 519);
             this.dataGridView1.TabIndex = 0;
             this.dataGridView1.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellValueChanged);
-            // 
-            // Level
-            // 
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.Level.DefaultCellStyle = dataGridViewCellStyle1;
-            this.Level.HeaderText = "Уровень пересечения";
-            this.Level.Name = "Level";
-            this.Level.ReadOnly = true;
-            // 
-            // HostName
-            // 
-            dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.HostName.DefaultCellStyle = dataGridViewCellStyle2;
-            this.HostName.HeaderText = "Конструкция";
-            this.HostName.Name = "HostName";
-            this.HostName.ReadOnly = true;
-            // 
-            // HostId
-            // 
-            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.HostId.DefaultCellStyle = dataGridViewCellStyle3;
-            this.HostId.HeaderText = "Id конструкции";
-            this.HostId.Name = "HostId";
-            this.HostId.ReadOnly = true;
-            this.HostId.Width = 50;
-            // 
-            // PipeName
-            // 
-            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.PipeName.DefaultCellStyle = dataGridViewCellStyle4;
-            this.PipeName.HeaderText = "Труба/Воздуховод";
-            this.PipeName.Name = "PipeName";
-            this.PipeName.ReadOnly = true;
-            // 
-            // PipeId
-            // 
-            this.PipeId.HeaderText = "Id трубы";
-            this.PipeId.Name = "PipeId";
-            this.PipeId.ReadOnly = true;
-            this.PipeId.Visible = false;
-            this.PipeId.Width = 50;
-            // 
-            // Offset
-            // 
-            this.Offset.HeaderText = "Отступ";
-            this.Offset.Name = "Offset";
-            this.Offset.Width = 50;
-            // 
-            // IsBrick
-            // 
-            this.IsBrick.HeaderText = "Размеры кирпича";
-            this.IsBrick.Name = "IsBrick";
-            this.IsBrick.ReadOnly = true;
-            this.IsBrick.Visible = false;
-            this.IsBrick.Width = 60;
-            // 
-            // HoleSize
-            // 
-            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            dataGridViewCellStyle5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.HoleSize.DefaultCellStyle = dataGridViewCellStyle5;
-            this.HoleSize.HeaderText = "Размер отверстия";
-            this.HoleSize.Name = "HoleSize";
-            this.HoleSize.ReadOnly = true;
-            this.HoleSize.Width = 60;
-            // 
-            // LevelOffset
-            // 
-            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            dataGridViewCellStyle6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.LevelOffset.DefaultCellStyle = dataGridViewCellStyle6;
-            this.LevelOffset.HeaderText = "Отметка низа (от уровня этажа)";
-            this.LevelOffset.Name = "LevelOffset";
-            this.LevelOffset.ReadOnly = true;
-            this.LevelOffset.Width = 80;
-            // 
-            // GroundOffset
-            // 
-            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            dataGridViewCellStyle7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.GroundOffset.DefaultCellStyle = dataGridViewCellStyle7;
-            this.GroundOffset.HeaderText = "Отметка низа (от уровня 0.000)";
-            this.GroundOffset.Name = "GroundOffset";
-            this.GroundOffset.ReadOnly = true;
-            this.GroundOffset.Width = 80;
-            // 
-            // HoleId
-            // 
-            this.HoleId.HeaderText = "Id отверстия ";
-            this.HoleId.Name = "HoleId";
-            this.HoleId.ReadOnly = true;
-            this.HoleId.Visible = false;
-            this.HoleId.Width = 70;
-            // 
-            // AddToProject
-            // 
-            this.AddToProject.HeaderText = "Добавить в проект";
-            this.AddToProject.Name = "AddToProject";
-            this.AddToProject.Width = 60;
             // 
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(711, 554);
+            this.button1.Location = new System.Drawing.Point(724, 554);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(105, 39);
             this.button1.TabIndex = 1;
@@ -263,11 +164,10 @@
             // 
             // countLabel
             // 
-            this.countLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.countLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.countLabel.AutoSize = true;
             this.countLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.countLabel.Location = new System.Drawing.Point(708, 539);
+            this.countLabel.Location = new System.Drawing.Point(721, 534);
             this.countLabel.Name = "countLabel";
             this.countLabel.Size = new System.Drawing.Size(41, 13);
             this.countLabel.TabIndex = 10;
@@ -275,10 +175,10 @@
             // 
             // label3
             // 
-            this.label3.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
             this.label3.Enabled = false;
-            this.label3.Location = new System.Drawing.Point(522, 539);
+            this.label3.Location = new System.Drawing.Point(593, 539);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(122, 26);
             this.label3.TabIndex = 12;
@@ -286,8 +186,8 @@
             // 
             // toleranceTextBox
             // 
-            this.toleranceTextBox.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.toleranceTextBox.Location = new System.Drawing.Point(525, 573);
+            this.toleranceTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.toleranceTextBox.Location = new System.Drawing.Point(596, 573);
             this.toleranceTextBox.Name = "toleranceTextBox";
             this.toleranceTextBox.Size = new System.Drawing.Size(98, 20);
             this.toleranceTextBox.TabIndex = 11;
@@ -295,11 +195,11 @@
             // 
             // mergeCheckBox
             // 
-            this.mergeCheckBox.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.mergeCheckBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.mergeCheckBox.AutoSize = true;
             this.mergeCheckBox.Checked = true;
             this.mergeCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.mergeCheckBox.Location = new System.Drawing.Point(425, 539);
+            this.mergeCheckBox.Location = new System.Drawing.Point(496, 539);
             this.mergeCheckBox.Name = "mergeCheckBox";
             this.mergeCheckBox.Size = new System.Drawing.Size(91, 30);
             this.mergeCheckBox.TabIndex = 13;
@@ -317,11 +217,110 @@
             this.clearButton.UseVisualStyleBackColor = true;
             this.clearButton.Click += new System.EventHandler(this.clearButton_Click);
             // 
+            // Level
+            // 
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.Level.DefaultCellStyle = dataGridViewCellStyle1;
+            this.Level.HeaderText = "Уровень пересечения";
+            this.Level.Name = "Level";
+            this.Level.ReadOnly = true;
+            // 
+            // HostName
+            // 
+            dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.HostName.DefaultCellStyle = dataGridViewCellStyle2;
+            this.HostName.HeaderText = "Конструкция";
+            this.HostName.Name = "HostName";
+            this.HostName.ReadOnly = true;
+            // 
+            // HostId
+            // 
+            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.HostId.DefaultCellStyle = dataGridViewCellStyle3;
+            this.HostId.HeaderText = "Id конструкции";
+            this.HostId.Name = "HostId";
+            this.HostId.ReadOnly = true;
+            this.HostId.Width = 50;
+            // 
+            // PipeName
+            // 
+            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.PipeName.DefaultCellStyle = dataGridViewCellStyle4;
+            this.PipeName.HeaderText = "Труба/Воздуховод";
+            this.PipeName.Name = "PipeName";
+            this.PipeName.ReadOnly = true;
+            // 
+            // PipeId
+            // 
+            this.PipeId.HeaderText = "Id трубы";
+            this.PipeId.Name = "PipeId";
+            this.PipeId.ReadOnly = true;
+            this.PipeId.Visible = false;
+            this.PipeId.Width = 50;
+            // 
+            // Offset
+            // 
+            this.Offset.HeaderText = "Отступ";
+            this.Offset.Name = "Offset";
+            this.Offset.Visible = false;
+            this.Offset.Width = 50;
+            // 
+            // IsBrick
+            // 
+            this.IsBrick.HeaderText = "В кирпиче";
+            this.IsBrick.Name = "IsBrick";
+            this.IsBrick.ReadOnly = true;
+            this.IsBrick.Width = 60;
+            // 
+            // HoleSize
+            // 
+            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            dataGridViewCellStyle5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.HoleSize.DefaultCellStyle = dataGridViewCellStyle5;
+            this.HoleSize.HeaderText = "Размер отверстия";
+            this.HoleSize.Name = "HoleSize";
+            this.HoleSize.ReadOnly = true;
+            this.HoleSize.Width = 120;
+            // 
+            // LevelOffset
+            // 
+            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            dataGridViewCellStyle6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.LevelOffset.DefaultCellStyle = dataGridViewCellStyle6;
+            this.LevelOffset.HeaderText = "Отм. от этажа";
+            this.LevelOffset.Name = "LevelOffset";
+            this.LevelOffset.ReadOnly = true;
+            this.LevelOffset.Width = 50;
+            // 
+            // GroundOffset
+            // 
+            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            dataGridViewCellStyle7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.GroundOffset.DefaultCellStyle = dataGridViewCellStyle7;
+            this.GroundOffset.HeaderText = "Отм. от 0.000";
+            this.GroundOffset.Name = "GroundOffset";
+            this.GroundOffset.ReadOnly = true;
+            this.GroundOffset.Width = 50;
+            // 
+            // HoleId
+            // 
+            this.HoleId.HeaderText = "Id отверстия ";
+            this.HoleId.Name = "HoleId";
+            this.HoleId.ReadOnly = true;
+            this.HoleId.Visible = false;
+            this.HoleId.Width = 70;
+            // 
+            // AddToProject
+            // 
+            this.AddToProject.HeaderText = "Добавить в проект";
+            this.AddToProject.Name = "AddToProject";
+            this.AddToProject.Width = 60;
+            // 
             // IntersectionsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(824, 605);
+            this.ClientSize = new System.Drawing.Size(837, 605);
             this.Controls.Add(this.clearButton);
             this.Controls.Add(this.mergeCheckBox);
             this.Controls.Add(this.label3);
@@ -336,7 +335,7 @@
             this.Controls.Add(this.button1);
             this.Controls.Add(this.dataGridView1);
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(840, 2000);
+            this.MaximumSize = new System.Drawing.Size(2000, 2000);
             this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(840, 300);
             this.Name = "IntersectionsForm";
