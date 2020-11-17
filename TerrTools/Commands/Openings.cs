@@ -252,8 +252,8 @@ namespace TerrTools
         public double HoleHeight { get => RoundValue(Outline.MaximumPoint.Z - Outline.MinimumPoint.Z, DisplayUnitType.DUT_MILLIMETERS, 1); }
         public double HoleWidth { get => RoundValue(Outline.MaximumPoint.X - Outline.MinimumPoint.X, DisplayUnitType.DUT_MILLIMETERS, 1); }
         public double HoleDepth { get => RoundValue(Outline.MaximumPoint.Y - Outline.MinimumPoint.Y, DisplayUnitType.DUT_MILLIMETERS, 1); }
-        public double LevelOffset { get => RoundValue(InsertionPoint.Z - Level.ProjectElevation, DisplayUnitType.DUT_MILLIMETERS, 1); }
-        public double GroundOffset { get => RoundValue(LevelOffset + Level.ProjectElevation, DisplayUnitType.DUT_MILLIMETERS, 1); }
+        public double LevelOffset { get => RoundValue(InsertionPoint.Z - Level.ProjectElevation, DisplayUnitType.DUT_MILLIMETERS, 5); }
+        public double GroundOffset { get => RoundValue(LevelOffset + Level.ProjectElevation, DisplayUnitType.DUT_MILLIMETERS, 5); }
 
         /// <summary>
         /// Округляет число во внутренней системе исчисления относительно указанной

@@ -7,8 +7,9 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription(@"
-Что нового:
 - Ускорение поиска пересечений по отчету, исправление ошибок
+- Округление высотных отметок у семейства отверстий
+- Исправлено определение пересечений с клапанами ОВ
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -35,4 +36,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("1.3")]
+[assembly: AssemblyFileVersion("1.3.1")]

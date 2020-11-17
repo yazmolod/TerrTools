@@ -572,9 +572,42 @@ namespace TerrTools
         static public XYZ GetDuctDirection(ConnectorManager conMngr)
         {
             var connectors = GetConnectors(conMngr);
-            var connectorsPts = connectors.Select(x => x.Origin);
-            XYZ vec = connectorsPts.Last() - connectorsPts.ElementAt(0);
-            return vec.Normalize();
+            if (connectors.Count == 2)
+            {
+                var connectorsPts = connectors.Select(x => x.Origin);
+                XYZ vec = connectorsPts.Last() - connectorsPts.ElementAt(0);
+                return vec.Normalize();
+            }
+            else if (connectors.Count <= 1)
+            {
+                throw new NotImplementedException("Семейства с одним и меньше коннектором не поддерживаются");
+            }
+            else
+            {
+                // семейства с тремя и более коннекторами
+                var usedConnectors = connectors.Where(x => x.IsConnected).ToList();
+                var connectorsPts = usedConnectors.Select(x => x.Origin).ToList();
+                if (usedConnectors.Count == 2)                {
+                    
+                    XYZ vec = connectorsPts.Last() - connectorsPts.ElementAt(0);
+                    return vec.Normalize();
+                }
+                else
+                {
+                    for (int i = 0; i < connectorsPts.Count - 1; i++)
+                    {
+                        for (int j = i + 1; j < connectorsPts.Count; j++)
+                        {
+                            var pt1 = connectorsPts[i];
+                            var pt2 = connectorsPts[j];
+                            var vec = (pt2 - pt1).Normalize();
+                            if (vec.IsAlmostEqualTo(XYZ.BasisZ) || vec.IsAlmostEqualTo(XYZ.BasisZ.Negate()) || vec.IsAlmostEqualTo(new XYZ(vec.X, vec.Y, 0))) return vec;
+                        }
+                    }
+                    return null;
+                }
+            }
+
         }
 
         public enum DuctOrientation
