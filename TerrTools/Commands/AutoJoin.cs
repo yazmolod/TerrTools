@@ -53,15 +53,17 @@ namespace TerrTools
         private void ConnectElements(FilteredElementCollector mostElementCollection,
             FilteredElementCollector leastElementCollection)
         {
+
             Transaction trans = new Transaction(Doc);
             trans.Start("Автоматическое присоединение элементов");
-            
             for (int i = 0; i < leastElementCollection.ToList().Count; i++)
             {
                 var firstElementToJoin = leastElementCollection.ToElements()[i];
                 var boundingBox = firstElementToJoin.get_BoundingBox(null);
                 var outline = new Outline(boundingBox.Min, boundingBox.Max);
                 var filter = new BoundingBoxIntersectsFilter(outline);
+                // На этом моменте происходит изменение FilteredElementCollector
+                // и соответственно, при следующей итерации цикла не получится отобрать элементы.
                 var elementsToJoin = mostElementCollection.WherePasses(filter).ToElements();
                 for (int t = 0; t < elementsToJoin.Count; t++)
                 {
