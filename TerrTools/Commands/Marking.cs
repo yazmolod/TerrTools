@@ -19,7 +19,6 @@ namespace TerrTools
     [Transaction(TransactionMode.Manual)]
     class Marking : IExternalCommand
     {
-        
         public UIDocument UIDoc { get; set; }
         public Document Doc { get => UIDoc.Document; }
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -55,9 +54,7 @@ namespace TerrTools
                     foreach (var instanceIdForTagging in instancesIdsForTagging)
                     {
                         var tagEndPoint = GetCenterFromBoundingBox(Doc.GetElement(instanceIdForTagging));
-                        var X = tagEndPoint.X;
-                        var Y = tagEndPoint.Y;
-                        UV uvPoint = new UV(X, Y);
+                        UV uvPoint = new UV(tagEndPoint.X, tagEndPoint.Y);
                         Doc.Create.NewRoomTag(new LinkElementId(instanceIdForTagging), uvPoint, UIDoc.ActiveView.Id);
                     }
                 }
@@ -69,9 +66,7 @@ namespace TerrTools
                     foreach (var instanceIdForTagging in instancesIdsForTagging)
                     {
                         var tagEndPoint = GetCenterFromBoundingBox(Doc.GetElement(instanceIdForTagging));
-                        var X = tagEndPoint.X;
-                        var Y = tagEndPoint.Y;
-                        UV uvPoint = new UV(X, Y);
+                        UV uvPoint = new UV(tagEndPoint.X, tagEndPoint.Y);
                         Doc.Create.NewSpaceTag((Space)Doc.GetElement(instanceIdForTagging), uvPoint, UIDoc.ActiveView);
                     }
                 }
