@@ -338,7 +338,8 @@ namespace TerrTools
             pbDict.Add("Marking",
                 MakePushButton(
                     "Marking",
-                    "Маркировать по\n выбранной марке"
+                    "Маркировать по\n выбранной марке",
+                    iconName: "Marking.png"
                     ));
 
 
