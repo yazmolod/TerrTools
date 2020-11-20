@@ -23,11 +23,19 @@ namespace TerrTools
         public Document Doc { get => UIDoc.Document; }
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            UIDoc = commandData.Application.ActiveUIDocument;
-            var selectedMarkReference = UIDoc.Selection.PickObject(ObjectType.Element, new TagsSelectionFilter(), "Выберите марку");
-            var selectedMark = Doc.GetElement(selectedMarkReference.ElementId);
-            MarkingElements(selectedMarkReference, selectedMark);
-            return Result.Succeeded;
+            try
+            {
+                UIDoc = commandData.Application.ActiveUIDocument;
+                var selectedMarkReference = UIDoc.Selection.PickObject(ObjectType.Element, new TagsSelectionFilter(), "Выберите марку");
+                var selectedMark = Doc.GetElement(selectedMarkReference.ElementId);
+                MarkingElements(selectedMarkReference, selectedMark);
+                return Result.Succeeded;
+            }
+            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+            {
+                return Result.Cancelled;
+            }
+            
         }
         private IEnumerable<ElementId> GetAllViewInstancesByCategory(ElementId selectedItem)
         {
@@ -39,7 +47,7 @@ namespace TerrTools
                          .Where(x => excessItem.Id != x);
            return allViewInstanceIds;
         }
-        // Маркирует элементы с учетом свойств выбранной пользователем марки.
+        // Маркиру ет элементы с учетом свойств выбранной пользователем марки.
         // нужно BIC а не mark
         private void MarkingElements(Reference selectedMarkReference, Element selectedTag)
         {
@@ -55,7 +63,9 @@ namespace TerrTools
                     {
                         var tagEndPoint = GetCenterFromBoundingBox(Doc.GetElement(instanceIdForTagging));
                         UV uvPoint = new UV(tagEndPoint.X, tagEndPoint.Y);
-                        Doc.Create.NewRoomTag(new LinkElementId(instanceIdForTagging), uvPoint, UIDoc.ActiveView.Id);
+                        var createdRoomTag = Doc.Create.NewRoomTag(new LinkElementId(instanceIdForTagging), uvPoint, UIDoc.ActiveView.Id);
+                        createdRoomTag.HasLeader = selectedRoomTag.HasLeader;
+                        createdRoomTag.TagOrientation = selectedRoomTag.TagOrientation;
                     }
                 }
                 // Случай, когда пользователь выбрал марку пространства.
@@ -67,7 +77,9 @@ namespace TerrTools
                     {
                         var tagEndPoint = GetCenterFromBoundingBox(Doc.GetElement(instanceIdForTagging));
                         UV uvPoint = new UV(tagEndPoint.X, tagEndPoint.Y);
-                        Doc.Create.NewSpaceTag((Space)Doc.GetElement(instanceIdForTagging), uvPoint, UIDoc.ActiveView);
+                        var createdSpaceTag = Doc.Create.NewSpaceTag((Space)Doc.GetElement(instanceIdForTagging), uvPoint, UIDoc.ActiveView);
+                        createdSpaceTag.TagOrientation = selectedSpaceTag.TagOrientation;
+                        createdSpaceTag.HasLeader = selectedSpaceTag.HasLeader;
                     }
                 }
                 else
