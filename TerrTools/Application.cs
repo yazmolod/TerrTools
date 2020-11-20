@@ -335,6 +335,11 @@ namespace TerrTools
                     "InsulCurvesSelection",
                     "Выбрать вручную"
                     ));
+            pbDict.Add("AutoJoin",
+                MakePushButton(
+                    "AutoJoin",
+                    "Соеденить элементы\nдвух категорий"
+                    ));
 
 
             ///
@@ -358,6 +363,7 @@ namespace TerrTools
             ///
             panelArch.AddItem(pbDict["GenerateFloor"]);
             panelArch.AddItem(pbDict["ColumnFinish"]);
+            panelArch.AddItem(pbDict["AutoJoin"]);
 
             ///
             /// Конструкторская панель

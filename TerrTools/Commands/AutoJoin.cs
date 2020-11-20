@@ -15,36 +15,34 @@ using TerrTools.UI;
 
 namespace TerrTools
 {
-
+    [Transaction(TransactionMode.Manual)]
     class AutoJoin : IExternalCommand
     {
-
         public UIDocument UIDoc { get; set; }
         public Document Doc { get => UIDoc.Document; }
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             UIDoc = commandData.Application.ActiveUIDocument;
-            IList<Element> mostElementCollection;
-            IList<Element> leastElementCollection;
+            FilteredElementCollector mostElementCollection;
+            FilteredElementCollector leastElementCollection;
             CollectElementsFromPairs(out mostElementCollection, out leastElementCollection);
             ConnectElements(mostElementCollection, leastElementCollection);
             return Result.Succeeded;
         }
         // Возвращает собранные и отсортированные по двум категориям коллекции элементов,
         // учитывая - какая из них больше, а какая - меньше(в целях оптимизации).
-        private void CollectElementsFromPairs(out IList<Element> mostElementCollection, 
-            out IList<Element> leastElementCollection)
+        private void CollectElementsFromPairs(out FilteredElementCollector mostElementCollection,
+            out FilteredElementCollector leastElementCollection)
         {
-            IList<Element> temporaryElementCollection;
+
+            FilteredElementCollector temporaryElementCollection;
             mostElementCollection = new FilteredElementCollector(Doc)
                 .OfCategory(BuiltInCategory.OST_StructuralColumns)
-                .WhereElementIsNotElementType()
-                .ToElements();
+                .WhereElementIsNotElementType();
             leastElementCollection = new FilteredElementCollector(Doc)
                 .OfCategory(BuiltInCategory.OST_Walls)
-                .WhereElementIsNotElementType()
-                .ToElements();
-            if (leastElementCollection.Count > mostElementCollection.Count)
+                .WhereElementIsNotElementType();
+            if (leastElementCollection.Count() > mostElementCollection.Count())
             {
                 temporaryElementCollection = mostElementCollection;
                 mostElementCollection = leastElementCollection;
@@ -52,22 +50,60 @@ namespace TerrTools
             }
         }
         // Соединяет элементы двух категорий.
-        private void ConnectElements(IList<Element> mostElementCollection,
-            IList<Element> leastElementCollection)
+        private void ConnectElements(FilteredElementCollector mostElementCollection,
+            FilteredElementCollector leastElementCollection)
         {
-            foreach (var firstElementToJoin in leastElementCollection)
+            Transaction trans = new Transaction(Doc);
+            trans.Start("Автоматическое присоединение элементов");
+            
+            for (int i = 0; i < leastElementCollection.ToList().Count; i++)
             {
+                var firstElementToJoin = leastElementCollection.ToElements()[i];
                 var boundingBox = firstElementToJoin.get_BoundingBox(null);
                 var outline = new Outline(boundingBox.Min, boundingBox.Max);
                 var filter = new BoundingBoxIntersectsFilter(outline);
-                var collectorWithLeastElements = (FilteredElementCollector)leastElementCollection;
-                var elementsToJoin = collectorWithLeastElements.WherePasses(filter);
-                // Соединение элементов
-                foreach (var secondElementToJoin in elementsToJoin)
+                var elementsToJoin = mostElementCollection.WherePasses(filter).ToElements();
+                for (int t = 0; t < elementsToJoin.Count; t++)
                 {
-                    JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
+                    var secondElementToJoin = elementsToJoin[t];
+                    try
+                    {
+                        JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
+                    }
+                    // Исключение, которое происходит в том случае, когда элементы уже соединены.
+                    // Не думаю, что имеет смысл уведомлять пользователей об этом.
+                    catch (Autodesk.Revit.Exceptions.ArgumentException)
+                    {
+                    }
                 }
             }
+            trans.Commit();
+            /*foreach (var firstElementToJoinId in leastElementCollection.ToElementIds())
+            {
+                var firstElementToJoin = Doc.GetElement(firstElementToJoinId);
+                var boundingBox = firstElementToJoin.get_BoundingBox(null);
+                //
+                var outline = new Outline(boundingBox.Min, boundingBox.Max);
+                //
+                var filter = new BoundingBoxIntersectsFilter(outline);
+                // элементы из наибольшей коллекции для присоединения, которые проходят фильтр
+                var elementsToJoin = mostElementCollection.WherePasses(filter);
+                // Соединение элементов
+                foreach (var secondElementToJoinId in elementsToJoin.ToElementIds())
+                {
+                    var secondElementToJoin = Doc.GetElement(secondElementToJoinId);
+                    try
+                    {
+                        JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
+                    }
+                    // Исключение, которое происходит в том случае, когда элементы уже соединены.
+                    // Не думаю, что имеет смысл уведомлять пользователей об этом.
+                    catch (Autodesk.Revit.Exceptions.ArgumentException)
+                    {
+                    }
+                }
+            }*/
+            /*trans.Commit();*/
         }
     }
 
