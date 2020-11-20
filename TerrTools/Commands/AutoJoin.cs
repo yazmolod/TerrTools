@@ -24,25 +24,51 @@ namespace TerrTools
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             UIDoc = commandData.Application.ActiveUIDocument;
-            IList<Element> firstElementCollection;
-            IList<Element> secondElementCollection;
-            CollectElementsFromPairs(out firstElementCollection, out secondElementCollection);
+            IList<Element> mostElementCollection;
+            IList<Element> leastElementCollection;
+            CollectElementsFromPairs(out mostElementCollection, out leastElementCollection);
+            ConnectElements(mostElementCollection, leastElementCollection);
             return Result.Succeeded;
         }
-        // Возвращает собранные и отсортированные по двум категориям коллекции элементов.
-        private void CollectElementsFromPairs(out IList<Element> firstElementCollection, 
-            out IList<Element> secondElementCollection)
+        // Возвращает собранные и отсортированные по двум категориям коллекции элементов,
+        // учитывая - какая из них больше, а какая - меньше(в целях оптимизации).
+        private void CollectElementsFromPairs(out IList<Element> mostElementCollection, 
+            out IList<Element> leastElementCollection)
         {
-            firstElementCollection = new FilteredElementCollector(Doc)
+            IList<Element> temporaryElementCollection;
+            mostElementCollection = new FilteredElementCollector(Doc)
                 .OfCategory(BuiltInCategory.OST_StructuralColumns)
                 .WhereElementIsNotElementType()
                 .ToElements();
-            secondElementCollection = new FilteredElementCollector(Doc)
+            leastElementCollection = new FilteredElementCollector(Doc)
                 .OfCategory(BuiltInCategory.OST_Walls)
                 .WhereElementIsNotElementType()
                 .ToElements();
+            if (leastElementCollection.Count > mostElementCollection.Count)
+            {
+                temporaryElementCollection = mostElementCollection;
+                mostElementCollection = leastElementCollection;
+                leastElementCollection = temporaryElementCollection;
+            }
         }
-        private IList<Element> 
+        // Соединяет элементы двух категорий.
+        private void ConnectElements(IList<Element> mostElementCollection,
+            IList<Element> leastElementCollection)
+        {
+            foreach (var firstElementToJoin in leastElementCollection)
+            {
+                var boundingBox = firstElementToJoin.get_BoundingBox(null);
+                var outline = new Outline(boundingBox.Min, boundingBox.Max);
+                var filter = new BoundingBoxIntersectsFilter(outline);
+                var collectorWithLeastElements = (FilteredElementCollector)leastElementCollection;
+                var elementsToJoin = collectorWithLeastElements.WherePasses(filter);
+                // Соединение элементов
+                foreach (var secondElementToJoin in elementsToJoin)
+                {
+                    JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
+                }
+            }
+        }
     }
 
 }
