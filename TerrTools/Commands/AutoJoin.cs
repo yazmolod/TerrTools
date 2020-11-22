@@ -31,15 +31,15 @@ namespace TerrTools
         }
         // Возвращает собранные и отсортированные по двум категориям коллекции элементов,
         // учитывая - какая из них больше, а какая - меньше(в целях оптимизации).
-        private void CollectElementsFromPairs(out BoostedCollector mostElementCollection,
-            out BoostedCollector leastElementCollection)
+        private void CollectElementsFromPairs(out FilteredElementCollector mostElementCollection,
+            out FilteredElementCollector leastElementCollection)
         {
 
-            BoostedCollector temporaryElementCollection;
-            mostElementCollection = (BoostedCollector)new BoostedCollector(Doc)
+            FilteredElementCollector temporaryElementCollection;
+            mostElementCollection = new FilteredElementCollector(Doc)
                 .OfCategory(BuiltInCategory.OST_StructuralColumns)
                 .WhereElementIsNotElementType();
-            leastElementCollection = (BoostedCollector)new BoostedCollector(Doc)
+            leastElementCollection = new FilteredElementCollector(Doc)
                 .OfCategory(BuiltInCategory.OST_Walls)
                 .WhereElementIsNotElementType();
             if (leastElementCollection.Count() > mostElementCollection.Count())
@@ -55,59 +55,34 @@ namespace TerrTools
         {
             using (Transaction trans = new Transaction(Doc))
             {
+                var leastElements = leastElementCollection.ToElements();
+                var mostElements = mostElementCollection.ToElements();
                 trans.Start("Автоматическое присоединение элементов");
-                for (int i = 0; i < leastElementCollection.ToList().Count; i++)
+                for (int i = 0; i < leastElements.Count; i++)
                 {
                     var firstElementToJoin = leastElementCollection.ToElements()[i];
                     var boundingBox = firstElementToJoin.get_BoundingBox(null);
                     var outline = new Outline(boundingBox.Min, boundingBox.Max);
                     var filter = new BoundingBoxIntersectsFilter(outline);
-                    // На этом моменте происходит изменение FilteredElementCollector
-                    var elementsToJoin = mostElementCollection.WherePasses(filter).ToElements();
-                    for (int t = 0; t < elementsToJoin.Count; t++)
+                    for (int t = 0; t < mostElements.Count; t++)
                     {
-                        var secondElementToJoin = elementsToJoin[t];
-                        try
+                        if (filter.PassesFilter(mostElements[t]))
                         {
-                            JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
-                        }
-                        // Исключение, которое происходит в том случае, когда элементы уже соединены.
-                        // Не думаю, что имеет смысл уведомлять пользователей об этом.
-                        catch (Autodesk.Revit.Exceptions.ArgumentException)
-                        {
+                            var secondElementToJoin = mostElements[t];
+                            try
+                            {
+                                JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
+                            }
+                            // Исключение, которое происходит в том случае, когда элементы уже соединены.
+                            // Не думаю, что имеет смысл уведомлять пользователей об этом.
+                            catch (Autodesk.Revit.Exceptions.ArgumentException)
+                            {
+                            }
                         }
                     }
                 }
                 trans.Commit();
             }
-            
-            
-            /*foreach (var firstElementToJoinId in leastElementCollection.ToElementIds())
-            {
-                var firstElementToJoin = Doc.GetElement(firstElementToJoinId);
-                var boundingBox = firstElementToJoin.get_BoundingBox(null);
-                //
-                var outline = new Outline(boundingBox.Min, boundingBox.Max);
-                //
-                var filter = new BoundingBoxIntersectsFilter(outline);
-                // элементы из наибольшей коллекции для присоединения, которые проходят фильтр
-                var elementsToJoin = mostElementCollection.WherePasses(filter);
-                // Соединение элементов
-                foreach (var secondElementToJoinId in elementsToJoin.ToElementIds())
-                {
-                    var secondElementToJoin = Doc.GetElement(secondElementToJoinId);
-                    try
-                    {
-                        JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
-                    }
-                    // Исключение, которое происходит в том случае, когда элементы уже соединены.
-                    // Не думаю, что имеет смысл уведомлять пользователей об этом.
-                    catch (Autodesk.Revit.Exceptions.ArgumentException)
-                    {
-                    }
-                }
-            }*/
-            /*trans.Commit();*/
         }
     }
     // Попытка дать объекту коллектора возможность поддерживать копирование.
