@@ -1,18 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing.Text;
 using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Media;
-using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
-using TerrTools.UI;
 
 namespace TerrTools
 {
@@ -35,7 +29,6 @@ namespace TerrTools
             {
                 return Result.Cancelled;
             }
-            
         }
         private IEnumerable<ElementId> GetAllViewInstancesByCategory(ElementId selectedItem)
         {
@@ -47,8 +40,7 @@ namespace TerrTools
                          .Where(x => excessItem.Id != x);
            return allViewInstanceIds;
         }
-        // Маркиру ет элементы с учетом свойств выбранной пользователем марки.
-        // нужно BIC а не mark
+        // Маркирует элементы с учетом свойств выбранной пользователем марки.
         private void MarkingElements(Reference selectedMarkReference, Element selectedTag)
         {
             using (Transaction trans = new Transaction(Doc))
@@ -123,6 +115,4 @@ namespace TerrTools
             }
         }
     }
-  
- 
 }
