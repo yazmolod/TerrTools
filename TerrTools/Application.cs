@@ -338,7 +338,8 @@ namespace TerrTools
             pbDict.Add("AutoJoin",
                 MakePushButton(
                     "AutoJoin",
-                    "Соеденить элементы\nдвух категорий"
+                    "Соеденить элементы\nдвух категорий",
+                    iconName: "AutoJoin.png"
                     ));
 
 
