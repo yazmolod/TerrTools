@@ -23,25 +23,26 @@ namespace TerrTools
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             UIDoc = commandData.Application.ActiveUIDocument;
-            FilteredElementCollector mostElementCollection;
-            FilteredElementCollector leastElementCollection;
+            List<Element> mostElementCollection;
+            List<Element> leastElementCollection;
             CollectElementsFromPairs(out mostElementCollection, out leastElementCollection);
             ConnectElements(mostElementCollection, leastElementCollection);
             return Result.Succeeded;
         }
         // Возвращает собранные и отсортированные по двум категориям коллекции элементов,
         // учитывая - какая из них больше, а какая - меньше(в целях оптимизации).
-        private void CollectElementsFromPairs(out FilteredElementCollector mostElementCollection,
-            out FilteredElementCollector leastElementCollection)
+        private void CollectElementsFromPairs(out List<Element> mostElementCollection,
+            out List<Element> leastElementCollection)
         {
-
-            FilteredElementCollector temporaryElementCollection;
+            List<Element> temporaryElementCollection;
             mostElementCollection = new FilteredElementCollector(Doc)
                 .OfCategory(BuiltInCategory.OST_StructuralColumns)
-                .WhereElementIsNotElementType();
+                .WhereElementIsNotElementType()
+                .ToList();
             leastElementCollection = new FilteredElementCollector(Doc)
                 .OfCategory(BuiltInCategory.OST_Walls)
-                .WhereElementIsNotElementType();
+                .WhereElementIsNotElementType()
+                .ToList();
             if (leastElementCollection.Count() > mostElementCollection.Count())
             {
                 temporaryElementCollection = mostElementCollection;
@@ -50,25 +51,21 @@ namespace TerrTools
             }
         }
         // Соединяет элементы двух категорий.
-        private void ConnectElements(FilteredElementCollector mostElementCollection,
-            FilteredElementCollector leastElementCollection)
+        private void ConnectElements(List<Element> mostElementsList,
+            List<Element> leastElementsList)
         {
             using (Transaction trans = new Transaction(Doc))
             {
-                var leastElements = leastElementCollection.ToElements();
-                var mostElements = mostElementCollection.ToElements();
                 trans.Start("Автоматическое присоединение элементов");
-                for (int i = 0; i < leastElements.Count; i++)
+                foreach (var firstElementToJoin in leastElementsList)
                 {
-                    var firstElementToJoin = leastElementCollection.ToElements()[i];
                     var boundingBox = firstElementToJoin.get_BoundingBox(null);
                     var outline = new Outline(boundingBox.Min, boundingBox.Max);
                     var filter = new BoundingBoxIntersectsFilter(outline);
-                    for (int t = 0; t < mostElements.Count; t++)
+                    foreach (var secondElementToJoin in mostElementsList)
                     {
-                        if (filter.PassesFilter(mostElements[t]))
+                        if (filter.PassesFilter(secondElementToJoin))
                         {
-                            var secondElementToJoin = mostElements[t];
                             try
                             {
                                 JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
@@ -85,19 +82,4 @@ namespace TerrTools
             }
         }
     }
-    // Попытка дать объекту коллектора возможность поддерживать копирование.
-    // На деле вылетает StackOverflowException.
-    class BoostedCollector : FilteredElementCollector, ICloneable
-    {
-        Document doc;
-        public BoostedCollector(Document doc) : base(doc)
-        {
-            this.doc = doc;
-        }
-        public object Clone()
-        {
-            return Clone();
-        }
-    }
-
 }
