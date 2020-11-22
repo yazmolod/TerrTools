@@ -23,10 +23,10 @@ namespace TerrTools
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             UIDoc = commandData.Application.ActiveUIDocument;
-            List<Element> mostElementCollection;
-            List<Element> leastElementCollection;
-            CollectElementsFromPairs(out mostElementCollection, out leastElementCollection);
-            ConnectElements(mostElementCollection, leastElementCollection);
+            List<Element> mostElementList;
+            List<Element> leastElementList;
+            CollectElementsFromPairs(out mostElementList, out leastElementList);
+            ConnectElements(mostElementList, leastElementList);
             return Result.Succeeded;
         }
         // Возвращает собранные и отсортированные по двум категориям коллекции элементов,
