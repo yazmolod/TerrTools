@@ -335,11 +335,18 @@ namespace TerrTools
                     "InsulCurvesSelection",
                     "Выбрать вручную"
                     ));
-            pbDict.Add("AutoJoin",
+
+
+            pbDict.Add("AutoJoin_WallColumn",
                 MakePushButton(
-                    "AutoJoin",
-                    "Соеденить элементы\nдвух категорий",
-                    iconName: "AutoJoin.png"
+                    "AutoJoin_WallColumn",
+                    "Стены - колонны"
+                    ));
+
+            pbDict.Add("AutoJoin_WallFloor",
+                MakePushButton(
+                    "AutoJoin_WallFloor",
+                    "Стены - перекрытия"
                     ));
 
 
@@ -359,12 +366,20 @@ namespace TerrTools
                     iconName: "Insul.png"
                     ));
 
+            plDict.Add("AutoJoin",
+                MakePulldownButton(
+                    "Соединить\nкатегории",
+                    iconName: "AutoJoin.png"
+                    ));
+
             ///
             /// Архитектурная панель
             ///
             panelArch.AddItem(pbDict["GenerateFloor"]);
             panelArch.AddItem(pbDict["ColumnFinish"]);
-            panelArch.AddItem(pbDict["AutoJoin"]);
+            tempBtn = panelArch.AddItem(plDict["AutoJoin"]) as PulldownButton;
+            tempBtn.AddPushButton(pbDict["AutoJoin_WallColumn"]);
+            tempBtn.AddPushButton(pbDict["AutoJoin_WallFloor"]);
 
             ///
             /// Конструкторская панель

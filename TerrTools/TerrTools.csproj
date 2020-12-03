@@ -376,9 +376,12 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
+
 copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2020\"
 
+
 copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2019\TerrToolsDLL\"
+
 copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2020\TerrToolsDLL\"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>

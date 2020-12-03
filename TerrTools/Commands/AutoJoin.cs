@@ -16,70 +16,88 @@ using TerrTools.UI;
 namespace TerrTools
 {
     [Transaction(TransactionMode.Manual)]
-    class AutoJoin : IExternalCommand
+    abstract class AutoJoin : IExternalCommand
     {
         public UIDocument UIDoc { get; set; }
         public Document Doc { get => UIDoc.Document; }
+        abstract public BuiltInCategory leftCategory { get; }
+        abstract public BuiltInCategory rightCategory { get; }
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             UIDoc = commandData.Application.ActiveUIDocument;
-            List<Element> mostElementList;
-            List<Element> leastElementList;
-            CollectElementsFromPairs(out mostElementList, out leastElementList);
-            ConnectElements(mostElementList, leastElementList);
+            List<Element> largeList;
+            List<Element> smallList;
+            CollectElementsFromPairs(out largeList, out smallList);
+            ConnectElements(largeList, smallList);
             return Result.Succeeded;
         }
         // Возвращает собранные и отсортированные по двум категориям коллекции элементов,
         // учитывая - какая из них больше, а какая - меньше(в целях оптимизации).
-        private void CollectElementsFromPairs(out List<Element> mostElementCollection,
-            out List<Element> leastElementCollection)
+        private void CollectElementsFromPairs(out List<Element> largeList, out List<Element> smallList)
         {
-            List<Element> temporaryElementCollection;
-            mostElementCollection = new FilteredElementCollector(Doc)
-                .OfCategory(BuiltInCategory.OST_StructuralColumns)
+            List<Element> leftCollection = new FilteredElementCollector(Doc)
+                .OfCategory(leftCategory)
                 .WhereElementIsNotElementType()
                 .ToList();
-            leastElementCollection = new FilteredElementCollector(Doc)
-                .OfCategory(BuiltInCategory.OST_Walls)
+            List<Element> rightCollection = new FilteredElementCollector(Doc)
+                .OfCategory(rightCategory)
                 .WhereElementIsNotElementType()
                 .ToList();
-            if (leastElementCollection.Count() > mostElementCollection.Count())
+            if (leftCollection.Count() > rightCollection.Count())
             {
-                temporaryElementCollection = mostElementCollection;
-                mostElementCollection = leastElementCollection;
-                leastElementCollection = temporaryElementCollection;
+                largeList = leftCollection;
+                smallList = rightCollection;
+            }
+            else
+            {
+                largeList = rightCollection;
+                smallList = leftCollection;
             }
         }
         // Соединяет элементы двух категорий.
-        private void ConnectElements(List<Element> mostElementsList,
-            List<Element> leastElementsList)
+        private void ConnectElements(List<Element> largeList, List<Element> smallList)
         {
+            var largeListIds = largeList.Select(x => x.Id).ToList();
             using (Transaction trans = new Transaction(Doc))
             {
-                trans.Start("Автоматическое присоединение элементов");
-                foreach (var firstElementToJoin in leastElementsList)
+                trans.Start("Соединение элементов");
+                foreach (var firstElementToJoin in smallList)
                 {
                     var boundingBox = firstElementToJoin.get_BoundingBox(null);
                     var outline = new Outline(boundingBox.Min, boundingBox.Max);
                     var filter = new BoundingBoxIntersectsFilter(outline);
-                    foreach (var secondElementToJoin in mostElementsList)
+                    var intersectedElements = new FilteredElementCollector(Doc, largeListIds).WherePasses(filter).ToElements();
+                    foreach (var secondElementToJoin in intersectedElements)
                     {
-                        if (filter.PassesFilter(secondElementToJoin))
+                        try
                         {
-                            try
-                            {
-                                JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
-                            }
-                            // Исключение, которое происходит в том случае, когда элементы уже соединены.
-                            // Не думаю, что имеет смысл уведомлять пользователей об этом.
-                            catch (Autodesk.Revit.Exceptions.ArgumentException)
-                            {
-                            }
+                            JoinGeometryUtils.JoinGeometry(Doc, firstElementToJoin, secondElementToJoin);
+                        }
+                        // Исключение, которое происходит в том случае, когда элементы уже соединены.
+                        // Не думаю, что имеет смысл уведомлять пользователей об этом.
+                        catch (Autodesk.Revit.Exceptions.ArgumentException)
+                        {
                         }
                     }
                 }
                 trans.Commit();
             }
         }
+    }
+
+    [Transaction(TransactionMode.Manual)]
+    class AutoJoin_WallFloor : AutoJoin
+    {
+        public override BuiltInCategory leftCategory => BuiltInCategory.OST_Walls;
+
+        public override BuiltInCategory rightCategory => BuiltInCategory.OST_Floors;
+    }
+
+    [Transaction(TransactionMode.Manual)]
+    class AutoJoin_WallColumn : AutoJoin
+    {
+        public override BuiltInCategory leftCategory => BuiltInCategory.OST_Walls;
+
+        public override BuiltInCategory rightCategory => BuiltInCategory.OST_StructuralColumns;
     }
 }
