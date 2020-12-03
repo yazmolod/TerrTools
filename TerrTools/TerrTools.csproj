@@ -110,6 +110,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application.cs" />
+    <Compile Include="Commands\AutoJoin.cs" />
     <Compile Include="Commands\CollisionUtilities.cs" />
     <Compile Include="Commands\CollisionViewer.cs" />
     <Compile Include="Commands\ColumnFinish.cs" />
@@ -369,12 +370,18 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\Insul.png" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\AutoJoin.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
+
 copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2020\"
 
+
 copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2019\TerrToolsDLL\"
+
 copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2020\TerrToolsDLL\"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>

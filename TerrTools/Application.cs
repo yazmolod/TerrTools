@@ -337,6 +337,19 @@ namespace TerrTools
                     ));
 
 
+            pbDict.Add("AutoJoin_WallColumn",
+                MakePushButton(
+                    "AutoJoin_WallColumn",
+                    "Стены - колонны"
+                    ));
+
+            pbDict.Add("AutoJoin_WallFloor",
+                MakePushButton(
+                    "AutoJoin_WallFloor",
+                    "Стены - перекрытия"
+                    ));
+
+
             ///
             /// Pulldown buttons
             ///
@@ -353,11 +366,20 @@ namespace TerrTools
                     iconName: "Insul.png"
                     ));
 
+            plDict.Add("AutoJoin",
+                MakePulldownButton(
+                    "Соединить\nкатегории",
+                    iconName: "AutoJoin.png"
+                    ));
+
             ///
             /// Архитектурная панель
             ///
             panelArch.AddItem(pbDict["GenerateFloor"]);
             panelArch.AddItem(pbDict["ColumnFinish"]);
+            tempBtn = panelArch.AddItem(plDict["AutoJoin"]) as PulldownButton;
+            tempBtn.AddPushButton(pbDict["AutoJoin_WallColumn"]);
+            tempBtn.AddPushButton(pbDict["AutoJoin_WallFloor"]);
 
             ///
             /// Конструкторская панель
