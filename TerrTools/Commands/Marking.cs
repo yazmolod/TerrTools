@@ -44,7 +44,7 @@ namespace TerrTools
         }
         // Маркиру ет элементы с учетом свойств выбранной пользователем марки.
         // нужно BIC а не mark
-        private void MarkingElements(Reference selectedMarkReference, Element selectedTag)
+        private void MarkingElements(Element tag)
         {
             using (Transaction trans = new Transaction(Doc))
             {
