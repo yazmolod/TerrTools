@@ -167,6 +167,12 @@
     <Compile Include="UI\IzometryGeneratorForm.Designer.cs">
       <DependentUpon>IzometryGeneratorForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\MarkingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\MarkingForm.Designer.cs">
+      <DependentUpon>MarkingForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\TwoDoc.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -255,6 +261,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\IzometryGeneratorForm.resx">
       <DependentUpon>IzometryGeneratorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\MarkingForm.resx">
+      <DependentUpon>MarkingForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\OneComboboxForm.resx">
       <DependentUpon>OneComboboxForm.cs</DependentUpon>
