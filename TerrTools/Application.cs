@@ -348,6 +348,16 @@ namespace TerrTools
                     "AutoJoin_WallFloor",
                     "Стены - перекрытия"
                     ));
+            pbDict.Add("LayerSplit_AllLayers",
+                MakePushButton(
+                    "DummyClass",
+                    "Все слои"
+                    ));
+            pbDict.Add("LayerSplit_ByStructure",
+                MakePushButton(
+                    "LayerSplit_ByStructure",
+                    "Несущий и отделка"
+                    ));
 
 
             ///
@@ -372,6 +382,12 @@ namespace TerrTools
                     iconName: "AutoJoin.png"
                     ));
 
+            plDict.Add("LayerSplit",
+                MakePulldownButton(
+                    "Разбить\nмногослойную стену",
+                    iconName: "LayersSplit.png"
+                    ));
+
             ///
             /// Архитектурная панель
             ///
@@ -379,12 +395,15 @@ namespace TerrTools
             panelArch.AddItem(pbDict["ColumnFinish"]);
             tempBtn = panelArch.AddItem(plDict["AutoJoin"]) as PulldownButton;
             tempBtn.AddPushButton(pbDict["AutoJoin_WallColumn"]);
-            tempBtn.AddPushButton(pbDict["AutoJoin_WallFloor"]);
+            tempBtn.AddPushButton(pbDict["AutoJoin_WallFloor"]);           
 
             ///
             /// Конструкторская панель
             ///
             panelStruct.AddItem(pbDict["WallOpening"]);
+            tempBtn = panelStruct.AddItem(plDict["LayerSplit"]) as PulldownButton;
+            tempBtn.AddPushButton(pbDict["LayerSplit_ByStructure"]);
+            tempBtn.AddPushButton(pbDict["LayerSplit_AllLayers"]);
 
             ///
             /// ОВиК панель
