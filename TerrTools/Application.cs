@@ -350,13 +350,23 @@ namespace TerrTools
                     ));
             pbDict.Add("LayerSplit_AllLayers",
                 MakePushButton(
-                    "DummyClass",
-                    "Все слои"
+                    "LayerSplit_AllLayers",
+                    "Разбить все слои"
                     ));
-            pbDict.Add("LayerSplit_ByStructure",
+            pbDict.Add("LayerSplit_ExtractFinish",
                 MakePushButton(
-                    "LayerSplit_ByStructure",
-                    "Несущий и отделка"
+                    "LayerSplit_ExtractFinish",
+                    "Отделить отделку"
+                    ));
+            pbDict.Add("LayerSplit_ExtractBearing",
+                MakePushButton(
+                    "LayerSplit_ExtractBearing",
+                    "Отделить несущую часть"
+                    ));
+            pbDict.Add("LayerSplit_Merge",
+                MakePushButton(
+                    "DummyClass",
+                    "Объединить слои в одну стену"
                     ));
 
 
@@ -384,7 +394,7 @@ namespace TerrTools
 
             plDict.Add("LayerSplit",
                 MakePulldownButton(
-                    "Разбить\nмногослойную стену",
+                    "Расслоение\nстены",
                     iconName: "LayersSplit.png"
                     ));
 
@@ -402,8 +412,10 @@ namespace TerrTools
             ///
             panelStruct.AddItem(pbDict["WallOpening"]);
             tempBtn = panelStruct.AddItem(plDict["LayerSplit"]) as PulldownButton;
-            tempBtn.AddPushButton(pbDict["LayerSplit_ByStructure"]);
+            tempBtn.AddPushButton(pbDict["LayerSplit_ExtractBearing"]);
+            tempBtn.AddPushButton(pbDict["LayerSplit_ExtractFinish"]);
             tempBtn.AddPushButton(pbDict["LayerSplit_AllLayers"]);
+            tempBtn.AddPushButton(pbDict["LayerSplit_Merge"]);
 
             ///
             /// ОВиК панель

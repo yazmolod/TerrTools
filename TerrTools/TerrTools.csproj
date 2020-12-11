@@ -119,6 +119,7 @@
     <Compile Include="Commands\IzometryGenerator .cs" />
     <Compile Include="Commands\InsulCurves.cs" />
     <Compile Include="Commands\PythonExecuter.cs" />
+    <Compile Include="Commands\WallSplit.cs" />
     <Compile Include="GlobalSettings.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="Commands\CopyRoomShape.cs" />
@@ -372,6 +373,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\AutoJoin.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\LayersSplit.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
