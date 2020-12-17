@@ -110,6 +110,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application.cs" />
+    <Compile Include="Commands\AutoJoin.cs" />
     <Compile Include="Commands\CollisionUtilities.cs" />
     <Compile Include="Commands\CollisionViewer.cs" />
     <Compile Include="Commands\ColumnFinish.cs" />
@@ -119,6 +120,7 @@
     <Compile Include="Commands\InsulCurves.cs" />
     <Compile Include="Commands\Marking.cs" />
     <Compile Include="Commands\PythonExecuter.cs" />
+    <Compile Include="Commands\WallSplit.cs" />
     <Compile Include="GlobalSettings.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="Commands\CopyRoomShape.cs" />
@@ -399,12 +401,13 @@
     <EmbeddedResource Include="Resources\Icons\Tables16.png" />
     <EmbeddedResource Include="Resources\Icons\Type16.png" />
     <EmbeddedResource Include="Resources\Icons\Zoom16.png" />
+    <EmbeddedResource Include="Resources\Icons\AutoJoin.png" />
+    <EmbeddedResource Include="Resources\Icons\LayersSplit.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
 copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2020\"
-
 copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2019\TerrToolsDLL\"
 copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2020\TerrToolsDLL\"</PostBuildEvent>
   </PropertyGroup>
