@@ -118,6 +118,7 @@
     <Compile Include="Commands\GridAxes.cs" />
     <Compile Include="Commands\IzometryGenerator .cs" />
     <Compile Include="Commands\InsulCurves.cs" />
+    <Compile Include="Commands\Marking.cs" />
     <Compile Include="Commands\PythonExecuter.cs" />
     <Compile Include="Commands\WallSplit.cs" />
     <Compile Include="GlobalSettings.cs" />
@@ -167,6 +168,12 @@
     </Compile>
     <Compile Include="UI\IzometryGeneratorForm.Designer.cs">
       <DependentUpon>IzometryGeneratorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\MarkingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\MarkingForm.Designer.cs">
+      <DependentUpon>MarkingForm.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\TwoDoc.cs">
       <SubType>Form</SubType>
@@ -256,6 +263,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\IzometryGeneratorForm.resx">
       <DependentUpon>IzometryGeneratorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\MarkingForm.resx">
+      <DependentUpon>MarkingForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\OneComboboxForm.resx">
       <DependentUpon>OneComboboxForm.cs</DependentUpon>
@@ -372,20 +382,33 @@
     <EmbeddedResource Include="Resources\Icons\Insul.png" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Icons\AutoJoin.png" />
+    <EmbeddedResource Include="Resources\Icons\Marking.png" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\3D16.png" />
+    <EmbeddedResource Include="Resources\Icons\Brush16.png" />
+    <EmbeddedResource Include="Resources\Icons\Column16.png" />
+    <EmbeddedResource Include="Resources\Icons\Diffuser16.png" />
+    <EmbeddedResource Include="Resources\Icons\DuctNumber16.png" />
+    <EmbeddedResource Include="Resources\Icons\Goal16.png" />
+    <EmbeddedResource Include="Resources\Icons\Grids16.png" />
+    <EmbeddedResource Include="Resources\Icons\Insul16.png" />
+    <EmbeddedResource Include="Resources\Icons\Marking16.png" />
+    <EmbeddedResource Include="Resources\Icons\Openings16.png" />
+    <EmbeddedResource Include="Resources\Icons\Python16.png" />
+    <EmbeddedResource Include="Resources\Icons\Radiator16.png" />
+    <EmbeddedResource Include="Resources\Icons\Room16.png" />
+    <EmbeddedResource Include="Resources\Icons\Tables16.png" />
+    <EmbeddedResource Include="Resources\Icons\Type16.png" />
+    <EmbeddedResource Include="Resources\Icons\Zoom16.png" />
+    <EmbeddedResource Include="Resources\Icons\AutoJoin.png" />
     <EmbeddedResource Include="Resources\Icons\LayersSplit.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
-
 copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2020\"
-
-
 copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2019\TerrToolsDLL\"
-
 copy "$(TargetPath)" "C:\ProgramData\Autodesk\Revit\Addins\2020\TerrToolsDLL\"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>

@@ -587,5 +587,10 @@ namespace TerrTools.UI
                 TaskDialog.Show("Ошибка", "Значение шага должно быть целым числом!");
             }
         }
+
+        private void GridAxesForm_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

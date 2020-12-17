@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.IO;
 using System.Reflection;
@@ -66,7 +66,11 @@ namespace TerrTools
                 Assembly.GetExecutingAssembly().Location,
                 "TerrTools." + className);
             btnData.ToolTip = toolTip ?? "";
-            if (iconName != null) btnData.LargeImage = BitmapToImageSource("TerrTools.Resources.Icons." + iconName);
+            if (iconName != null)
+            {
+                btnData.LargeImage = BitmapToImageSource("TerrTools.Resources.Icons." + iconName + ".png");
+                btnData.Image = BitmapToImageSource("TerrTools.Resources.Icons." + iconName + "16.png");
+            }
             return btnData;
         }
 
@@ -75,7 +79,11 @@ namespace TerrTools
             pullBtnCounter++;
             PulldownButtonData btnData = new PulldownButtonData("PulldownButton" + pullBtnCounter.ToString(), btnText);
             btnData.ToolTip = toolTip ?? "";
-            if (iconName != null) btnData.LargeImage = BitmapToImageSource("TerrTools.Resources.Icons." + iconName);
+            if (iconName != null) 
+            { 
+                btnData.LargeImage = BitmapToImageSource("TerrTools.Resources.Icons." + iconName + ".png");
+                btnData.Image = BitmapToImageSource("TerrTools.Resources.Icons." + iconName + "16.png");
+            }
             return btnData;
         }
 
@@ -228,34 +236,35 @@ namespace TerrTools
                 "DiffuserProcessing",
                 "Обновить\nдиффузоры",
                 "Копирует номер пространства и расход воздуха для всех диффузоров в проекте",
-                "Diffuser.png"
+                "Diffuser"
                 ));
             pbDict.Add("RadiatorProcessing",
                 MakePushButton(
                 "RadiatorProcessing",
                 "Обновить\nрадиаторы",
                 "Копирует номер пространства и подбирает радиатор исходя из заданной в пространстве тепловой мощности",
-                "Radiator.png"));
+                "Radiator"
+                ));
             pbDict.Add("WallOpening",
            MakePushButton(
                 "WallOpeningHandler",
                 "Генерация\nотверстий",
                 "Вставляет отверстия в местах пересечений с системами",
-                "Openings.png"
+                "Openings"
                 ));
             pbDict.Add("GenerateFloor",
            MakePushButton(
                 "FloorFinishing",
                 "Отделка\nпола",
                 "Создает элемент \"Перекрытие\" нужного типоразмера в указанных помещениях",
-                "Brush.png"
+                "Brush"
                 ));
             pbDict.Add("FocusOnElement",
                 MakePushButton(
                     "FocusOnElement",
                     "Поиск элементов\nна виде",
                     "Выберите из списка необходимый элемент и окно сфокусируется на нем",
-                    "Zoom.png"
+                    "Zoom"
                     ));
             pbDict.Add("UpdateTypeCurrent",
                 MakePushButton(
@@ -272,41 +281,41 @@ namespace TerrTools
                     "IzometryGenerator",
                     "Создать 3D виды\nпо системам",
                     "Генерирует 3D-виды с фильтрами по системам",
-                    "3D.png"
+                    "3D"
                     ));
 
             pbDict.Add("CopyRoomShape",
                 MakePushButton(
                     "CopyRoomShape",
                     "Создать контур\nпомещения",
-                    iconName:"Shape.png"
+                    iconName:"Shape"
                     ));            
 
             pbDict.Add("SystemScheduleExporter",
                 MakePushButton(
                     "ScheduleExporter",
                     "Экспорт\nспецификаций",
-                    iconName: "Tables.png"
+                    iconName: "Tables"
                     ));
             pbDict.Add("PythonExecuter",
                 MakePushButton(
                     "PythonExecuter",
                     "Запуск скрипта",
-                    iconName: "Python.png",
+                    iconName: "Python",
                     toolTip: "Позволяет запускать файлы скриптов с форматов .py"
                     ));
             pbDict.Add("ColumnFinish",
                 MakePushButton(
                     "ColumnFinish",
                     "Отделка\nколонн",
-                    iconName: "Column.png",
+                    iconName: "Column",
                     toolTip: "Автоматически генерирует штукатурку для всех колонн, находящихся в помещениях"
                     ));
             pbDict.Add("GridAxes",
                 MakePushButton(
                     "GridAxes",
                     "Создать сетку\nосей",
-                    iconName: "Grids.png",
+                    iconName: "Grids",
                     toolTip: "Создает сетку осей с заданным шагом"
                     ));
 
@@ -314,7 +323,7 @@ namespace TerrTools
                 MakePushButton(
                     "CollisionViewer",
                     "Просмотр\nколлизий",
-                    iconName: "Goal.png",
+                    iconName: "Goal",
                     toolTip: "Просмотр отчета о коллизиях в отдельном окне"
                     ));
 
@@ -335,38 +344,11 @@ namespace TerrTools
                     "InsulCurvesSelection",
                     "Выбрать вручную"
                     ));
-
-
-            pbDict.Add("AutoJoin_WallColumn",
+            pbDict.Add("Marking",
                 MakePushButton(
-                    "AutoJoin_WallColumn",
-                    "Стены - колонны"
-                    ));
-
-            pbDict.Add("AutoJoin_WallFloor",
-                MakePushButton(
-                    "AutoJoin_WallFloor",
-                    "Стены - перекрытия"
-                    ));
-            pbDict.Add("LayerSplit_AllLayers",
-                MakePushButton(
-                    "LayerSplit_AllLayers",
-                    "Разбить все слои"
-                    ));
-            pbDict.Add("LayerSplit_ExtractFinish",
-                MakePushButton(
-                    "LayerSplit_ExtractFinish",
-                    "Отделить отделку"
-                    ));
-            pbDict.Add("LayerSplit_ExtractBearing",
-                MakePushButton(
-                    "LayerSplit_ExtractBearing",
-                    "Отделить несущую часть"
-                    ));
-            pbDict.Add("LayerSplit_Merge",
-                MakePushButton(
-                    "LayerSplit_Merge",
-                    "Объединить слои в одну стену"
+                    "Marking",
+                    "Маркировать\nвсе по аналогу",
+                    iconName: "Marking"
                     ));
 
 
@@ -377,25 +359,13 @@ namespace TerrTools
                 MakePulldownButton(
                     "Обновить\nшрифт",
                     "Обновление всех шрифтов в проекте под стандарты предприятия",
-                    "Type.png"
+                    "Type"
                     ));
 
             plDict.Add("InsulCurves",
                 MakePulldownButton(
                     "3D маркировка\nизоляции",
-                    iconName: "Insul.png"
-                    ));
-
-            plDict.Add("AutoJoin",
-                MakePulldownButton(
-                    "Соединить\nкатегории",
-                    iconName: "AutoJoin.png"
-                    ));
-
-            plDict.Add("LayerSplit",
-                MakePulldownButton(
-                    "Расслоение\nстены",
-                    iconName: "LayersSplit.png"
+                    iconName: "Insul"
                     ));
 
             ///
@@ -403,19 +373,11 @@ namespace TerrTools
             ///
             panelArch.AddItem(pbDict["GenerateFloor"]);
             panelArch.AddItem(pbDict["ColumnFinish"]);
-            tempBtn = panelArch.AddItem(plDict["AutoJoin"]) as PulldownButton;
-            tempBtn.AddPushButton(pbDict["AutoJoin_WallColumn"]);
-            tempBtn.AddPushButton(pbDict["AutoJoin_WallFloor"]);           
 
             ///
             /// Конструкторская панель
             ///
             panelStruct.AddItem(pbDict["WallOpening"]);
-            tempBtn = panelStruct.AddItem(plDict["LayerSplit"]) as PulldownButton;
-            tempBtn.AddPushButton(pbDict["LayerSplit_ExtractBearing"]);
-            tempBtn.AddPushButton(pbDict["LayerSplit_ExtractFinish"]);
-            tempBtn.AddPushButton(pbDict["LayerSplit_AllLayers"]);
-            tempBtn.AddPushButton(pbDict["LayerSplit_Merge"]);
 
             ///
             /// ОВиК панель
@@ -443,13 +405,14 @@ namespace TerrTools
             panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
             panelGeneral.AddItem(pbDict["GridAxes"]);
             panelGeneral.AddItem(pbDict["CopyRoomShape"]);
-            panelGeneral.AddItem(pbDict["PythonExecuter"]);            
+            panelGeneral.AddItem(pbDict["PythonExecuter"]);
+            panelGeneral.AddItem(pbDict["Marking"]);
 
 
             ///
             /// Настройки
             ///
-            panelInfo.AddItem(MakePushButton("SettingsWindow", "Настройки", iconName: "Settings.png"));
+            panelInfo.AddItem(MakePushButton("SettingsWindow", "Настройки", iconName: "Settings"));
 
 #if DEBUG
             panelInfo.AddItem(MakePushButton("DebuggingTools", "DEBUG",
