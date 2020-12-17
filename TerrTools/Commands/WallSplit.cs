@@ -134,7 +134,7 @@ namespace TerrTools
             return layers;
         }
 
-        public Wall MergeWalls(List<Wall> walls)
+        public void MergeWalls(List<Wall> walls)
         {
             int bearingIndex = 0;
             var layers = GetSortedLayers(walls, out bearingIndex);
@@ -153,8 +153,7 @@ namespace TerrTools
                     mergedWallType.SetCompoundStructure(mergedStructure);
                 }
             }
-            Wall mergedWall = CreateWall(mergedWallType);            
-            return mergedWall;
+            ParentWall.ChangeTypeId(mergedWallType.Id);          
         }
 
         void SplitWall(List<CompoundStructure> listOfStructures, int bearingIndex)
@@ -445,16 +444,16 @@ namespace TerrTools
             using (Transaction tr = new Transaction(Doc, "Разбить стену по несущему слою"))
             {
                 tr.Start();
-                Wall mergedWall = MergeWalls(ParentWalls);
-                var structure = mergedWall.WallType.GetCompoundStructure();
+                MergeWalls(ParentWalls);
+                var structure = ParentWall.WallType.GetCompoundStructure();
 
                 double offset = CalculateLayerOffset(structure);
                 offset = ParentWall.Flipped ? -offset : offset;
-                MoveLayer(mergedWall, offset);
+                MoveLayer(ParentWall, offset);
 
                 foreach (Wall wall in ParentWalls)
                 {
-                    if (wall.Id.IntegerValue != mergedWall.Id.IntegerValue)
+                    if (wall.Id.IntegerValue != ParentWall.Id.IntegerValue)
                     {
                         Doc.Delete(wall.Id);
                     }

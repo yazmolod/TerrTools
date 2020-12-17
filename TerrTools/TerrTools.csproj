@@ -404,6 +404,10 @@
     <EmbeddedResource Include="Resources\Icons\AutoJoin.png" />
     <EmbeddedResource Include="Resources\Icons\LayersSplit.png" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\AutoJoin16.png" />
+    <EmbeddedResource Include="Resources\Icons\LayersSplit16.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
