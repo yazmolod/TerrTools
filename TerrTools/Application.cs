@@ -351,6 +351,38 @@ namespace TerrTools
                     iconName: "Marking"
                     ));
 
+            pbDict.Add("AutoJoin_WallColumn",
+                MakePushButton(
+                    "AutoJoin_WallColumn",
+                    "Стены - колонны"
+                    ));
+
+            pbDict.Add("AutoJoin_WallFloor",
+                MakePushButton(
+                    "AutoJoin_WallFloor",
+                    "Стены - перекрытия"
+                    ));
+            pbDict.Add("LayerSplit_AllLayers",
+                MakePushButton(
+                    "LayerSplit_AllLayers",
+                    "Разбить все слои"
+                    ));
+            pbDict.Add("LayerSplit_ExtractFinish",
+                MakePushButton(
+                    "LayerSplit_ExtractFinish",
+                    "Отделить отделку"
+                    ));
+            pbDict.Add("LayerSplit_ExtractBearing",
+                MakePushButton(
+                    "LayerSplit_ExtractBearing",
+                    "Отделить несущую часть"
+                    ));
+            pbDict.Add("LayerSplit_Merge",
+                MakePushButton(
+                    "LayerSplit_Merge",
+                    "Объединить слои в одну стену"
+                    ));
+
 
             ///
             /// Pulldown buttons
@@ -368,16 +400,36 @@ namespace TerrTools
                     iconName: "Insul"
                     ));
 
+            plDict.Add("AutoJoin",
+                MakePulldownButton(
+                    "Соединить\nкатегории",
+                    iconName: "AutoJoin"
+                    ));
+
+            plDict.Add("LayerSplit",
+                MakePulldownButton(
+                    "Расслоение\nстены",
+                    iconName: "LayersSplit"
+                    ));
+
             ///
             /// Архитектурная панель
             ///
             panelArch.AddItem(pbDict["GenerateFloor"]);
             panelArch.AddItem(pbDict["ColumnFinish"]);
+            tempBtn = panelArch.AddItem(plDict["AutoJoin"]) as PulldownButton;
+            tempBtn.AddPushButton(pbDict["AutoJoin_WallColumn"]);
+            tempBtn.AddPushButton(pbDict["AutoJoin_WallFloor"]);
 
             ///
             /// Конструкторская панель
             ///
             panelStruct.AddItem(pbDict["WallOpening"]);
+            tempBtn = panelStruct.AddItem(plDict["LayerSplit"]) as PulldownButton;
+            tempBtn.AddPushButton(pbDict["LayerSplit_ExtractBearing"]);
+            tempBtn.AddPushButton(pbDict["LayerSplit_ExtractFinish"]);
+            tempBtn.AddPushButton(pbDict["LayerSplit_AllLayers"]);
+            tempBtn.AddPushButton(pbDict["LayerSplit_Merge"]);
 
             ///
             /// ОВиК панель
