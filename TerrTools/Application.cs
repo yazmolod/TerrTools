@@ -66,7 +66,11 @@ namespace TerrTools
                 Assembly.GetExecutingAssembly().Location,
                 "TerrTools." + className);
             btnData.ToolTip = toolTip ?? "";
-            if (iconName != null) btnData.LargeImage = BitmapToImageSource("TerrTools.Resources.Icons." + iconName);
+            if (iconName != null)
+            {
+                btnData.LargeImage = BitmapToImageSource("TerrTools.Resources.Icons." + iconName + ".png");
+                btnData.Image = BitmapToImageSource("TerrTools.Resources.Icons." + iconName + "16.png");
+            }
             return btnData;
         }
 
@@ -75,7 +79,11 @@ namespace TerrTools
             pullBtnCounter++;
             PulldownButtonData btnData = new PulldownButtonData("PulldownButton" + pullBtnCounter.ToString(), btnText);
             btnData.ToolTip = toolTip ?? "";
-            if (iconName != null) btnData.LargeImage = BitmapToImageSource("TerrTools.Resources.Icons." + iconName);
+            if (iconName != null) 
+            { 
+                btnData.LargeImage = BitmapToImageSource("TerrTools.Resources.Icons." + iconName + ".png");
+                btnData.Image = BitmapToImageSource("TerrTools.Resources.Icons." + iconName + "16.png");
+            }
             return btnData;
         }
 
@@ -228,34 +236,35 @@ namespace TerrTools
                 "DiffuserProcessing",
                 "Обновить\nдиффузоры",
                 "Копирует номер пространства и расход воздуха для всех диффузоров в проекте",
-                "Diffuser.png"
+                "Diffuser"
                 ));
             pbDict.Add("RadiatorProcessing",
                 MakePushButton(
                 "RadiatorProcessing",
                 "Обновить\nрадиаторы",
                 "Копирует номер пространства и подбирает радиатор исходя из заданной в пространстве тепловой мощности",
-                "Radiator.png"));
+                "Radiator"
+                ));
             pbDict.Add("WallOpening",
            MakePushButton(
                 "WallOpeningHandler",
                 "Генерация\nотверстий",
                 "Вставляет отверстия в местах пересечений с системами",
-                "Openings.png"
+                "Openings"
                 ));
             pbDict.Add("GenerateFloor",
            MakePushButton(
                 "FloorFinishing",
                 "Отделка\nпола",
                 "Создает элемент \"Перекрытие\" нужного типоразмера в указанных помещениях",
-                "Brush.png"
+                "Brush"
                 ));
             pbDict.Add("FocusOnElement",
                 MakePushButton(
                     "FocusOnElement",
                     "Поиск элементов\nна виде",
                     "Выберите из списка необходимый элемент и окно сфокусируется на нем",
-                    "Zoom.png"
+                    "Zoom"
                     ));
             pbDict.Add("UpdateTypeCurrent",
                 MakePushButton(
@@ -272,41 +281,41 @@ namespace TerrTools
                     "IzometryGenerator",
                     "Создать 3D виды\nпо системам",
                     "Генерирует 3D-виды с фильтрами по системам",
-                    "3D.png"
+                    "3D"
                     ));
 
             pbDict.Add("CopyRoomShape",
                 MakePushButton(
                     "CopyRoomShape",
                     "Создать контур\nпомещения",
-                    iconName:"Shape.png"
+                    iconName:"Shape"
                     ));            
 
             pbDict.Add("SystemScheduleExporter",
                 MakePushButton(
                     "ScheduleExporter",
                     "Экспорт\nспецификаций",
-                    iconName: "Tables.png"
+                    iconName: "Tables"
                     ));
             pbDict.Add("PythonExecuter",
                 MakePushButton(
                     "PythonExecuter",
                     "Запуск скрипта",
-                    iconName: "Python.png",
+                    iconName: "Python",
                     toolTip: "Позволяет запускать файлы скриптов с форматов .py"
                     ));
             pbDict.Add("ColumnFinish",
                 MakePushButton(
                     "ColumnFinish",
                     "Отделка\nколонн",
-                    iconName: "Column.png",
+                    iconName: "Column",
                     toolTip: "Автоматически генерирует штукатурку для всех колонн, находящихся в помещениях"
                     ));
             pbDict.Add("GridAxes",
                 MakePushButton(
                     "GridAxes",
                     "Создать сетку\nосей",
-                    iconName: "Grids.png",
+                    iconName: "Grids",
                     toolTip: "Создает сетку осей с заданным шагом"
                     ));
 
@@ -314,7 +323,7 @@ namespace TerrTools
                 MakePushButton(
                     "CollisionViewer",
                     "Просмотр\nколлизий",
-                    iconName: "Goal.png",
+                    iconName: "Goal",
                     toolTip: "Просмотр отчета о коллизиях в отдельном окне"
                     ));
 
@@ -338,8 +347,8 @@ namespace TerrTools
             pbDict.Add("Marking",
                 MakePushButton(
                     "Marking",
-                    "Маркировать по\n выбранной марке",
-                    iconName: "Marking.png"
+                    "Маркировать\nвсе по аналогу",
+                    iconName: "Marking"
                     ));
 
 
@@ -350,13 +359,13 @@ namespace TerrTools
                 MakePulldownButton(
                     "Обновить\nшрифт",
                     "Обновление всех шрифтов в проекте под стандарты предприятия",
-                    "Type.png"
+                    "Type"
                     ));
 
             plDict.Add("InsulCurves",
                 MakePulldownButton(
                     "3D маркировка\nизоляции",
-                    iconName: "Insul.png"
+                    iconName: "Insul"
                     ));
 
             ///
@@ -403,7 +412,7 @@ namespace TerrTools
             ///
             /// Настройки
             ///
-            panelInfo.AddItem(MakePushButton("SettingsWindow", "Настройки", iconName: "Settings.png"));
+            panelInfo.AddItem(MakePushButton("SettingsWindow", "Настройки", iconName: "Settings"));
 
 #if DEBUG
             panelInfo.AddItem(MakePushButton("DebuggingTools", "DEBUG",

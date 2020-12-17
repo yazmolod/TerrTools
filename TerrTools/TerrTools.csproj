@@ -382,6 +382,24 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\Marking.png" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\3D16.png" />
+    <EmbeddedResource Include="Resources\Icons\Brush16.png" />
+    <EmbeddedResource Include="Resources\Icons\Column16.png" />
+    <EmbeddedResource Include="Resources\Icons\Diffuser16.png" />
+    <EmbeddedResource Include="Resources\Icons\DuctNumber16.png" />
+    <EmbeddedResource Include="Resources\Icons\Goal16.png" />
+    <EmbeddedResource Include="Resources\Icons\Grids16.png" />
+    <EmbeddedResource Include="Resources\Icons\Insul16.png" />
+    <EmbeddedResource Include="Resources\Icons\Marking16.png" />
+    <EmbeddedResource Include="Resources\Icons\Openings16.png" />
+    <EmbeddedResource Include="Resources\Icons\Python16.png" />
+    <EmbeddedResource Include="Resources\Icons\Radiator16.png" />
+    <EmbeddedResource Include="Resources\Icons\Room16.png" />
+    <EmbeddedResource Include="Resources\Icons\Tables16.png" />
+    <EmbeddedResource Include="Resources\Icons\Type16.png" />
+    <EmbeddedResource Include="Resources\Icons\Zoom16.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "C:\ProgramData\Autodesk\Revit\Addins\2019\"
