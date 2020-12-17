@@ -44,58 +44,116 @@ namespace TerrTools
         public abstract void SplitStructure(CompoundStructure structure, out List<CompoundStructure> splittedStructures, out int bearingIndex);
         public virtual Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            // инициализация
+            // инициализация   
             UIDoc = commandData.Application.ActiveUIDocument;
-            Reference wallRef;
+            List<Wall> walls = null;
             try
             {
-                wallRef = UIDoc.Selection.PickObject(ObjectType.Element, new ClassSelectionFilter<Wall>(), "Выберите стену");
+                walls = SelectionHandler();
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException)
             {
                 return Result.Cancelled;
             }
-            ParentWall = Doc.GetElement(wallRef.ElementId) as Wall;
-
-            // получаем разбитые слои
-            CompoundStructure wallStructure = ParentWallType.GetCompoundStructure();
-            int bearingIndex;
-            List<CompoundStructure> listOfStructures;
-            SplitStructure(wallStructure, out listOfStructures, out bearingIndex);
-
-            // обрабатываем случай когда стена развернута
-            if (ParentWall.Flipped)
-            {
-                listOfStructures.Reverse();
-                bearingIndex = listOfStructures.Count - 1 - bearingIndex;
-            }
-
-            if (bearingIndex < 0)
-            {
-                TaskDialog.Show("Ошибка", "В стене нет несущего слоя. Проверьте структуру стены");
-                return Result.Failed;
-            }
-
-            using (Transaction tr = new Transaction(Doc, "Разбить стену по несущему слою"))
+            using (Transaction tr = new Transaction(Doc, "Расслоить стены"))
             {
                 tr.Start();
-                SplitWall(listOfStructures, bearingIndex);
+                ManyWallsSplit(walls);
                 tr.Commit();
             }
+
             return Result.Succeeded;
         }
 
-        public Wall MergeWalls(IList<Wall> walls)
+        void ManyWallsSplit(List<Wall> walls)
         {
+            foreach (Wall wall in walls)
+            {
+                ParentWall = wall;
+
+                // получаем разбитые слои
+                CompoundStructure wallStructure = ParentWallType.GetCompoundStructure();
+                int bearingIndex;
+                List<CompoundStructure> listOfStructures;
+                SplitStructure(wallStructure, out listOfStructures, out bearingIndex);
+
+                if (bearingIndex < 0)
+                {
+                    TaskDialog.Show("Ошибка", "В стене id " + wall.Id.IntegerValue.ToString() + " нет несущего слоя. Проверьте структуру стены");
+                    continue;
+                }
+
+                // обрабатываем случай когда стена развернута
+                if (ParentWall.Flipped)
+                {
+                    listOfStructures.Reverse();
+                    bearingIndex = listOfStructures.Count - 1 - bearingIndex;
+                }
+
+                SplitWall(listOfStructures, bearingIndex);
+            }
+        }
+
+        public List<Wall> SelectionHandler()
+        {
+            List<Wall> walls;
+            var selected = UIDoc.Selection.GetElementIds();
+            if (selected.Count == 0)
+            {
+                List<Reference> wallRefs = UIDoc.Selection.PickObjects(ObjectType.Element, new ClassSelectionFilter<Wall>(), "Выберите стены").ToList();
+                walls = wallRefs.Select(x => Doc.GetElement(x.ElementId) as Wall).ToList();
+            }
+            else
+            {
+                walls = selected.Select(x => Doc.GetElement(x) as Wall).ToList();
+            }
+            return walls;
+        }
+
+        public List<CompoundStructureLayer> GetSortedLayers(List<Wall> walls, out int bearingIndex)
+        {
+            //Располагаем слои относительно координат их начала
+            walls = walls.OrderBy(x => (x.Location as LocationCurve).Curve.GetEndPoint(0).X)
+                         .ThenBy(y => (y.Location as LocationCurve).Curve.GetEndPoint(0).Y).ToList();
+
+            // если стена была начерчена с определенным углом (а именно 0 >= a > -180) то нужно обратить порядок слоев
+            Curve wallLocation = (ParentWall.Location as LocationCurve).Curve;
+            XYZ wallDirection = (wallLocation.GetEndPoint(1) - wallLocation.GetEndPoint(0)).Normalize();        
+            if (wallDirection.IsAlmostEqualTo(XYZ.BasisX) || wallDirection.Y < 0)
+            {
+                walls.Reverse();
+            }
+            if (ParentWall.Flipped)
+            {
+                walls.Reverse();
+            }
+
             var layers = walls.SelectMany(x => x.WallType.GetCompoundStructure().GetLayers()).ToList();
+            Wall bearingWall = walls.Where(x => x.StructuralUsage == Autodesk.Revit.DB.Structure.StructuralWallUsage.Bearing).FirstOrDefault();
+            bearingIndex = walls.IndexOf(bearingWall);
+            return layers;
+        }
+
+        public Wall MergeWalls(List<Wall> walls)
+        {
+            int bearingIndex = 0;
+            var layers = GetSortedLayers(walls, out bearingIndex);
             var mergedStructure = CompoundStructure.CreateSimpleCompoundStructure(layers);
+            mergedStructure.StructuralMaterialIndex = 0;
             WallType mergedWallType = FindWallTypeByStructure(mergedStructure);
+
             if (mergedWallType == null)
             {
                 string name = GenerateNewWallTypeName(mergedStructure);
-                mergedWallType = walls[0].WallType.Duplicate(name) as WallType;
+                mergedWallType = FindWalltypeByName(name);
+                if (mergedWallType == null)
+                {
+                    mergedWallType = walls[0].WallType.Duplicate(name) as WallType;
+                    mergedStructure.StructuralMaterialIndex = bearingIndex;
+                    mergedWallType.SetCompoundStructure(mergedStructure);
+                }
             }
-            Wall mergedWall = CreateWall(mergedWallType);
+            Wall mergedWall = CreateWall(mergedWallType);            
             return mergedWall;
         }
 
@@ -216,7 +274,7 @@ namespace TerrTools
         /// <param name="structures"></param>
         /// <param name="currentStructureIndex"></param>
         /// <returns></returns>
-        double CalculateLayerOffset(IEnumerable<CompoundStructure> structures, int currentStructureIndex)
+        public double CalculateLayerOffset(IEnumerable<CompoundStructure> structures, int currentStructureIndex)
         {
             // Растояние от начала стены (наружный слой) до середины стены
             double wallW = structures.Sum(x => x.GetWidth()) / 2;
@@ -225,12 +283,27 @@ namespace TerrTools
             return layerW - wallW;
         }
 
+        public double CalculateLayerOffset(CompoundStructure structure)
+        {
+            int currentStructureIndex = structure.StructuralMaterialIndex;
+            // Растояние от начала стены (наружный слой) до середины стены
+            double wallW = structure.GetWidth() / 2;
+            // Растояние от начала стены (наружный слой) до середины нужного слоя
+            double layerW = 0;
+            for (int i = 0; i < currentStructureIndex; i++)
+            {
+                layerW += structure.GetLayerWidth(i);
+            }
+            layerW += structure.GetLayerWidth(currentStructureIndex) / 2;
+            return wallW - layerW;
+        }
+
         /// <summary>
         /// Параллельное смещение стены. Положительные значения - вправо от вектора стены, отрицательные - влево. Вектор стены - от начала к концу при создании
         /// </summary>
         /// <param name="wall">Стена для смещения</param>
         /// <param name="wallOffset">Длина вектора смещения</param>
-        void MoveLayer(Wall wall, double wallOffset)
+        public void MoveLayer(Wall wall, double wallOffset)
         {
             XYZ translationVector = (ParentLocationCurve.GetEndPoint(1) - ParentLocationCurve.GetEndPoint(0)).CrossProduct(XYZ.BasisZ).Normalize();
             translationVector = translationVector * wallOffset;
@@ -280,21 +353,31 @@ namespace TerrTools
     {
         public override void SplitStructure(CompoundStructure structure, out List<CompoundStructure> splittedStructures, out int bearingIndex)
         {
-            splittedStructures = new List<CompoundStructure>();
-            bearingIndex = 1;   // всегда посередине ,т.к. несущий слой один
+            splittedStructures = new List<CompoundStructure>();            
             int structuralIndex = structure.StructuralMaterialIndex;
+            if (structuralIndex == -1)
+            {
+                // в стене нет несущей части
+                bearingIndex = -1;
+                return;
+            }
             var layers = structure.GetLayers();
             var outerLayers = layers.Take(structuralIndex).ToList();
             var bearingLayers = layers.Skip(structuralIndex).Take(1).ToList();
             var innerLayers = layers.Skip(structuralIndex + 1).ToList();
-            if (outerLayers.Count > 0) 
-            {                
-                splittedStructures.Add(CompoundStructure.CreateSimpleCompoundStructure(outerLayers)); 
-            }
-            if (bearingLayers.Count > 0)
+            
+            if (outerLayers.Count > 0)
             {
-                splittedStructures.Add(CompoundStructure.CreateSimpleCompoundStructure(bearingLayers));
+                splittedStructures.Add(CompoundStructure.CreateSimpleCompoundStructure(outerLayers));
+                bearingIndex = 1;
             }
+            else
+            {
+                bearingIndex = 0;
+            }
+
+            splittedStructures.Add(CompoundStructure.CreateSimpleCompoundStructure(bearingLayers));
+
             if (innerLayers.Count > 0)
             {
                 splittedStructures.Add(CompoundStructure.CreateSimpleCompoundStructure(innerLayers));
@@ -351,22 +434,31 @@ namespace TerrTools
         {
             // инициализация
             UIDoc = commandData.Application.ActiveUIDocument;
-            List<Reference> wallRef;
-            try
+            List<Wall> ParentWalls = SelectionHandler();
+            ParentWall = ParentWalls.Where(x => x.StructuralUsage == Autodesk.Revit.DB.Structure.StructuralWallUsage.Bearing).FirstOrDefault();
+            if (ParentWall == null)
             {
-                wallRef = UIDoc.Selection.PickObjects(ObjectType.Element, new ClassSelectionFilter<Wall>(), "Выберите стены").ToList();
+                TaskDialog.Show("Ошибка", "Не найден несущий слой. Объединение невозможно");
+                return Result.Failed;
             }
-            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-            {
-                return Result.Cancelled;
-            }
-            List<Wall> ParentWalls = wallRef.Select(x => Doc.GetElement(x)).Cast<Wall>().ToList();
-            ParentWall = Doc.GetElement(wallRef[0].ElementId) as Wall;
 
             using (Transaction tr = new Transaction(Doc, "Разбить стену по несущему слою"))
             {
                 tr.Start();
-                Wall wall = MergeWalls(ParentWalls);
+                Wall mergedWall = MergeWalls(ParentWalls);
+                var structure = mergedWall.WallType.GetCompoundStructure();
+
+                double offset = CalculateLayerOffset(structure);
+                offset = ParentWall.Flipped ? -offset : offset;
+                MoveLayer(mergedWall, offset);
+
+                foreach (Wall wall in ParentWalls)
+                {
+                    if (wall.Id.IntegerValue != mergedWall.Id.IntegerValue)
+                    {
+                        Doc.Delete(wall.Id);
+                    }
+                }                
                 tr.Commit();
             }
             return Result.Succeeded;

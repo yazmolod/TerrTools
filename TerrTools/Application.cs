@@ -365,7 +365,7 @@ namespace TerrTools
                     ));
             pbDict.Add("LayerSplit_Merge",
                 MakePushButton(
-                    "DummyClass",
+                    "LayerSplit_Merge",
                     "Объединить слои в одну стену"
                     ));
 
