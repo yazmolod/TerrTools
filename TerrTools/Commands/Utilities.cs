@@ -268,8 +268,6 @@ namespace TerrTools
             return false;
         }
 
-
-
         static Curve CreateReversedCurve(Curve orig)
         {
             if (orig is Line)
@@ -617,14 +615,22 @@ namespace TerrTools
         {
             StraightVertical,
             Horizontal,
-            Angled
+            Angled,
+            AlmostHorizontal,
+            AlmostVertical
         } 
 
         static public DuctOrientation GetDuctOrientation(ConnectorManager conMngr)
         {
             XYZ orientation = GetDuctDirection(conMngr);
+            double angleToZ = orientation.AngleTo(XYZ.BasisZ);
+
             if (orientation.IsAlmostEqualTo(XYZ.BasisZ) || orientation.IsAlmostEqualTo(XYZ.BasisZ.Negate())) return DuctOrientation.StraightVertical;
             else if (orientation.IsAlmostEqualTo(new XYZ(orientation.X, orientation.Y, 0))) return DuctOrientation.Horizontal;
+            // угол между Z и вектором от 60 до 120 градусов
+            else if (angleToZ > (Math.PI / 3) && angleToZ < (2 * Math.PI / 3)) return DuctOrientation.AlmostHorizontal;
+            // угол между Z и вектором больше 150 градусов или меньше 30
+            else if (angleToZ > (5 * Math.PI / 6) || angleToZ < (Math.PI / 6)) return DuctOrientation.AlmostVertical;
             else return DuctOrientation.Angled;
         }
 

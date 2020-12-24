@@ -98,16 +98,28 @@ namespace TerrTools
                 new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces),
                 ChangeTypeAdditionAndModication));
 
+            // MEPCurveOrientation
+            var orfilter = new LogicalOrFilter(
+                new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves),
+                new ElementCategoryFilter(BuiltInCategory.OST_PipeCurves)
+                );
+            var mepupd = new MepOrientationUpdater(new LogicalAndFilter(orfilter,
+                                                                        new ElementIsElementTypeFilter(true)),
+                                                    ChangeTypeAdditionAndModication);
+            BuiltInCategory[] categories = new BuiltInCategory[] { BuiltInCategory.OST_DuctCurves, BuiltInCategory.OST_PipeCurves };
+            mepupd.AddSharedSettings(new SharedParameterSettings(categories, "ТеррНИИ_Горизонтальный воздуховод"));
+            mepupd.AddSharedSettings(new SharedParameterSettings(categories, "ТеррНИИ_Вертикальный воздуховод"));
+            Updaters.Add(mepupd);
+
+
             // DuctUpdater
-            var upd = new DuctsUpdater(new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves), 
+            var ductupd = new DuctsUpdater(new LogicalAndFilter(new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves), 
                                                             new ElementIsElementTypeFilter(true)),
-                                       ChangeTypeAdditionAndModication);            
-            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ADSK_Толщина стенки"));
-            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Класс герметичности"));
-            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Отметка от нуля"));
-            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Горизонтальный воздуховод"));
-            upd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Вертикальный воздуховод"));
-            Updaters.Add(upd);
+                                       ChangeTypeAdditionAndModication);
+            ductupd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ADSK_Толщина стенки"));
+            ductupd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Класс герметичности"));
+            ductupd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Отметка от нуля"));            
+            Updaters.Add(ductupd);
 
             // DuctsAccessoryUpdater
             Updaters.Add(new DuctsAccessoryUpdater(                

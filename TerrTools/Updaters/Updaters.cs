@@ -187,7 +187,89 @@ namespace TerrTools.Updaters
             foreach (var e in elements) SpaceNaming.TransferData(e);
         }
     }
+
+    public class MepOrientationUpdater : TerrUpdater
+    {
+        public MepOrientationUpdater
+            (ElementFilter filter, ChangeType chtype)
+            : base(filter, chtype) { }
+        public override string Name => "MepOrientationUpdater";
+
+        public override string Info => "Определеяет ориентацию в пространстве для труб, воздуховодов и лотков";
+
+        public override string Guid => "d967d0d4-04b7-42de-89ea-967fe12a383b";
+
+        public override ChangePriority Priority => ChangePriority.MEPAccessoriesFittingsSegmentsWires;
+
+        string horizontalParameter = "ТеррНИИ_Горизонтальный воздуховод";
+        string verticalParameter = "ТеррНИИ_Вертикальный воздуховод";
+
+        private void Main(MEPCurve el)
+        {
+            var orient = GeometryUtils.GetDuctOrientation(el.ConnectorManager);
+            Parameter hp = el.LookupParameter(horizontalParameter);
+            Parameter vp = el.LookupParameter(verticalParameter);
+            
+            // для категорий, где параметр не назначен (гибкие трубы например)
+            if (hp == null)
+            {
+                return;
+            }
+
+            switch (orient)
+            {
+                case GeometryUtils.DuctOrientation.Horizontal:
+                    hp.Set(1);
+                    vp.Set(0);
+                    break;
+                case GeometryUtils.DuctOrientation.StraightVertical:
+                    hp.Set(0);
+                    vp.Set(1);
+                    break;
+                case GeometryUtils.DuctOrientation.Angled:
+                    hp.Set(0);
+                    vp.Set(0);
+                    break;
+            }
+        }
+
+        public override void GlobalExecute(Document doc)
+        {
+            foreach (MEPCurve el in new FilteredElementCollector(doc).WherePasses(TriggerPairs[0].Filter).ToElements())
+            {
+                try
+                {
+                    Main(el);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    Debug.WriteLine(ex.StackTrace);
+                    Debug.WriteLine("Element id: " + el.Id.IntegerValue.ToString());
+                }
+            }
+        }
         
+
+        public override void InnerExecute(UpdaterData data)
+        {
+            foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))
+            {
+                try
+                {
+                    MEPCurve el = (MEPCurve)doc.GetElement(id);
+                    Main(el);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    Debug.WriteLine(ex.StackTrace);
+                    Debug.WriteLine("Element id: " + id.IntegerValue.ToString());
+                }
+            }
+        }
+    }
+
     public class DuctsUpdater : TerrUpdater
     {
         public override string Name => "DuctsUpdater";
@@ -287,15 +369,11 @@ namespace TerrTools.Updaters
             el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
             el.LookupParameter(classParameter).Set(GetDuctClass(el));
             el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
-            el.LookupParameter(horizontalParameter).Set(IsHorizontal(el));
-            el.LookupParameter(verticalParameter).Set(IsVertical(el));
         }
 
         string thickParameter = "ADSK_Толщина стенки";
         string classParameter = "ТеррНИИ_Класс герметичности";
         string levelParameter = "ТеррНИИ_Отметка от нуля";
-        string horizontalParameter = "ТеррНИИ_Горизонтальный воздуховод";
-        string verticalParameter = "ТеррНИИ_Вертикальный воздуховод";
         public override void InnerExecute(UpdaterData data)
         {            
             foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))

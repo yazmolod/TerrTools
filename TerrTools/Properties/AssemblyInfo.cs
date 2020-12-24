@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 
 - Инструменты с панели ТеррНИИ BIM теперь можно выносить на панель быстрого доступа
 
-
+Исправления: вертикальность и горизонтальность считается теперь и для труб; коллизии с *почти* горизонтальными элементами обрабатываются генератором коллизий
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -42,4 +42,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("1.4.3")]
+[assembly: AssemblyFileVersion("1.4.4")]

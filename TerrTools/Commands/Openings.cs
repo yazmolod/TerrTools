@@ -562,8 +562,9 @@ namespace TerrTools
                 // угол не задает, т.к. в горзонтальной плоскости уже все развернуто
                 return outline;
             }
+
             // Сеть идет в горизонтальной плоскости
-            else if (direction == GeometryUtils.DuctOrientation.Horizontal)
+            else if (direction == GeometryUtils.DuctOrientation.Horizontal || direction == GeometryUtils.DuctOrientation.AlmostHorizontal)
             {
                 width += Offset * 2;
                 height += Offset * 2;
