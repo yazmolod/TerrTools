@@ -41,7 +41,9 @@ namespace TerrTools
             var log_id = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров id");
             var log_level = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка параметров уровня");
             var log_cut = LoggingMachine.NewLog("Добавление отверстий", intersections.Select(x => x.Id), "Ошибка вырезания");
-            foreach (Intersection i in intersections)
+            bool unpinFlag = false;
+            bool unpinAsked = false;
+           foreach (Intersection i in intersections)
             {
                     Element holeElement;
                     if (IsExisted(i))
@@ -51,7 +53,29 @@ namespace TerrTools
                         XYZ vec = new XYZ(i.InsertionPoint.X,
                                           i.InsertionPoint.Y,
                                           i.Level.ProjectElevation) - loc.Point;
+
+                    if (!unpinAsked)
+                    {
+                        TaskDialog td = new TaskDialog("Обнаружены закрепленные");
+                        td.MainInstruction = "В отчете найдены отверстия, которые уже существуют в проекте и которые закреплены";
+                        td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Открепить и обновить отверстия");
+                        td.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Оставить без изменений");
+                        var res = td.Show();
+                        unpinFlag = res == TaskDialogResult.CommandLink1;
+                        unpinAsked = true;
+                    }
+
+                    if (holeElement.Pinned && unpinFlag)
+                    {
+                        holeElement.Pinned = false;
                         ElementTransformUtils.MoveElement(doc, holeElement.Id, vec);
+                    }
+                    else if (!holeElement.Pinned)
+                    {
+                        ElementTransformUtils.MoveElement(doc, holeElement.Id, vec);
+                    }
+                        
+                    
                     }
                     else
                     {

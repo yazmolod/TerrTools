@@ -39,8 +39,10 @@ namespace TerrTools
                 //таблица с группами
                 if (nodes == null)
                 {
-                    nodes = report.DocumentNode.SelectNodes("//table[@class='mainTable']/tr[@class='childRow']");
-                    nodes.AddRange(report.DocumentNode.SelectNodes("//table[@class='mainTable']/tr[@class='childRowLast']"));
+                    nodes = report.DocumentNode.SelectNodes("//table[@class='mainTable']/tr[@class='childRow']");                
+                    var childNodes = report.DocumentNode.SelectNodes("//table[@class='mainTable']/tr[@class='childRowLast']");
+                    if (childNodes != null) {
+                        nodes.AddRange(childNodes); }
                 }          
             }
             else
@@ -48,7 +50,10 @@ namespace TerrTools
                 nodes = report.DocumentNode.SelectNodes("//div[@class='viewpoint']");
             }
             List<CollisionReportRow> rows = new List<CollisionReportRow>();
-            foreach (var node in nodes) rows.Add(new CollisionReportRow(this, node));
+            if (nodes != null)
+            {
+                foreach (var node in nodes) rows.Add(new CollisionReportRow(this, node));                
+            }
             Rows = rows;
         }
     }
