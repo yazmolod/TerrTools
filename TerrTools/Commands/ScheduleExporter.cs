@@ -147,7 +147,7 @@ namespace TerrTools
             Excel.Application excelApp = new Excel.Application();
             excelApp.DisplayAlerts = false;
             Excel.Workbook wb;
-
+            string savepath;
             switch (opt.SplittingFile)
             {
                 case SplitFileOptions.MultipleFiles:
@@ -155,8 +155,8 @@ namespace TerrTools
                     {
                         wb = excelApp.Workbooks.Add();
                         WriteTable(wb, table);
-                        path = Path.Combine(path, table.Name + ".xlsx");
-                        SafeSave(wb, path);
+                        savepath = Path.Combine(path, table.Name + ".xlsx");
+                        SafeSave(wb, savepath);
                     }
                     break;
 

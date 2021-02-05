@@ -6,8 +6,9 @@ using System.Runtime.InteropServices;
 // набора атрибутов. Измените значения этих атрибутов, чтобы изменить сведения,
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
-[assembly: AssemblyDescription(@"
-При расстановке отверстий учитываются закреплены ли они (раньше просто выдавало ошибку). Можно использовать для предотвращения изменений отверстий от работы плагина
+[assembly: AssemblyDescription(@"Исправления в этой версии:
+- При расстановке отверстий учитываются закреплены ли они (раньше просто выдавало ошибку). Можно использовать для предотвращения изменений отверстий от работы плагина
+- Исправлена ошибка при экспорте спецификаций
 ")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
@@ -34,4 +35,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("1.5.0")]
+[assembly: AssemblyFileVersion("1.5.1")]
