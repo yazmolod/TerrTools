@@ -356,8 +356,11 @@ namespace TerrTools
             {
                 // Случай, когда стена разбита на части
                 Part part = findedElems.FirstOrDefault(x => x is Part) as Part;
-                LinkElementId linkId = part.GetSourceElementIds().First();
-                host = hostdoc.GetElement(linkId.HostElementId);
+                if (part != null)
+                {
+                    LinkElementId linkId = part.GetSourceElementIds().First();
+                    host = hostdoc.GetElement(linkId.HostElementId);
+                }
             }
 
             Element pipe = findedElems.FirstOrDefault(x => x is MEPCurve ||
