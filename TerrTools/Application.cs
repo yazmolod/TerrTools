@@ -94,9 +94,9 @@ namespace TerrTools
             SharedParameterSettings settings;
 
             // SpaceUpdater
-            Updaters.Add(new SpaceUpdater(                 
-                new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces),
-                ChangeTypeAdditionAndModication));
+            var spaceupd = new SpaceUpdater(new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces),ChangeTypeAdditionAndModication);
+            spaceupd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_MEPSpaces, "ADSK_Категория помещения", BuiltInParameterGroup.PG_IDENTITY_DATA));
+            Updaters.Add(spaceupd);
 
             // MEPCurveOrientation
             var orfilter = new LogicalOrFilter(

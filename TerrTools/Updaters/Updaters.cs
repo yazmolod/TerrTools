@@ -35,6 +35,13 @@ namespace TerrTools.Updaters
             ParameterGroup = BuiltInParameterGroup.PG_ADSK_MODEL_PROPERTIES;
             IsInstance = true;
         }
+        public SharedParameterSettings(BuiltInCategory c, string p, BuiltInParameterGroup g)
+        {
+            Categories = new BuiltInCategory[] { c };
+            ParameterName = p;
+            ParameterGroup = g;
+            IsInstance = true;
+        }
         public SharedParameterSettings(BuiltInCategory[] c, string p)
         {
             Categories = c;
@@ -164,7 +171,7 @@ namespace TerrTools.Updaters
     public class SpaceUpdater : TerrUpdater
     {
         public override string Name => "SpaceUpdater";
-        public override string Info => "Сопоставляет номер помещения из связанного проекта с номером пространства в текущем проекте";
+        public override string Info => "Сопоставляет данные помещения из связанного проекта с данными пространства в текущем проекте";
         public override string Guid => "b49432e1-c88d-4020-973d-1464f2d7b121";
         public override ChangePriority Priority => ChangePriority.RoomsSpacesZones;
 
@@ -172,19 +179,55 @@ namespace TerrTools.Updaters
             (ElementFilter filter, ChangeType chtype)
             : base(filter, chtype) { }
 
+        private void Room2SpaceData(Element e)
+        {
+            string name = e.get_Parameter(BuiltInParameter.SPACE_ASSOC_ROOM_NAME).AsString();
+            string number = e.get_Parameter(BuiltInParameter.SPACE_ASSOC_ROOM_NUMBER).AsString();
+            e.get_Parameter(BuiltInParameter.ROOM_NAME).Set(name);
+            e.get_Parameter(BuiltInParameter.ROOM_NUMBER).Set(number);
+
+            Parameter cat_p_space = e.LookupParameter("ADSK_Категория помещения");
+            if (cat_p_space != null)
+            {
+                RevitLinkInstance[] links = DocumentUtils.GetRevitLinkInstances(e.Document);
+                foreach (RevitLinkInstance link in links)
+                {
+                    Element[] rooms = new FilteredElementCollector(link.GetLinkDocument()).OfCategory(BuiltInCategory.OST_Rooms).ToArray();
+                    foreach (Element room in rooms)
+                    {
+                        Parameter cat_p_room = room.LookupParameter("ADSK_Категория помещения");
+                        if (room == null)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            string current_name = room.get_Parameter(BuiltInParameter.ROOM_NAME).AsString();
+                            string current_number = room.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString();
+                            if (current_name == name && current_number == number)
+                            {
+                                cat_p_space.Set(cat_p_room.AsString());
+                                return;
+                            }
+                        }
+                    }
+                }                
+            }
+        }
+
         public override void InnerExecute(UpdaterData data)
         {            
             var modified = data.GetModifiedElementIds();
             var added = data.GetAddedElementIds();
             var elements = added.Concat(modified).Select(x => doc.GetElement(x));
-            foreach (Element e in elements) SpaceNaming.TransferData(e);         
+            foreach (Element e in elements) Room2SpaceData(e);         
         }
 
         public override void GlobalExecute(Document doc)
         {
             var filter = new ElementCategoryFilter(BuiltInCategory.OST_MEPSpaces);
             var elements = new FilteredElementCollector(doc).WherePasses(filter).ToElements();
-            foreach (var e in elements) SpaceNaming.TransferData(e);
+            foreach (var e in elements) Room2SpaceData(e);
         }
     }
 

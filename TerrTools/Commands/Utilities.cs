@@ -793,6 +793,11 @@ namespace TerrTools
             }
         }
 
+        static public RevitLinkInstance[] GetRevitLinkInstances(Document doc)
+        {
+            RevitLinkInstance[] linkedDocs = new FilteredElementCollector(doc).OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().ToArray();
+            return linkedDocs;
+        }
 
         static public Transform GetCorrectionTransform(RevitLinkInstance linkedDocInstance)
         {
