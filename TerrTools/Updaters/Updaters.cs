@@ -192,22 +192,25 @@ namespace TerrTools.Updaters
                 RevitLinkInstance[] links = DocumentUtils.GetRevitLinkInstances(e.Document);
                 foreach (RevitLinkInstance link in links)
                 {
-                    Element[] rooms = new FilteredElementCollector(link.GetLinkDocument()).OfCategory(BuiltInCategory.OST_Rooms).ToArray();
-                    foreach (Element room in rooms)
-                    {
-                        Parameter cat_p_room = room.LookupParameter("ADSK_Категория помещения");
-                        if (room == null)
+                    Document linked_doc = link.GetLinkDocument();
+                    if (linked_doc != null) { 
+                    Element[] rooms = new FilteredElementCollector(linked_doc).OfCategory(BuiltInCategory.OST_Rooms).ToArray();
+                        foreach (Element room in rooms)
                         {
-                            break;
-                        }
-                        else
-                        {
-                            string current_name = room.get_Parameter(BuiltInParameter.ROOM_NAME).AsString();
-                            string current_number = room.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString();
-                            if (current_name == name && current_number == number)
+                            Parameter cat_p_room = room.LookupParameter("ADSK_Категория помещения");
+                            if (room == null)
                             {
-                                cat_p_space.Set(cat_p_room.AsString());
-                                return;
+                                break;
+                            }
+                            else
+                            {
+                                string current_name = room.get_Parameter(BuiltInParameter.ROOM_NAME).AsString();
+                                string current_number = room.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString();
+                                if (current_name == name && current_number == number)
+                                {
+                                    cat_p_space.Set(cat_p_room.AsString());
+                                    return;
+                                }
                             }
                         }
                     }
