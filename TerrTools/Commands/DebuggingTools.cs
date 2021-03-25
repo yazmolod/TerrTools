@@ -17,8 +17,15 @@ namespace TerrTools
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            WallOpeningHandler handler = new WallOpeningHandler();
-            handler.Init(commandData);
+            string scriptString = @"
+name = INPUT[0].Title
+OUTPUT = name.upper()";
+
+            Document doc = commandData.Application.ActiveUIDocument.Document;
+            object[] input = new object[] { doc };
+
+            var result = PythonExecuter.RunPythonScriptFromString(scriptString, input);
+            TaskDialog.Show("WOW", result); 
             return Result.Succeeded;
         }
     }

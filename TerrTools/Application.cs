@@ -394,6 +394,13 @@ namespace TerrTools
                     "LayerSplit_Merge",
                     "Объединить слои в одну стену"
                     ));
+            pbDict.Add("PdfPrinting",
+                MakePushButton(
+                    "PdfPrinting",
+                    "Экспорт PDF",
+                    iconName: "PDF",
+                    toolTip: "Позволяет разом экспортировать листы разных форматов за пару кликов"
+                    ));
 
 
             ///
@@ -467,12 +474,12 @@ namespace TerrTools
             tempBtn.AddPushButton(pbDict["UpdateTypeAll"]);
 
             panelGeneral.AddItem(pbDict["SystemScheduleExporter"]);
+            panelGeneral.AddItem(pbDict["PdfPrinting"]);
             panelGeneral.AddItem(pbDict["GridAxes"]);
             panelGeneral.AddItem(pbDict["CopyRoomShape"]);
-            panelGeneral.AddItem(pbDict["PythonExecuter"]);
             panelGeneral.AddItem(pbDict["Marking"]);
-
-
+            panelGeneral.AddItem(pbDict["PythonExecuter"]);
+            
             ///
             /// Настройки
             ///

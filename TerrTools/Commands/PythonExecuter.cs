@@ -4,17 +4,19 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 using Forms = System.Windows.Forms;
 using IronPython.Hosting;
+using Microsoft.Scripting.Hosting;
+using System.Reflection;
+using System.Collections.Generic;
+using System.IO;
 
 namespace TerrTools
 {
     [Transaction(TransactionMode.Manual)]
-    class PythonExecuter : IExternalCommand
+    public class PythonExecuter : IExternalCommand
     {
-        private UIApplication __revit__;
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            __revit__ = commandData.Application;
-
+            UIApplication app = commandData.Application;
             Forms.OpenFileDialog dialog = new Forms.OpenFileDialog();
             dialog.Filter = "Python files (*.py)|*.py";
             dialog.Multiselect = false;
@@ -22,7 +24,11 @@ namespace TerrTools
             {
                 try
                 {
-                    RunPythonScript(dialog.FileName);
+                    Dictionary<string, object> input = new Dictionary<string, object>();
+                    input.Add("__revit__", app);
+                    input.Add("uidoc", app.ActiveUIDocument);
+                    input.Add("doc", app.ActiveUIDocument.Document);
+                    RunPythonScriptFromFile(dialog.FileName);
                     TaskDialog.Show("Python execute", "Скрипт исполнен");
                     return Result.Succeeded;
                 }
@@ -38,16 +44,61 @@ namespace TerrTools
             else return Result.Cancelled;
         }
 
-        private void RunPythonScript(string filepath)
+        static dynamic ExecuteScript(string scriptString, object[] input)
         {
-            var engine = Python.CreateEngine();
-            var source = engine.CreateScriptSourceFromFile(filepath);
+            ScriptEngine engine = Python.CreateEngine();
+            dynamic scope = engine.CreateScope();
+            if (input != null)
+            {
+                scope.SetVariable("INPUT", input);
+            }
+            engine.Execute(scriptString, scope);
+            try
+            {
+                var result = scope.OUTPUT;
+                return result;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
-            //Execute
-            var scope = engine.CreateScope();
-            scope.SetVariable("__revit__", __revit__);
+        /// <summary>
+        /// Выполнение скрипта Python, который хранится в ресурсах сборки
+        /// </summary>
+        /// <param name="resourcePath">Путь к ресурсу</param>
+        /// <param name="input">Переменные для инициализации в скрипте в виде словаря "название переменной" - "объект переменной". По умолчанию null</param>
+        /// <returns>значение переменной OUTPUT в скрипте; если она отсутствует - null</returns>
+        static public dynamic RunPythonScriptFromResource(string resourcePath, object[] input = null)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            StreamReader reader = new StreamReader(assembly.GetManifestResourceStream(resourcePath));
+            string script = reader.ReadToEnd();
+            return ExecuteScript(script, input);
+        }
 
-            source.Execute(scope);
+        /// <summary>
+        /// Выполнение скрипта Python
+        /// </summary>
+        /// <param name="script">Текст скрипта</param>
+        /// <param name="input">Переменные для инициализации в скрипте в виде словаря "название переменной" - "объект переменной". По умолчанию null</param>
+        /// <returns>значение переменной OUTPUT в скрипте; если она отсутствует - null</returns>
+        static public dynamic RunPythonScriptFromString(string script, object[] input = null)
+        {
+            return ExecuteScript(script, input);
+        }
+
+        /// <summary>
+        /// Выполнение скрипта Python из файла
+        /// </summary>
+        /// <param name="filepath">Путь к файлу скрипта</param>
+        /// <param name="input">Переменные для инициализации в скрипте в виде словаря "название переменной" - "объект переменной". По умолчанию null</param>
+        /// <returns>значение переменной OUTPUT в скрипте; если она отсутствует - null</returns>
+        static public dynamic RunPythonScriptFromFile(string filepath, object[] input = null)
+        {
+            string script = File.ReadAllText(filepath);
+            return ExecuteScript(script, input);
         }
     }
 }

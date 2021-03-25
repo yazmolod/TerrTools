@@ -119,6 +119,7 @@
     <Compile Include="Commands\IzometryGenerator .cs" />
     <Compile Include="Commands\InsulCurves.cs" />
     <Compile Include="Commands\Marking.cs" />
+    <Compile Include="Commands\PdfPrinting.cs" />
     <Compile Include="Commands\PythonExecuter.cs" />
     <Compile Include="Commands\WallSplit.cs" />
     <Compile Include="GlobalSettings.cs" />
@@ -174,6 +175,12 @@
     </Compile>
     <Compile Include="UI\MarkingForm.Designer.cs">
       <DependentUpon>MarkingForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PdfPrintingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\PdfPrintingForm.Designer.cs">
+      <DependentUpon>PdfPrintingForm.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\TwoDoc.cs">
       <SubType>Form</SubType>
@@ -269,6 +276,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\OneComboboxForm.resx">
       <DependentUpon>OneComboboxForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\PdfPrintingForm.resx">
+      <DependentUpon>PdfPrintingForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\ProgressBar.resx">
       <DependentUpon>ProgressBar.cs</DependentUpon>
@@ -407,6 +417,13 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\Icons\AutoJoin16.png" />
     <EmbeddedResource Include="Resources\Icons\LayersSplit16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Icons\PDF.png" />
+    <EmbeddedResource Include="Resources\Icons\PDF16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\CreatePrintSetting.py" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
