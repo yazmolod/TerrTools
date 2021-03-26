@@ -33,9 +33,9 @@
             this.setComboBox = new System.Windows.Forms.ComboBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.setRadioButton = new System.Windows.Forms.RadioButton();
             this.currentRadioButton = new System.Windows.Forms.RadioButton();
             this.selectionRadioButton = new System.Windows.Forms.RadioButton();
-            this.setRadioButton = new System.Windows.Forms.RadioButton();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -91,6 +91,17 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Что печатать";
             // 
+            // setRadioButton
+            // 
+            this.setRadioButton.AutoSize = true;
+            this.setRadioButton.Location = new System.Drawing.Point(6, 65);
+            this.setRadioButton.Name = "setRadioButton";
+            this.setRadioButton.Size = new System.Drawing.Size(95, 17);
+            this.setRadioButton.TabIndex = 7;
+            this.setRadioButton.Text = "Набор листов";
+            this.setRadioButton.UseVisualStyleBackColor = true;
+            this.setRadioButton.CheckedChanged += new System.EventHandler(this.setRadioButton_CheckedChanged);
+            // 
             // currentRadioButton
             // 
             this.currentRadioButton.AutoSize = true;
@@ -112,16 +123,6 @@
             this.selectionRadioButton.TabIndex = 6;
             this.selectionRadioButton.Text = "Виды, выделенные в диспетчере";
             this.selectionRadioButton.UseVisualStyleBackColor = true;
-            // 
-            // setRadioButton
-            // 
-            this.setRadioButton.AutoSize = true;
-            this.setRadioButton.Location = new System.Drawing.Point(6, 65);
-            this.setRadioButton.Name = "setRadioButton";
-            this.setRadioButton.Size = new System.Drawing.Size(95, 17);
-            this.setRadioButton.TabIndex = 7;
-            this.setRadioButton.Text = "Набор листов";
-            this.setRadioButton.UseVisualStyleBackColor = true;
             // 
             // PdfPrintingForm
             // 

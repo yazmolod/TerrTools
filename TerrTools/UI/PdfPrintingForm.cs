@@ -33,5 +33,11 @@ namespace TerrTools.UI
         {
 
         }
+
+        private void setRadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            RadioButton rb = sender as RadioButton;
+            setComboBox.Enabled = rb.Checked;
+        }
     }
 }

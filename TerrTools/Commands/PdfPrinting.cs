@@ -19,7 +19,7 @@ namespace TerrTools
     class PdfPrinting : IExternalCommand
     {
         UIDocument uidoc;
-        Document doc { get => uidoc.Document; }        
+        Document doc { get => uidoc.Document; }
         string printerName
         {
             get { return printManager.PrinterName; }
@@ -29,13 +29,14 @@ namespace TerrTools
                 printManager.Apply();
             }
         }
-        PrintManager printManager { get => doc.PrintManager; }
+        PrintManager printManager;
 
 
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             uidoc = commandData.Application.ActiveUIDocument;
+            printManager = doc.PrintManager;
 
             string[] printers = PDFPrinterNamesIterator().ToArray();
             if (printers.Length == 0)
@@ -130,18 +131,25 @@ namespace TerrTools
             printManager.PrintRange = Autodesk.Revit.DB.PrintRange.Current;
             printManager.PrintToFile = true;
             string folder = Path.GetDirectoryName(doc.PathName);
-            string filename = viewSheet.Name + ".pdf";
+            string filename = $"Лист {viewSheet.SheetNumber} - {viewSheet.Name}.pdf";
             string filepath = Path.Combine(folder, filename);
             printManager.PrintToFileName = filepath;
         }
 
+
         private void PrintTitleBlock(ViewSheet viewSheet)
-        {            
+        {
+            TitleBlockPrintSize[] blockPrintSizes;
             Tuple<int, int> sheetSize = GetViewTitleBlocksSizes(viewSheet);
             if (sheetSize != null)
             {
-                TitleBlockPrintSize[] blockPrintSizes = GetSystemPaperSize(sheetSize).ToArray();
-
+                blockPrintSizes = GetSystemPaperSize(sheetSize).ToArray();                
+            }
+            else
+            {
+                var size = AskSheetSize(viewSheet, printerName);                
+                blockPrintSizes = size != null ? new TitleBlockPrintSize[] { size } : new TitleBlockPrintSize[] { };
+            }
                 // пытаемся найти уже существующую настройку с подходящими параметрами 
                 foreach (TitleBlockPrintSize blockPrintSize in blockPrintSizes)
                 {
@@ -154,24 +162,30 @@ namespace TerrTools
                         }
                     }
                 }
-
-                // ничего не нашли - делаем сами
-                try
-                {
-                    PrintSetting setting = CreateSetting(blockPrintSizes[0]);
-                    SetupAndPrint(viewSheet, setting);
-                }
-                catch
-                {
-                    TaskDialog td = new TaskDialog($"Ошибка");
-                    td.MainIcon = TaskDialogIcon.TaskDialogIconWarning;
-                    td.MainInstruction = $"Лист {viewSheet.Name}: не удалось подобрать настройки или создать настройки для размера листа {sheetSize.Item1}x{sheetSize.Item2}";
-                    td.Show();
-                }                
+            // ничего не нашли - делаем сами
+            try
+            {
+                IPrintSetting new_setting = CreateSetting(blockPrintSizes[0]);
+                SetupAndPrint(viewSheet, new_setting);
             }
+            catch
+            {
+                TaskDialog td = new TaskDialog($"Ошибка");
+                td.MainIcon = TaskDialogIcon.TaskDialogIconWarning;
+                td.MainInstruction = $"Лист {viewSheet.Name}: не удалось подобрать настройки или создать настройки для листа";
+                td.Show();
+            }
+
         }
 
-        private void SetupAndPrint(ViewSheet viewSheet, PrintSetting setting)
+        private TitleBlockPrintSize AskSheetSize(ViewSheet viewSheet, string printerName)
+        {
+            var ui = new UI.AskPaperFormatForm(viewSheet.Name, printerName);
+            if (ui.ShowDialog() == System.Windows.Forms.DialogResult.OK) return new TitleBlockPrintSize(ui.PaperSize, ui.IsRotated);
+            else return null;
+        }
+
+        private void SetupAndPrint(ViewSheet viewSheet, IPrintSetting setting)
         {
             using (Transaction tr = new Transaction(doc, "Обновление принтера"))
             {
@@ -184,13 +198,13 @@ namespace TerrTools
             printManager.SubmitPrint(viewSheet);
         }
 
+
         private bool SettingIsOk(PrintSetting setting, TitleBlockPrintSize blockPrintSize)
         {
             List<bool> flags = new List<bool>();
-            PrintParameters pp = setting.PrintParameters;
-
             try
             {
+                PrintParameters pp = setting.PrintParameters;            
                 flags.Add(pp.PaperPlacement == PaperPlacementType.Margins);
                 flags.Add(pp.MarginType == MarginType.NoMargin);
                 flags.Add(pp.ZoomType == ZoomType.Zoom);
@@ -202,7 +216,7 @@ namespace TerrTools
 
                 return flags.All(x => x == true);
             }
-            catch(Autodesk.Revit.Exceptions.InvalidOperationException)
+            catch (Autodesk.Revit.Exceptions.InvalidOperationException)
             {
                 return false;
             }
@@ -218,16 +232,16 @@ namespace TerrTools
             }
         }
 
-        private IEnumerable<TitleBlockPrintSize> GetSystemPaperSize(Tuple<int,int> viewSize) 
+        private IEnumerable<TitleBlockPrintSize> GetSystemPaperSize(Tuple<int, int> viewSize)
         {
 
             PrinterSettings pd = new PrinterSettings();
             pd.PrinterName = printerName;
             foreach (System.Drawing.Printing.PaperSize existed_size in pd.PaperSizes) {
 
-                int paperWidth_mm = (int) Math.Round(existed_size.Width * 0.254);
-                int paperHeight_mm = (int) Math.Round(existed_size.Height * 0.254);
-                if (paperWidth_mm == viewSize.Item1 && paperHeight_mm == viewSize.Item2)                    
+                int paperWidth_mm = (int)Math.Round(existed_size.Width * 0.254);
+                int paperHeight_mm = (int)Math.Round(existed_size.Height * 0.254);
+                if (paperWidth_mm == viewSize.Item1 && paperHeight_mm == viewSize.Item2)
                 {
                     yield return new TitleBlockPrintSize(existed_size, false);
                 }
@@ -238,25 +252,50 @@ namespace TerrTools
             }
         }
 
-        private Tuple<int,int> GetViewTitleBlocksSizes(ViewSheet viewSheet)
+        private bool PrinterHasSuchSize(Tuple<int, int> viewSize)
         {
-            Element[] title_blocks = new FilteredElementCollector(doc, viewSheet.Id).OfCategory(BuiltInCategory.OST_TitleBlocks).ToArray();
+            return GetSystemPaperSize(viewSize).Count() > 0;
+        }
+
+        private Tuple<int, int> GetViewTitleBlocksSizes(ViewSheet viewSheet)
+        {
+            FamilyInstance[] title_blocks = new FilteredElementCollector(doc, viewSheet.Id).OfCategory(BuiltInCategory.OST_TitleBlocks).Cast<FamilyInstance>().ToArray();
             if (title_blocks.Length == 1)
             {
-                Element title_block = title_blocks[0];
-                BoundingBoxXYZ bbox = title_block.get_BoundingBox(viewSheet);
-                XYZ diff = bbox.Max - bbox.Min;
-                int width = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(diff.X, DisplayUnitType.DUT_MILLIMETERS));
-                int height = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(diff.Y, DisplayUnitType.DUT_MILLIMETERS));
-                Tuple<int, int> size = new Tuple<int, int>(width, height);
-                return size;
+                FamilyInstance title_block = title_blocks[0];
+                double instance_width_d = title_block.get_Parameter(BuiltInParameter.SHEET_WIDTH).AsDouble();
+                double instance_height_d = title_block.get_Parameter(BuiltInParameter.SHEET_HEIGHT).AsDouble();
+                int instance_width = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(instance_width_d, DisplayUnitType.DUT_MILLIMETERS));
+                int instance_height = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(instance_height_d, DisplayUnitType.DUT_MILLIMETERS));
+                Tuple<int, int> instance_size = new Tuple<int, int>(instance_width, instance_height);
+                if (PrinterHasSuchSize(instance_size))
+                {
+                    return instance_size;
+                }
+
+                FamilySymbol title_block_symbol = title_block.Symbol;
+                Parameter w_parameter = title_block_symbol.LookupParameter("Ширина");
+                Parameter h_parameter = title_block_symbol.LookupParameter("Высота");
+                if (w_parameter != null && h_parameter != null)
+                {
+                    double type_width_d = w_parameter.AsDouble();
+                    double type_height_d = h_parameter.AsDouble();
+                    int type_width = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(type_width_d, DisplayUnitType.DUT_MILLIMETERS));
+                    int type_height = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(type_height_d, DisplayUnitType.DUT_MILLIMETERS));
+                    Tuple<int, int> type_size = new Tuple<int, int>(type_width, type_height);
+                    if (PrinterHasSuchSize(type_size))
+                    {
+                        return type_size;
+                    }
+                }
+                return null;
             }
             else
             {
                 TaskDialog td = new TaskDialog($"Ошибка");
                 td.MainIcon = TaskDialogIcon.TaskDialogIconWarning;
-                td.MainInstruction = title_blocks.Length == 0 ? 
-                    $"{viewSheet.Name}: На листе не найден ни один штамп и будет пропущен" : 
+                td.MainInstruction = title_blocks.Length == 0 ?
+                    $"{viewSheet.Name}: На листе не найден ни один штамп и будет пропущен" :
                     $"{viewSheet.Name}: На листе обнаружено несколько штампов. Корректная печать невозможна";
                 td.Show();
                 return null;
@@ -268,18 +307,38 @@ namespace TerrTools
             return doc.GetPrintSettingIds().Select(x => doc.GetElement(x)).Where(x => x.Name == name).Cast<PrintSetting>().FirstOrDefault();
         }
 
-        private PrintSetting CreateSetting(TitleBlockPrintSize size)
+
+        private IPrintSetting CreateSetting(TitleBlockPrintSize size)
         {
-            // По неведомым причинам, идентичный код настройки новых параметров принтера  
-            // работает в Python, но не работает в C#. Поэтому после двух безуспешных дней работы
-            // я сдался и сделал этот ужас
-            var ps = size.ConvertToRevitPaperSize(printManager);
-            object[] input = new object[] { doc, ps, size.Rotated};
-            string settingName = PythonExecuter.RunPythonScriptFromResource("TerrTools.Resources.CreatePrintSetting.py", input);
-            PrintSetting setting = FindSettingByName(settingName); 
-            return setting;
+            var s = printManager.PrintSetup.InSession;
+            s.PrintParameters.PaperSize = size.ConvertToRevitPaperSize(printManager);
+            s.PrintParameters.ZoomType = ZoomType.Zoom;
+            s.PrintParameters.Zoom = 100;
+            s.PrintParameters.PaperPlacement = PaperPlacementType.Margins;
+            s.PrintParameters.MarginType = MarginType.NoMargin;
+            s.PrintParameters.PageOrientation = size.PageOrientation;            
+
+            using (Transaction tr = new Transaction(doc, "Добавление настроек принтера"))
+            {
+                tr.Start();
+                printManager.PrintSetup.CurrentPrintSetting = s;
+                string suffix = size.Rotated ? "А" : "К";
+                string settingName = size.Name + suffix;
+                try
+                {
+                    printManager.PrintSetup.SaveAs(settingName);
+                }
+                catch
+                {
+                    settingName += '_';
+                    settingName += DateTime.Now.ToString("s").Replace(':', '-');
+                    printManager.PrintSetup.SaveAs(settingName);
+                }
+                tr.Commit();
+            }
+            return s;
         }
-    }
+    } 
 
     class TitleBlockPrintSize
     {
