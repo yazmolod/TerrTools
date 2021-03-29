@@ -20,15 +20,7 @@ namespace TerrTools
     {
         UIDocument uidoc;
         Document doc { get => uidoc.Document; }
-        string printerName
-        {
-            get { return printManager.PrinterName; }
-            set
-            {
-                printManager.SelectNewPrintDriver(value);
-                printManager.Apply();
-            }
-        }
+        string printerName { get; set; }
         PrintManager printManager;
 
 
@@ -86,11 +78,15 @@ namespace TerrTools
                     return Result.Cancelled;
                 }
 
-                printerName = ui.Printer;
-                ViewSheetSet viewSheetSet = ui.Set;
                 using (TransactionGroup transGroup = new TransactionGroup(doc))
                 {
                     transGroup.Start("Настройка принтера");
+
+                    ViewSheetSet viewSheetSet = ui.Set;
+                    printerName = ui.Printer;
+                    printManager.SelectNewPrintDriver(printerName);
+                    printManager = doc.PrintManager;
+
                     foreach (View view in views)
                     {
                         ViewSheet viewSheet = view as ViewSheet;
@@ -118,7 +114,7 @@ namespace TerrTools
         {
             foreach (string installedPrinter in PrinterSettings.InstalledPrinters)
             {
-                printerName = installedPrinter;
+                printManager.SelectNewPrintDriver(installedPrinter);
                 if (printManager.IsVirtual == VirtualPrinterType.AdobePDF)
                 {
                     yield return installedPrinter;
@@ -310,7 +306,7 @@ namespace TerrTools
 
         private IPrintSetting CreateSetting(TitleBlockPrintSize size)
         {
-            var s = printManager.PrintSetup.InSession;
+            var s = printManager.PrintSetup.CurrentPrintSetting;
             s.PrintParameters.PaperSize = size.ConvertToRevitPaperSize(printManager);
             s.PrintParameters.ZoomType = ZoomType.Zoom;
             s.PrintParameters.Zoom = 100;

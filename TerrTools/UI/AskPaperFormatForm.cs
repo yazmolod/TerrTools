@@ -32,6 +32,7 @@ namespace TerrTools.UI
             comboBox1.DisplayMember = "PaperName";
         }
 
+
         private void button2_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
