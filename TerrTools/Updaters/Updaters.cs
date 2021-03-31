@@ -9,6 +9,7 @@ using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Architecture;
 using System.Diagnostics;
 using System.Security.Policy;
+using System.Text.RegularExpressions;
 
 namespace TerrTools.Updaters
 {
@@ -340,6 +341,35 @@ namespace TerrTools.Updaters
             if (isInsul) return "B в изоляции";
             else return "А";
         }
+
+        private string GetSizeText(Duct el)
+        {
+            // вычисляемый стандартный параметр "Размер"
+            string currentSize = el.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString();
+            // прямоугольные воздуховоды 
+            if (currentSize.Contains("x"))
+            {
+                List<int> partSize = new List<int>();
+                Regex regex = new Regex(@"\d+");
+                foreach (Match match in regex.Matches(currentSize))
+                {
+                    int x;
+                    if (Int32.TryParse(match.Value, out x))
+                    {
+                        partSize.Add(x);
+                    }
+                }
+                // соединяем обратно от большего к меньшему
+                string reorderedSize = String.Join("x", partSize.OrderByDescending(i => i));
+                return reorderedSize;
+            }
+            // круглые воздуховоды 
+            else
+            {
+                return currentSize;
+            }
+        }
+
         private double GetDuctThickness(Duct el)
         {
             double thickness = -1;
@@ -415,11 +445,13 @@ namespace TerrTools.Updaters
             el.LookupParameter(thickParameter).Set(GetDuctThickness(el));
             el.LookupParameter(classParameter).Set(GetDuctClass(el));
             el.LookupParameter(levelParameter).Set(GetLevelHeight(el));
+            el.LookupParameter(sizeParameter).Set(GetSizeText(el));
         }
 
         string thickParameter = "ADSK_Толщина стенки";
         string classParameter = "ТеррНИИ_Класс герметичности";
         string levelParameter = "ТеррНИИ_Отметка от нуля";
+        string sizeParameter = "ТеррНИИ_Размер_Текст";
         public override void InnerExecute(UpdaterData data)
         {            
             foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))

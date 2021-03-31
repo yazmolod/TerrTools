@@ -127,11 +127,10 @@ namespace TerrTools
             printManager.PrintRange = Autodesk.Revit.DB.PrintRange.Current;
             printManager.PrintToFile = true;
             string folder = Path.GetDirectoryName(doc.PathName);
-            string filename = $"Лист {viewSheet.SheetNumber} - {viewSheet.Name}.pdf";
+            string filename = $"Лист {viewSheet.SheetNumber.PadLeft(5, '0')} - {viewSheet.Name}.pdf";
             string filepath = Path.Combine(folder, filename);
             printManager.PrintToFileName = filepath;
         }
-
 
         private void PrintTitleBlock(ViewSheet viewSheet)
         {

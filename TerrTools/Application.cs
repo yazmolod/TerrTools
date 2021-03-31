@@ -118,7 +118,8 @@ namespace TerrTools
                                        ChangeTypeAdditionAndModication);
             ductupd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ADSK_Толщина стенки"));
             ductupd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Класс герметичности"));
-            ductupd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Отметка от нуля"));            
+            ductupd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Отметка от нуля"));
+            ductupd.AddSharedSettings(new SharedParameterSettings(BuiltInCategory.OST_DuctCurves, "ТеррНИИ_Размер_Текст"));
             Updaters.Add(ductupd);
 
             // DuctsAccessoryUpdater
