@@ -81,7 +81,7 @@ namespace TerrTools.Updaters
         public abstract ChangePriority Priority { get; }
         private bool SelfInvoked { get; set; }
         
-        protected Document doc;
+        protected Document Document;
         public bool IsActive
         {
             get
@@ -134,7 +134,7 @@ namespace TerrTools.Updaters
             {
                 try
                 {
-                    doc = data.GetDocument();
+                    Document = data.GetDocument();
                     InnerExecute(data);
                 }
                 catch (Exception e)
@@ -223,7 +223,7 @@ namespace TerrTools.Updaters
         {            
             var modified = data.GetModifiedElementIds();
             var added = data.GetAddedElementIds();
-            var elements = added.Concat(modified).Select(x => doc.GetElement(x));
+            var elements = added.Concat(modified).Select(x => Document.GetElement(x));
             foreach (Element e in elements) Room2SpaceData(e);         
         }
 
@@ -304,7 +304,7 @@ namespace TerrTools.Updaters
             {
                 try
                 {
-                    MEPCurve el = (MEPCurve)doc.GetElement(id);
+                    MEPCurve el = (MEPCurve)Document.GetElement(id);
                     Main(el);
                 }
                 catch (Exception ex)
@@ -458,7 +458,7 @@ namespace TerrTools.Updaters
             {
                 try
                 {
-                    Duct el = (Duct)doc.GetElement(id);
+                    Duct el = (Duct)Document.GetElement(id);
                     Main(el);
                 }
                 catch (Exception ex)
@@ -498,7 +498,7 @@ namespace TerrTools.Updaters
         
         private void UpdateMark(ElementId id)
         {
-            Element el = doc.GetElement(id);
+            Element el = Document.GetElement(id);
             string rawSize = el.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString();
             string size = rawSize.Split('-')[0].Replace("м", "").Replace(" ", "");
             el.LookupParameter("Марка").Set(size);
@@ -548,13 +548,13 @@ namespace TerrTools.Updaters
         public override void InnerExecute(UpdaterData data)
         {
             string thickParameter = "ADSK_Размер_Толщина";
-            SharedParameterUtils.AddSharedParameter(doc, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_Parts }, group: BuiltInParameterGroup.PG_GEOMETRY);
+            SharedParameterUtils.AddSharedParameter(Document, thickParameter, new BuiltInCategory[] { BuiltInCategory.OST_Parts }, group: BuiltInParameterGroup.PG_GEOMETRY);
 
             foreach (ElementId id in data.GetModifiedElementIds().Concat(data.GetAddedElementIds()))
             {
                 try
                 {
-                    Part el = (Part)doc.GetElement(id);
+                    Part el = (Part)Document.GetElement(id);
                     el.LookupParameter(thickParameter).Set(GetThickness(el));
                 }
                 catch (Exception ex)
@@ -606,6 +606,7 @@ namespace TerrTools.Updaters
 
         public override void GlobalExecute(Document doc)
         {
+            Document = doc;
             var systems = new FilteredElementCollector(doc).WherePasses(sysFilter).ToArray();
             var items = new FilteredElementCollector(doc).WherePasses(elemFilter).ToArray();
             foreach (var s in systems) UpdateSystem(s);
@@ -617,7 +618,7 @@ namespace TerrTools.Updaters
             string localSystem = system.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString();
             string globalSystem = system.LookupParameter(systemNameP).AsString();
             globalSystem = globalSystem ?? "";
-            var collector = new FilteredElementCollector(doc).WherePasses(elemFilter).ToElements();
+            var collector = new FilteredElementCollector(Document).WherePasses(elemFilter).ToElements();
             foreach (var item in collector)
             {
                 Parameter itemLocalP = item.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
@@ -647,7 +648,7 @@ namespace TerrTools.Updaters
                 foreach (string v in values) localSystems.Add(v);
             }
            
-            Element[] allSystems = new FilteredElementCollector(doc).WherePasses(sysFilter).ToArray();
+            Element[] allSystems = new FilteredElementCollector(Document).WherePasses(sysFilter).ToArray();
             string[] currentAllSystem = allSystems.Where(x => localSystems.Contains(x.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM).AsString()))
                       .Select(x => x.LookupParameter(systemNameP).AsString()).ToArray();
             HashSet<string> globalSystems = new HashSet<string>(currentAllSystem);
@@ -681,12 +682,12 @@ namespace TerrTools.Updaters
             if (FirstExecutionInTransaction)
             {
                 ElementId[] addedIds = data.GetAddedElementIds().ToArray();
-                Element[] addedElements = addedIds.Select(x => doc.GetElement(x)).ToArray();
+                Element[] addedElements = addedIds.Select(x => Document.GetElement(x)).ToArray();
                 Element[] addedSystems = addedElements.Where(x => sysFilter.PassesFilter(x)).ToArray();
                 Element[] addedItems = addedElements.Where(x => elemFilter.PassesFilter(x)).ToArray();
 
                 ElementId[] modifiedIds = data.GetModifiedElementIds().ToArray();
-                Element[] modifiedElements = modifiedIds.Select(x => doc.GetElement(x)).ToArray();
+                Element[] modifiedElements = modifiedIds.Select(x => Document.GetElement(x)).ToArray();
                 Element[] modifiedSystems = modifiedElements.Where(x => sysFilter.PassesFilter(x)).ToArray();
                 Element[] modifiedItems = modifiedElements.Where(x => elemFilter.PassesFilter(x)).ToArray();
 

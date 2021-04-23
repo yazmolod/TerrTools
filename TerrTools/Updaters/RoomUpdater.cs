@@ -29,7 +29,7 @@ namespace TerrTools.Updaters
             {
                 try
                 {
-                    Element el = doc.GetElement(id);
+                    Element el = Document.GetElement(id);
                     if (el is Room)
                     {
                         FinishingData.Calculate(el as Room);
@@ -44,7 +44,7 @@ namespace TerrTools.Updaters
                         }
                         else
                         {
-                            foreach (Room r in new FilteredElementCollector(doc, doc.ActiveView.Id).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>()) FinishingData.Calculate(r);
+                            foreach (Room r in new FilteredElementCollector(Document, Document.ActiveView.Id).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>()) FinishingData.Calculate(r);
                         }
                     }
                 }
@@ -59,7 +59,7 @@ namespace TerrTools.Updaters
             {
                 try
                 {
-                    foreach (Room r in new FilteredElementCollector(doc, doc.ActiveView.Id).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>()) FinishingData.Calculate(r);
+                    foreach (Room r in new FilteredElementCollector(Document, Document.ActiveView.Id).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>()) FinishingData.Calculate(r);
                 }
                 catch (Exception ex)
                 {
