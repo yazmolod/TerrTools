@@ -24,11 +24,7 @@ namespace TerrTools
             {
                 try
                 {
-                    Dictionary<string, object> input = new Dictionary<string, object>();
-                    input.Add("__revit__", app);
-                    input.Add("uidoc", app.ActiveUIDocument);
-                    input.Add("doc", app.ActiveUIDocument.Document);
-                    RunPythonScriptFromFile(dialog.FileName);
+                    RunPythonScriptFromFile(dialog.FileName, app);
                     TaskDialog.Show("Python execute", "Скрипт исполнен");
                     return Result.Succeeded;
                 }
@@ -44,10 +40,13 @@ namespace TerrTools
             else return Result.Cancelled;
         }
 
-        static dynamic ExecuteScript(string scriptString, object[] input)
+        static dynamic ExecuteScript(string scriptString, UIApplication app, object[] input)
         {
             ScriptEngine engine = Python.CreateEngine();
             dynamic scope = engine.CreateScope();
+            scope.SetVariable("__revit__", app);
+            scope.SetVariable("uidoc", app.ActiveUIDocument);
+            scope.SetVariable("doc", app.ActiveUIDocument.Document);
             if (input != null)
             {
                 scope.SetVariable("INPUT", input);
@@ -68,37 +67,40 @@ namespace TerrTools
         /// Выполнение скрипта Python, который хранится в ресурсах сборки
         /// </summary>
         /// <param name="resourcePath">Путь к ресурсу</param>
+        /// <param name="app">Экземпляр приложения Revit</param>
         /// <param name="input">Переменные для инициализации в скрипте в виде словаря "название переменной" - "объект переменной". По умолчанию null</param>
         /// <returns>значение переменной OUTPUT в скрипте; если она отсутствует - null</returns>
-        static public dynamic RunPythonScriptFromResource(string resourcePath, object[] input = null)
+        static public dynamic RunPythonScriptFromResource(string resourcePath, UIApplication app, object[] input = null)
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             StreamReader reader = new StreamReader(assembly.GetManifestResourceStream(resourcePath));
             string script = reader.ReadToEnd();
-            return ExecuteScript(script, input);
+            return ExecuteScript(script, app, input);
         }
 
         /// <summary>
         /// Выполнение скрипта Python
         /// </summary>
         /// <param name="script">Текст скрипта</param>
+        /// <param name="app">Экземпляр приложения Revit</param>
         /// <param name="input">Переменные для инициализации в скрипте в виде словаря "название переменной" - "объект переменной". По умолчанию null</param>
         /// <returns>значение переменной OUTPUT в скрипте; если она отсутствует - null</returns>
-        static public dynamic RunPythonScriptFromString(string script, object[] input = null)
+        static public dynamic RunPythonScriptFromString(string script, UIApplication app, object[] input = null)
         {
-            return ExecuteScript(script, input);
+            return ExecuteScript(script, app, input);
         }
 
         /// <summary>
         /// Выполнение скрипта Python из файла
         /// </summary>
         /// <param name="filepath">Путь к файлу скрипта</param>
+        /// <param name="app">Экземпляр приложения Revit</param>
         /// <param name="input">Переменные для инициализации в скрипте в виде словаря "название переменной" - "объект переменной". По умолчанию null</param>
         /// <returns>значение переменной OUTPUT в скрипте; если она отсутствует - null</returns>
-        static public dynamic RunPythonScriptFromFile(string filepath, object[] input = null)
+        static public dynamic RunPythonScriptFromFile(string filepath, UIApplication app, object[] input = null)
         {
             string script = File.ReadAllText(filepath);
-            return ExecuteScript(script, input);
+            return ExecuteScript(script, app, input);
         }
     }
 }

@@ -21,10 +21,11 @@ namespace TerrTools
 name = INPUT[0].Title
 OUTPUT = name.upper()";
 
-            Document doc = commandData.Application.ActiveUIDocument.Document;
+            UIApplication app = commandData.Application;
+            Document doc = app.ActiveUIDocument.Document;
             object[] input = new object[] { doc };
 
-            var result = PythonExecuter.RunPythonScriptFromString(scriptString, input);
+            var result = PythonExecuter.RunPythonScriptFromString(scriptString, app, input);
             TaskDialog.Show("WOW", result); 
             return Result.Succeeded;
         }
