@@ -14,7 +14,8 @@ using System.Runtime.InteropServices;
     "используется встроенный параметр \"Размер\", в котором исправлено форматирование и организован порядок от большего к меньшему числу." +
     "\n\nИсправление:\n" +
     "Исправлена ошибка в глобальном запуске апдейтеров\n"+
-    "Исправлена ошибка в исполнителе скриптов Python")]
+    "Исправлена ошибка в исполнителе скриптов Python\n"+
+    "Исправлена ошибки определение отметки у пожарных клапанов")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("TerrTools")]
@@ -40,4 +41,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("1.6.5")]
+[assembly: AssemblyFileVersion("1.6.6")]

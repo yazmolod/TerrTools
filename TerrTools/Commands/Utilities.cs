@@ -555,10 +555,21 @@ namespace TerrTools
         {
             try
             {
-                var connectors = GetConnectors(conMngr);
-                var connectorsPts = connectors.Select(x => x.Origin).ToList();
-                // ищем самую длинную линию
-                Curve curve = FindLongestCurveFromPoints(connectorsPts);                
+                List<Connector> connectors = GetConnectors(conMngr);
+                List<Connector> HvacConnectors = connectors.Where(x => x.Domain == Domain.DomainHvac || x.Domain == Domain.DomainPiping).ToList();
+                List<XYZ> connectorsPts = HvacConnectors.Select(x => x.Origin).ToList();
+                Curve curve;
+                if (connectorsPts.Count == 2)
+                {
+                    curve = Line.CreateBound(connectorsPts[0], connectorsPts[1]); ;
+                    return curve;
+                }
+                else
+                {
+                    // решение супер неудачное потому что дает много ложных срабатываний
+                    // ну а что поделать
+                    curve = FindLongestCurveFromPoints(connectorsPts);
+                }
                 return curve;
             }
             catch (Autodesk.Revit.Exceptions.InvalidOperationException)
@@ -645,6 +656,14 @@ namespace TerrTools
                 if (pf != null) normalFaces.Add(pf);
             }
             return normalFaces;
+        }
+    }
+
+    [Serializable]
+    public class UndetectableDuctCurveException : Exception
+    {
+        public UndetectableDuctCurveException() : base($"Невозможно определить конкретную линию по данному менеджеру коннекторов. Вероятно, число HVAC коннекторов больше двух")
+        {
         }
     }
 
