@@ -29,7 +29,7 @@ namespace TerrTools
                 // Получаем все помещения из документа
                 IList<Element> rooms = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements();
                 // Получаем стены из документа(для выбора типа стены)
-                IList<Element> walls = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls).WhereElementIsElementType().ToElements();
+                IList<WallType> walls = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls).WhereElementIsElementType().Cast<WallType>().ToList();
                 // Исключаем из собранных стен с документа все витражи
                 // и составные стены(оставляем только базовые).
                 // В цикле создаем вспомогателньый список для того, 
@@ -51,7 +51,7 @@ namespace TerrTools
                 ColumnFinishForm form = new ColumnFinishForm(walls);
                 System.Windows.Forms.DialogResult r = form.ShowDialog();
                 // wall_type - это элемент(тип стены), выбранный пользователем
-                Element wall_type = form.Result;
+                WallType wall_type = form.Result;
                 if (wall_type != null)
                 {
                     // Нужен для работы метода GetBoundarySegments
@@ -84,7 +84,7 @@ namespace TerrTools
                         // Обьявляем переменную со значением половины толщины стены,
                         // это нужно для того, чтобы штукатурка примыкала именно к 
                         // колонне, а не входила внутрь
-                        double width = wall_type.LookupParameter("Ширина").AsDouble() / 2;
+                        double width = wall_type.Width / 2;
 
 
                         

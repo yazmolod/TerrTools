@@ -15,8 +15,8 @@ namespace TerrTools.UI
 {
     public partial class ColumnFinishForm : WF.Form
     {
-        public Element Result { get; set; }
-        public ColumnFinishForm(IList<Element> a)
+        public WallType Result { get; set; }
+        public ColumnFinishForm(IList<WallType> a)
         {
             InitializeComponent();
             comboBox1.DataSource = a;
@@ -30,7 +30,7 @@ namespace TerrTools.UI
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Result = comboBox1.SelectedItem as Element;
+            Result = comboBox1.SelectedItem as WallType;
             this.Close();
         }
 
@@ -56,7 +56,7 @@ namespace TerrTools.UI
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            Result = comboBox1.SelectedItem as Element;
+            Result = comboBox1.SelectedItem as WallType;
             this.Close();
         }
     }
