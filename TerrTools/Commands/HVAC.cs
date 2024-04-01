@@ -208,7 +208,7 @@ namespace TerrTools
                     // достаем назначенный расход
                     double airflow = plunt.LookupParameter("ADSK_Расход воздуха").AsDouble();
                     string pluntSystemType = plunt.get_Parameter(BuiltInParameter.RBS_DUCT_SYSTEM_TYPE_PARAM).AsValueString();
-                    airflow = UnitUtils.ConvertFromInternalUnits(airflow, DisplayUnitType.DUT_CUBIC_METERS_PER_HOUR);
+                    airflow = UnitUtils.ConvertFromInternalUnits(airflow, SymbolTypeId.MSup3PerH);
                     Connector connector = plunt.MEPModel.ConnectorManager.Connectors.Cast<Connector>().First();
                     switch (connector.Shape)
                     {
@@ -218,19 +218,19 @@ namespace TerrTools
                             // Приточка
                             if (pluntSystemType == suplySystemTypeName)
                             {
-                                if (airflow <= 50) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, DisplayUnitType.DUT_MILLIMETERS));
-                                else if (airflow <= 100) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, DisplayUnitType.DUT_MILLIMETERS));
-                                else if (airflow <= 160) diamParam.Set(UnitUtils.ConvertToInternalUnits(160, DisplayUnitType.DUT_MILLIMETERS));
-                                else if (airflow <= 250) diamParam.Set(UnitUtils.ConvertToInternalUnits(200, DisplayUnitType.DUT_MILLIMETERS));
+                                if (airflow <= 50) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, SymbolTypeId.Mm));
+                                else if (airflow <= 100) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, SymbolTypeId.Mm));
+                                else if (airflow <= 160) diamParam.Set(UnitUtils.ConvertToInternalUnits(160, SymbolTypeId.Mm));
+                                else if (airflow <= 250) diamParam.Set(UnitUtils.ConvertToInternalUnits(200, SymbolTypeId.Mm));
                                 else failedPlunts.Add(plunt);
                             }
                             // Вытяжка
                             else if (pluntSystemType == exhaustSystemTypeName)
                             {
-                                if (airflow <= 80) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, DisplayUnitType.DUT_MILLIMETERS));
-                                else if (airflow <= 125) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, DisplayUnitType.DUT_MILLIMETERS));
-                                else if (airflow <= 160) diamParam.Set(UnitUtils.ConvertToInternalUnits(160, DisplayUnitType.DUT_MILLIMETERS));
-                                else if (airflow <= 300) diamParam.Set(UnitUtils.ConvertToInternalUnits(200, DisplayUnitType.DUT_MILLIMETERS));
+                                if (airflow <= 80) diamParam.Set(UnitUtils.ConvertToInternalUnits(100, SymbolTypeId.Mm));
+                                else if (airflow <= 125) diamParam.Set(UnitUtils.ConvertToInternalUnits(125, SymbolTypeId.Mm));
+                                else if (airflow <= 160) diamParam.Set(UnitUtils.ConvertToInternalUnits(160, SymbolTypeId.Mm));
+                                else if (airflow <= 300) diamParam.Set(UnitUtils.ConvertToInternalUnits(200, SymbolTypeId.Mm));
                                 else failedPlunts.Add(plunt);
                             }
                             break;
@@ -248,8 +248,8 @@ namespace TerrTools
                                     double V = airflow / (3600 * F);
                                     if (V < 3)
                                     {
-                                        lengthParam.Set(UnitUtils.ConvertToInternalUnits(size[0], DisplayUnitType.DUT_MILLIMETERS));
-                                        heightParam.Set(UnitUtils.ConvertToInternalUnits(size[1], DisplayUnitType.DUT_MILLIMETERS));
+                                        lengthParam.Set(UnitUtils.ConvertToInternalUnits(size[0], SymbolTypeId.Mm));
+                                        heightParam.Set(UnitUtils.ConvertToInternalUnits(size[1], SymbolTypeId.Mm));
                                         found = true;
                                         break;
                                     }
@@ -295,15 +295,15 @@ namespace TerrTools
                     int countUpperZone = (from d in allPlunts
                                  where d.LookupParameter(spaceNumberParameterName).AsString() == spaceNumberParam.AsString()
                                  && d.get_Parameter(sysTypeBuiltIn).AsValueString() == systemType
-                                 && UnitUtils.ConvertFromInternalUnits(d.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).AsDouble(), DisplayUnitType.DUT_MILLIMETERS) >= upperZoneHeight
+                                 && UnitUtils.ConvertFromInternalUnits(d.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).AsDouble(), SymbolTypeId.Mm) >= upperZoneHeight
                                           select d).Count();
                     int countBottomZone = (from d in allPlunts
                                  where d.LookupParameter(spaceNumberParameterName).AsString() == spaceNumberParam.AsString()
                                  && d.get_Parameter(sysTypeBuiltIn).AsValueString() == systemType
-                                 && UnitUtils.ConvertFromInternalUnits(d.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).AsDouble(), DisplayUnitType.DUT_MILLIMETERS) < upperZoneHeight
+                                 && UnitUtils.ConvertFromInternalUnits(d.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).AsDouble(), SymbolTypeId.Mm) < upperZoneHeight
                                            select d).Count();
                     // Смещение
-                    bool isInUpperZone = UnitUtils.ConvertFromInternalUnits(plunt.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).AsDouble(), DisplayUnitType.DUT_MILLIMETERS) >= upperZoneHeight;
+                    bool isInUpperZone = UnitUtils.ConvertFromInternalUnits(plunt.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).AsDouble(), SymbolTypeId.Mm) >= upperZoneHeight;
 
                     // Находим пространство, в котором находится диффузор и достаем нужные значения
                     Space space = GetSpaceOfPlant(plunt);
@@ -559,7 +559,7 @@ namespace TerrTools
                 int count = allPlunts.Where(x => x.LookupParameter("ТеррНИИ_Номер помещения").AsString() == space.get_Parameter(BuiltInParameter.ROOM_NUMBER).AsString()).Count();
                 double requiredValue = space.get_Parameter(BuiltInParameter.ROOM_DESIGN_HEATING_LOAD_PARAM).AsDouble() / count;
                 plunt.LookupParameter(spacePowerParameterName).Set(requiredValue); // для проверки найденных типораразмеров
-                requiredValue = UnitUtils.ConvertFromInternalUnits(requiredValue, DisplayUnitType.DUT_WATTS);
+                requiredValue = UnitUtils.ConvertFromInternalUnits(requiredValue, SymbolTypeId.Watt);
 
                 FamilySizeTableManager sizeMng = FamilySizeTableManager.GetFamilySizeTableManager(doc, plunt.Symbol.Family.Id);
                 Parameter tableNameParam = plunt.Symbol.LookupParameter("Таблица выбора");
@@ -577,9 +577,9 @@ namespace TerrTools
                     continue;
                 }
 
-                double Tz = UnitUtils.ConvertFromInternalUnits(TzParam.AsDouble(), DisplayUnitType.DUT_CELSIUS);
-                double Tp = UnitUtils.ConvertFromInternalUnits(TpParam.AsDouble(), DisplayUnitType.DUT_CELSIUS);
-                double Ti = UnitUtils.ConvertFromInternalUnits(TiParam.AsDouble(), DisplayUnitType.DUT_CELSIUS);
+                double Tz = UnitUtils.ConvertFromInternalUnits(TzParam.AsDouble(), SymbolTypeId.DegreeC);
+                double Tp = UnitUtils.ConvertFromInternalUnits(TpParam.AsDouble(), SymbolTypeId.DegreeC);
+                double Ti = UnitUtils.ConvertFromInternalUnits(TiParam.AsDouble(), SymbolTypeId.DegreeC);
                 FamilySizeTable sizeTable = sizeMng.GetSizeTable(plunt.Symbol.LookupParameter("Таблица выбора").AsString());
 
                 string sN, sQn, sTzn, sTpn, sTin;
@@ -592,12 +592,12 @@ namespace TerrTools
                 Parameter keepTypeParam = plunt.LookupParameter("Не изменять тип");
                 var iteratedHeights = keepHeightParam != null && keepHeightParam.AsInteger() == 1
                     ?
-                    new List<int>() { Convert.ToInt32(UnitUtils.ConvertFromInternalUnits(hParam.AsDouble(), DisplayUnitType.DUT_MILLIMETERS)) } 
+                    new List<int>() { Convert.ToInt32(UnitUtils.ConvertFromInternalUnits(hParam.AsDouble(), SymbolTypeId.Mm)) } 
                     : 
                     TerrSettings.RadiatorHeights;
                 var iteratedLengths = keepLengthParam != null && keepLengthParam.AsInteger() == 1
                     ?
-                    new List<int>() { Convert.ToInt32(UnitUtils.ConvertFromInternalUnits(lParam.AsDouble(), DisplayUnitType.DUT_MILLIMETERS)) }
+                    new List<int>() { Convert.ToInt32(UnitUtils.ConvertFromInternalUnits(lParam.AsDouble(), SymbolTypeId.Mm)) }
                     :
                     TerrSettings.RadiatorLengths;
                 var iteratedTypes = keepTypeParam != null && keepTypeParam.AsInteger() == 1
@@ -644,8 +644,8 @@ namespace TerrTools
 
                             if (powerValue >= requiredValue)
                             {
-                                lParam.Set(UnitUtils.ConvertToInternalUnits(length, DisplayUnitType.DUT_MILLIMETERS));
-                                hParam.Set(UnitUtils.ConvertToInternalUnits(height, DisplayUnitType.DUT_MILLIMETERS));
+                                lParam.Set(UnitUtils.ConvertToInternalUnits(length, SymbolTypeId.Mm));
+                                hParam.Set(UnitUtils.ConvertToInternalUnits(height, SymbolTypeId.Mm));
                                 radTypeParam.Set(type);
                                 wattFinded = true;
                             }

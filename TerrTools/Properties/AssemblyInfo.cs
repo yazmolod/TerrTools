@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription("Улучшения в этой версии:\n" +
-    "- Исправлен критический баг в скрипте отделки колонн")]
+    "- Перевод на 2024 версию")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("TerrTools")]
@@ -33,4 +33,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("1.6.7")]
+[assembly: AssemblyFileVersion("2.0.0")]

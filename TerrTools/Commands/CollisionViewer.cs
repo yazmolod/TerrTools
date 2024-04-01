@@ -127,7 +127,7 @@ namespace TerrTools
             ProjectLocation pl = uidoc.Document.ActiveProjectLocation;
             XYZ centerPoint = pl.GetTransform().OfPoint(row.Point);
             // создаем подрезку 3д вида                    
-            double m = UnitUtils.ConvertToInternalUnits(1, DisplayUnitType.DUT_METERS);
+            double m = UnitUtils.ConvertToInternalUnits(1, SymbolTypeId.Meter);
             Outline outline = Intersection.CreateOutline(centerPoint, m, m, m);
             BoundingBoxXYZ bbox = new BoundingBoxXYZ();
             bbox.Min = outline.MinimumPoint;

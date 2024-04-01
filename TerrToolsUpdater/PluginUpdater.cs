@@ -6,13 +6,13 @@ using System.Threading;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace TerrToolsUpdater
 {
     class PluginUpdater
-    {
-        static string folderFrom = @"\\serverL\PSD\REVIT\Плагины\TerrTools\";
-        static string dirTo = @"C:\ProgramData\Autodesk\Revit\Addins\";
+    {        
+        static string dirTo = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Autodesk\Revit\Addins\";
         static string[] fileNames =
             {
             "TerrTools.addin",
@@ -106,7 +106,7 @@ namespace TerrToolsUpdater
             {
                 foreach (string fileName in fileNames)
                 {
-                    string src = Path.Combine(folderFrom, fileName);
+                    string src = Path.Combine(Directory.GetCurrentDirectory(), fileName);
                     string dst = Path.Combine(folderTo, fileName);
                     FileAttributes attr = File.GetAttributes(src);
 

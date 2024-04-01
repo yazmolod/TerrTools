@@ -137,9 +137,9 @@ namespace TerrTools
                 else
                 {
                     var selectedTag = (IndependentTag)tag;
-                    var instancesIdsForTagging = GetAllViewInstancesByCategory(selectedTag.TaggedLocalElementId);
+                    var instancesIdsForTagging = GetAllViewInstancesByCategory(selectedTag.GetTaggedLocalElementIds().First());
                     var selectedTagHeadPosition = selectedTag.TagHeadPosition;
-                    var oldElementBBPoint = GetPointFromBoundingBox(selectedTag.GetTaggedLocalElement(), MarkOffset);
+                    var oldElementBBPoint = GetPointFromBoundingBox(selectedTag.GetTaggedLocalElements().First(), MarkOffset);
                     foreach (var instanceIdForTagging in instancesIdsForTagging)
                     {
                         var newElementToTag = Doc.GetElement(instanceIdForTagging);
@@ -154,19 +154,19 @@ namespace TerrTools
                         createdTag.HasLeader = selectedTag.HasLeader;
                         if (selectedTag.HasLeader)
                         {
-                            createdTag.TagHeadPosition = newHeadPoint;
+                            // createdTag.TagHeadPosition = newHeadPoint;
                             // Если выноска имеет свободный конец.
-                            if (selectedTag.LeaderEndCondition == LeaderEndCondition.Free)
-                            {
-                                createdTag.LeaderEnd = GetPointForOffset(selectedTag.TagHeadPosition,
-                                    selectedTag.LeaderEnd, createdTag.TagHeadPosition);
-                            }
+                            // if (selectedTag.LeaderEndCondition == LeaderEndCondition.Free)
+                            // {
+                            //    createdTag.LeaderEnd = GetPointForOffset(selectedTag.TagHeadPosition,
+                            //        selectedTag.LeaderEnd, createdTag.TagHeadPosition);
+                            //}
                             // Если выноска загибается.
-                            if (selectedTag.HasElbow)
-                            {
-                                createdTag.LeaderElbow = GetPointForOffset(oldElementBBPoint,
-                                        selectedTag.LeaderElbow, newElementBBPoint);
-                            }
+                            // if (selectedTag.HasElbow)
+                            // {
+                            //    createdTag.LeaderElbow = GetPointForOffset(oldElementBBPoint,
+                            //            selectedTag.LeaderElbow, newElementBBPoint);
+                            //}
                         }
                     }
                 }

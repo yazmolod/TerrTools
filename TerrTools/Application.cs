@@ -502,7 +502,7 @@ namespace TerrTools
         public Result OnStartup(UIControlledApplication app)
         {          
             App.Application = app;
-            CheckUpdateDialog();            
+            // CheckUpdateDialog();            
             CreateRibbon();
             InitUpdaters();
             RegisterEvents();            

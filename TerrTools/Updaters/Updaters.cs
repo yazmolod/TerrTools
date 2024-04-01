@@ -388,7 +388,7 @@ namespace TerrTools.Updaters
                 size = el.Diameter;
                 isRound = true;
             }
-            size = UnitUtils.ConvertFromInternalUnits(size, DisplayUnitType.DUT_MILLIMETERS);
+            size = UnitUtils.ConvertFromInternalUnits(size, SymbolTypeId.Mm);
 
             if (systemType.IndexOf("дым", StringComparison.OrdinalIgnoreCase) >= 0) 
             {
@@ -410,7 +410,7 @@ namespace TerrTools.Updaters
                     else if (800 < size && size <= 1250) thickness = isInsul ? 1.0 : 1.0;
                 }
             }
-            thickness = UnitUtils.ConvertToInternalUnits(thickness, DisplayUnitType.DUT_MILLIMETERS);
+            thickness = UnitUtils.ConvertToInternalUnits(thickness, SymbolTypeId.Mm);
             return thickness;
         }
 

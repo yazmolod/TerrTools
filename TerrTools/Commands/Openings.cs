@@ -273,11 +273,11 @@ namespace TerrTools
         public bool IsBrick { get; set;} = false;
         public Level Level { get; private set; }
         public XYZ InsertionPoint { get; private set; }
-        public double HoleHeight { get => RoundValue(Outline.MaximumPoint.Z - Outline.MinimumPoint.Z, DisplayUnitType.DUT_MILLIMETERS, 1); }
-        public double HoleWidth { get => RoundValue(Outline.MaximumPoint.X - Outline.MinimumPoint.X, DisplayUnitType.DUT_MILLIMETERS, 1); }
-        public double HoleDepth { get => RoundValue(Outline.MaximumPoint.Y - Outline.MinimumPoint.Y, DisplayUnitType.DUT_MILLIMETERS, 1); }
-        public double LevelOffset { get => RoundValue(InsertionPoint.Z - Level.ProjectElevation, DisplayUnitType.DUT_MILLIMETERS, 5); }
-        public double GroundOffset { get => RoundValue(LevelOffset + Level.ProjectElevation, DisplayUnitType.DUT_MILLIMETERS, 5); }
+        public double HoleHeight { get => RoundValue(Outline.MaximumPoint.Z - Outline.MinimumPoint.Z, SymbolTypeId.Mm, 1); }
+        public double HoleWidth { get => RoundValue(Outline.MaximumPoint.X - Outline.MinimumPoint.X, SymbolTypeId.Mm, 1); }
+        public double HoleDepth { get => RoundValue(Outline.MaximumPoint.Y - Outline.MinimumPoint.Y, SymbolTypeId.Mm, 1); }
+        public double LevelOffset { get => RoundValue(InsertionPoint.Z - Level.ProjectElevation, SymbolTypeId.Mm, 5); }
+        public double GroundOffset { get => RoundValue(LevelOffset + Level.ProjectElevation, SymbolTypeId.Mm, 5); }
 
         /// <summary>
         /// Округляет число во внутренней системе исчисления относительно указанной
@@ -286,7 +286,7 @@ namespace TerrTools
         /// <param name="displayUnitType">Система исчисления, относительно которой нужно округлять</param>
         /// <param name="i">Степень округления</param>
         /// <returns></returns>
-        public double RoundValue(double x, DisplayUnitType displayUnitType, int i = 1)
+        public double RoundValue(double x, ForgeTypeId displayUnitType, int i = 1)
         {
             double humanUnitValue = UnitUtils.ConvertFromInternalUnits(x, displayUnitType);
             double roundedValue = Math.Round(humanUnitValue / i) * i;

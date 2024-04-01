@@ -176,7 +176,7 @@ namespace TerrTools
             foreach (var x in new FilteredElementCollector(doc)
                 .OfClass(typeof(IndependentTag))
                 .Cast<IndependentTag>()
-                .Where(x => x.TaggedLocalElementId == oldFloor)) {
+                .Where(x => x.GetTaggedLocalElementIds().Contains(oldFloor))) {
                 tags.Add(new OldTag(x.TagOrientation, x.TagHeadPosition, doc.GetElement(x.OwnerViewId) as View, x.GetTypeId()));
             };
             return tags;
@@ -262,8 +262,12 @@ namespace TerrTools
                 }
             }*/
 
-
-            return doc.Create.NewFloor(res.MainProfile, res.FinishingType as FloorType, res.Level, false); }
+                List<CurveLoop> curveLoop = new List<CurveLoop>();
+                foreach (var curve in res.MainProfile)
+                {
+                    curveLoop.Append(curve);
+                }
+                return Floor.Create(doc, curveLoop, res.FinishingType.Id, res.Level.Id); }
             catch (Autodesk.Revit.Exceptions.ArgumentException e)
             {
                 ModelCurveCreator mmc = new ModelCurveCreator(doc);
