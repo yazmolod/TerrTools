@@ -684,14 +684,35 @@ namespace TerrTools
 
     public class DocumentDataSet: IEnumerable<DocumentData>
     {
+        public static IDictionary<string, DocumentData> cachedDocs { get; } = new Dictionary<string, DocumentData>();
         ICollection<DocumentData> Docs { get; }
         public DocumentData this[string name]
         {
             get
             {
+                if (DocumentDataSet.cachedDocs.ContainsKey(name)) { return DocumentDataSet.cachedDocs[name]; }
                 DocumentData doc = Docs.Where(x => x.Basename == name).FirstOrDefault();
-                if (doc != null) return doc;
-                else throw new DocumentNotFoundException(name);
+                if (doc != null)
+                {
+                    DocumentDataSet.cachedDocs.Add(name, doc);
+                    return doc;
+                }
+
+                var dialog = new UI.SelectFromList(
+                    $"Не найден файл {name}, выберите подходящий", 
+                    Docs.Select(v => v.Basename).ToArray()
+                );
+                var result = dialog.ShowDialog();
+                if (result == System.Windows.Forms.DialogResult.OK)
+                {
+                    doc = Docs.Where(x => x.Basename == dialog.result).FirstOrDefault();
+                    if (doc != null)
+                    {
+                        DocumentDataSet.cachedDocs.Add(name, doc);
+                        return doc;
+                    }
+                }
+                throw new DocumentNotFoundException(name);
             }
         }
 

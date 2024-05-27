@@ -20,8 +20,8 @@ namespace TerrTools
         public static List<TerrUpdater> Updaters = new List<TerrUpdater>();
         public static AddInId AddInId { get => new AddInId(new Guid("4e6830af-73c4-45fa-aea0-82df352d5157")); }
         public static string AppName { get => "ТеррНИИ BIM"; }
-        public static string DLLPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrToolsDLL\TerrTools.dll";  }
-        public static string UpdaterPath { get => @"\\serverL\PSD\REVIT\Плагины\TerrTools\TerrToolsUpdater.exe";  }
+        public static string DLLPath { get => @"\\serverc\PSD\REVIT\Плагины\TerrTools\TerrToolsDLL\TerrTools.dll";  }
+        public static string UpdaterPath { get => @"\\serverc\PSD\REVIT\Плагины\TerrTools\TerrToolsUpdater.exe";  }
         public static string Version { get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion; }
         public static string PatchNote { get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).Comments; }
         

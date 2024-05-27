@@ -164,6 +164,12 @@
     <Compile Include="UI\AskPaperFormatForm.Designer.cs">
       <DependentUpon>AskPaperFormatForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\SelectFromList.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\SelectFromList.Designer.cs">
+      <DependentUpon>SelectFromList.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\IzometryGeneratorForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -286,6 +292,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\ProgressBar.resx">
       <DependentUpon>ProgressBar.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SelectFromList.resx">
+      <DependentUpon>SelectFromList.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\SettingsForm.resx">
       <DependentUpon>SettingsForm.cs</DependentUpon>

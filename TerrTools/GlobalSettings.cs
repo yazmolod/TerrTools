@@ -16,7 +16,7 @@ namespace TerrTools
         //
         //public static string WallOpeningFamilyName = "ТеррНИИ_ОтверстиеПрямоугольное_Стена";
         public static string WallOpeningFamilyName = "ТеррНИИ_Компонент_Отверстие";
-        public static string OpeningsFolder = @"\\serverl\psd\REVIT\Семейства\ТеррНИИ\АР";
+        public static string OpeningsFolder = @"\\serverc\psd\REVIT\Семейства\ТеррНИИ\АР";
         public static string FloorOpeningFamilyName = "ТеррНИИ_ОтверстиеПрямоугольное_Перекрытие";        
 
     }
