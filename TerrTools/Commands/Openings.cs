@@ -273,11 +273,11 @@ namespace TerrTools
         public bool IsBrick { get; set;} = false;
         public Level Level { get; private set; }
         public XYZ InsertionPoint { get; private set; }
-        public double HoleHeight { get => RoundValue(Outline.MaximumPoint.Z - Outline.MinimumPoint.Z, SymbolTypeId.Mm, 1); }
-        public double HoleWidth { get => RoundValue(Outline.MaximumPoint.X - Outline.MinimumPoint.X, SymbolTypeId.Mm, 1); }
-        public double HoleDepth { get => RoundValue(Outline.MaximumPoint.Y - Outline.MinimumPoint.Y, SymbolTypeId.Mm, 1); }
-        public double LevelOffset { get => RoundValue(InsertionPoint.Z - Level.ProjectElevation, SymbolTypeId.Mm, 5); }
-        public double GroundOffset { get => RoundValue(LevelOffset + Level.ProjectElevation, SymbolTypeId.Mm, 5); }
+        public double HoleHeight { get => RoundValue(Outline.MaximumPoint.Z - Outline.MinimumPoint.Z, UnitTypeId.Millimeters, 1); }
+        public double HoleWidth { get => RoundValue(Outline.MaximumPoint.X - Outline.MinimumPoint.X, UnitTypeId.Millimeters, 1); }
+        public double HoleDepth { get => RoundValue(Outline.MaximumPoint.Y - Outline.MinimumPoint.Y, UnitTypeId.Millimeters, 1); }
+        public double LevelOffset { get => RoundValue(InsertionPoint.Z - Level.ProjectElevation, UnitTypeId.Millimeters, 5); }
+        public double GroundOffset { get => RoundValue(LevelOffset + Level.ProjectElevation, UnitTypeId.Millimeters, 5); }
 
         /// <summary>
         /// Округляет число во внутренней системе исчисления относительно указанной

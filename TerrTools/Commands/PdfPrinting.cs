@@ -260,8 +260,8 @@ namespace TerrTools
                 FamilyInstance title_block = title_blocks[0];
                 double instance_width_d = title_block.get_Parameter(BuiltInParameter.SHEET_WIDTH).AsDouble();
                 double instance_height_d = title_block.get_Parameter(BuiltInParameter.SHEET_HEIGHT).AsDouble();
-                int instance_width = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(instance_width_d, SymbolTypeId.Mm));
-                int instance_height = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(instance_height_d, SymbolTypeId.Mm));
+                int instance_width = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(instance_width_d, UnitTypeId.Millimeters));
+                int instance_height = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(instance_height_d, UnitTypeId.Millimeters));
                 Tuple<int, int> instance_size = new Tuple<int, int>(instance_width, instance_height);
                 if (PrinterHasSuchSize(instance_size))
                 {
@@ -275,8 +275,8 @@ namespace TerrTools
                 {
                     double type_width_d = w_parameter.AsDouble();
                     double type_height_d = h_parameter.AsDouble();
-                    int type_width = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(type_width_d, SymbolTypeId.Mm));
-                    int type_height = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(type_height_d, SymbolTypeId.Mm));
+                    int type_width = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(type_width_d, UnitTypeId.Millimeters));
+                    int type_height = (int)Math.Round(UnitUtils.ConvertFromInternalUnits(type_height_d, UnitTypeId.Millimeters));
                     Tuple<int, int> type_size = new Tuple<int, int>(type_width, type_height);
                     if (PrinterHasSuchSize(type_size))
                     {

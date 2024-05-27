@@ -164,9 +164,9 @@ namespace TerrTools
                     case "Точка конфликта":
                         MatchCollection matches = Regex.Matches(value, @"\d+\.\d+");
                         double[] coords = matches.Cast<Match>().Select(x => double.Parse(x.Value.Replace('.', ','))).ToArray();
-                        double cx = UnitUtils.ConvertToInternalUnits(coords[0], SymbolTypeId.Meter);
-                        double cy = UnitUtils.ConvertToInternalUnits(coords[1], SymbolTypeId.Meter);
-                        double cz = UnitUtils.ConvertToInternalUnits(coords[2], SymbolTypeId.Meter);
+                        double cx = UnitUtils.ConvertToInternalUnits(coords[0], UnitTypeId.Meters);
+                        double cy = UnitUtils.ConvertToInternalUnits(coords[1], UnitTypeId.Meters);
+                        double cz = UnitUtils.ConvertToInternalUnits(coords[2], UnitTypeId.Meters);
                         Point = new XYZ(cx, cy, cz);
                         break;
 
@@ -260,9 +260,9 @@ namespace TerrTools
                     case "Точка конфликта":
                         MatchCollection matches = Regex.Matches(value, @"\d+\.\d+");
                         double[] coords = matches.Cast<Match>().Select(x => double.Parse(x.Value.Replace('.', ','))).ToArray();
-                        double cx = UnitUtils.ConvertToInternalUnits(coords[0], SymbolTypeId.Meter);
-                        double cy = UnitUtils.ConvertToInternalUnits(coords[1], SymbolTypeId.Meter);
-                        double cz = UnitUtils.ConvertToInternalUnits(coords[2], SymbolTypeId.Meter);
+                        double cx = UnitUtils.ConvertToInternalUnits(coords[0], UnitTypeId.Meters);
+                        double cy = UnitUtils.ConvertToInternalUnits(coords[1], UnitTypeId.Meters);
+                        double cz = UnitUtils.ConvertToInternalUnits(coords[2], UnitTypeId.Meters);
                         Point = new XYZ(cx, cy, cz);
                         break;
 
