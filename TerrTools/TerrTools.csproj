@@ -236,6 +236,7 @@
     <Compile Include="UI\SettingsForm.Designer.cs">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Updaters\DuctUpdater.cs" />
     <Compile Include="Updaters\RoomUpdater.cs" />
     <Compile Include="Updaters\Updaters.cs" />
   </ItemGroup>
@@ -438,7 +439,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)TerrTools.addin" "%25appdata%25\Autodesk\Revit\Addins\2024"
-copy ""\\195.200.0.227\psd\REVIT\ФОП\ФОП2017.txt"" "$(TargetDir)/FOP.txt"
+copy "U:\REVIT\Плагины\TerrTools\TerrToolsDLL\FOP.txt" "$(TargetDir)/FOP.txt"
 if not exist "%25appdata%25\Autodesk\Revit\Addins\2024\TerrToolsDLL\" mkdir "%25appdata%25\Autodesk\Revit\Addins\2024\TerrToolsDLL\"
 copy "$(TargetDir)" "%25appdata%25\Autodesk\Revit\Addins\2024\TerrToolsDLL\"</PostBuildEvent>
   </PropertyGroup>

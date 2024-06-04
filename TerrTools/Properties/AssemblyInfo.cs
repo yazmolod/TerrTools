@@ -7,7 +7,8 @@ using System.Runtime.InteropServices;
 // связанные со сборкой.
 [assembly: AssemblyTitle("TerrTools")]
 [assembly: AssemblyDescription("Улучшения в этой версии:\n" +
-    "- Перевод на 2024 версию")]
+    "- Подсчет площади воздуховодов и их фитингов\n" +
+    "- Исправление ошибок")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("TerrTools")]
@@ -33,4 +34,4 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("2.0.0")]
+[assembly: AssemblyFileVersion("2.1.0")]

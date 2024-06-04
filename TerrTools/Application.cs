@@ -176,6 +176,22 @@ namespace TerrTools
                 filterRDW,
                 ChangeTypeAdditionAndModication));
             Updaters.Last().AddTriggerPair(filterDW, Element.GetChangeTypeElementDeletion());
+
+            //DuctAreaUpdater
+            BuiltInCategory[] ductAreaCats = new BuiltInCategory[]
+            {
+                BuiltInCategory.OST_DuctCurves,
+                BuiltInCategory.OST_DuctFitting,
+            };
+            var ductAreaFilter = new LogicalAndFilter(
+                new ElementMulticategoryFilter(ductAreaCats), 
+                new ElementIsElementTypeFilter(inverted: true)
+            );
+            var ductAreaUpd = new DuctsAreaUpdater(
+                ductAreaFilter,
+                ChangeTypeAdditionAndModication);
+            ductAreaUpd.AddSharedSettings(new SharedParameterSettings(ductAreaCats, ductAreaUpd.areaParamName));
+            Updaters.Add(ductAreaUpd);
         }
 
         private void AddUpdaterSharedParameters(Document doc)
